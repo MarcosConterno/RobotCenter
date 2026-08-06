@@ -6,9 +6,9 @@ import { useState, type CSSProperties } from "react";
 interface RobotHeaderProps {
   pesquisa: string;
   onPesquisaChange: (value: string) => void;
-  cliente: string;
-  clientes: readonly string[];
-  onClienteChange: (value: string) => void;
+  pacote: string;
+  pacotes: readonly string[];
+  onPacoteChange: (value: string) => void;
   sistema: string;
   sistemas: readonly string[];
   onSistemaChange: (value: string) => void;
@@ -62,9 +62,9 @@ function FilterSelect({
 export default function RobotHeader({
   pesquisa,
   onPesquisaChange,
-  cliente,
-  clientes,
-  onClienteChange,
+  pacote,
+  pacotes,
+  onPacoteChange,
   sistema,
   sistemas,
   onSistemaChange,
@@ -82,7 +82,7 @@ export default function RobotHeader({
 
   const filtrosAtivos =
     pesquisa.trim().length > 0 ||
-    cliente !== "Todos" ||
+    pacote !== "Todos" ||
     sistema !== "Todos" ||
     ambiente !== "Todos" ||
     status !== "Todos";
@@ -148,11 +148,11 @@ export default function RobotHeader({
 
             <div style={selectRowStyle}>
               <FilterSelect
-                label="Cliente"
-                value={cliente}
-                options={clientes}
-                allOptionLabel="Todos os clientes"
-                onChange={onClienteChange}
+                label="Pacote"
+                value={pacote}
+                options={pacotes}
+                allOptionLabel="Todos os pacotes"
+                onChange={onPacoteChange}
               />
               <FilterSelect
                 label="Sistema"

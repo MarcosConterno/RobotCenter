@@ -8,13 +8,15 @@ import RobotsOverviewTable from "@/components/dashboard/RobotsOverviewTable";
 import StatsCards from "@/components/dashboard/StatsCards";
 import AppShell from "@/components/layout/AppShell";
 import RobotDetails from "@/components/robos/RobotDetails";
-import type { Robot } from "@/types/robot";
+import { useAppData } from "@/data/AppDataProvider";
+import type { Robo } from "@/domain/entities";
 
 export default function DashboardPage() {
-  const [selectedRobot, setSelectedRobot] = useState<Robot | null>(null);
+  const { robos, publicacoes } = useAppData();
+  const [selectedRobot, setSelectedRobot] = useState<Robo | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "robots">("overview");
 
-  function openRobotDetails(robot: Robot) {
+  function openRobotDetails(robot: Robo) {
     setSelectedRobot(robot);
   }
 
@@ -67,12 +69,12 @@ export default function DashboardPage() {
 
           {activeTab === "overview" ? (
             <div id="dashboard-overview-panel" role="tabpanel" className="dashboard-tab-panel">
-              <StatsCards />
-              <Feed onViewRobot={openRobotDetails} />
+              <StatsCards robos={robos} />
+              <Feed publicacoes={publicacoes} robos={robos} onViewRobot={openRobotDetails} />
             </div>
           ) : (
             <div id="dashboard-robots-panel" role="tabpanel" className="dashboard-tab-panel">
-              <RobotsOverviewTable onViewRobot={openRobotDetails} />
+              <RobotsOverviewTable robos={robos} onViewRobot={openRobotDetails} />
             </div>
           )}
         </div>

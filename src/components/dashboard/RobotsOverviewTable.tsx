@@ -2,20 +2,21 @@
 
 import { ArrowUpRight, Bot, TableProperties } from "lucide-react";
 
-import { robotsMock } from "@/components/robos/robots.mock";
-import type { Robot, RobotEnvironment } from "@/types/robot";
+import { formatarData } from "@/domain/formatters";
+import type { AmbienteRobo, Robo } from "@/domain/entities";
 
 interface RobotsOverviewTableProps {
-  onViewRobot: (robot: Robot) => void;
+  robos: Robo[];
+  onViewRobot: (robot: Robo) => void;
 }
 
-const environmentColors: Record<RobotEnvironment, { color: string; background: string }> = {
+const environmentColors: Record<AmbienteRobo, { color: string; background: string }> = {
   Produção: { color: "#4ADE80", background: "rgba(34,197,94,.1)" },
   Teste: { color: "#FBBF24", background: "rgba(245,158,11,.1)" },
   Desenvolvimento: { color: "#A78BFA", background: "rgba(139,92,246,.1)" },
 };
 
-export default function RobotsOverviewTable({ onViewRobot }: RobotsOverviewTableProps) {
+export default function RobotsOverviewTable({ robos, onViewRobot }: RobotsOverviewTableProps) {
   return (
     <section className="dashboard-robots-table">
       <header className="dashboard-robots-table__header">
@@ -28,7 +29,7 @@ export default function RobotsOverviewTable({ onViewRobot }: RobotsOverviewTable
             <p>Visão consolidada dos dados cadastrados no ambiente.</p>
           </div>
         </div>
-        <span className="dashboard-robots-table__count">{robotsMock.length} robôs</span>
+        <span className="dashboard-robots-table__count">{robos.length} robôs</span>
       </header>
 
       <div className="dashboard-robots-table__scroll">
@@ -46,7 +47,7 @@ export default function RobotsOverviewTable({ onViewRobot }: RobotsOverviewTable
             </tr>
           </thead>
           <tbody>
-            {robotsMock.map((robot) => {
+            {robos.map((robot) => {
               const environment = environmentColors[robot.ambiente];
 
               return (
@@ -89,7 +90,7 @@ export default function RobotsOverviewTable({ onViewRobot }: RobotsOverviewTable
                     <small className="dashboard-robots-table__secondary">{robot.fila}</small>
                   </td>
                   <td className="dashboard-robots-table__muted">{robot.responsavel}</td>
-                  <td className="dashboard-robots-table__muted">{robot.ultimaPublicacao}</td>
+                  <td className="dashboard-robots-table__muted">{formatarData(robot.ultimaPublicacaoEm)}</td>
                   <td>
                     <button
                       type="button"

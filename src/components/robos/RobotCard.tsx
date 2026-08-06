@@ -6,10 +6,11 @@ import {
   User,
 } from "lucide-react";
 import type { CSSProperties } from "react";
-import type { Robot } from "@/types/robot";
+import { formatarData } from "@/domain/formatters";
+import type { Robo } from "@/domain/entities";
 
 interface RobotCardProps {
-  robot: Robot;
+  robot: Robo;
   selected?: boolean;
   onClick?: () => void;
 }
@@ -131,7 +132,7 @@ export default function RobotCard({
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <Calendar size={14} style={{ flexShrink: 0 }} />
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {robot.ultimaPublicacao}
+            {formatarData(robot.ultimaPublicacaoEm)}
           </span>
         </div>
 

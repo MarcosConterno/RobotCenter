@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import { AppDataProvider } from "@/data/AppDataProvider";
 
 export const metadata: Metadata = {
   title: "Robot Center",
@@ -13,7 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <body><AppDataProvider>{children}</AppDataProvider></body>
     </html>
   );
 }

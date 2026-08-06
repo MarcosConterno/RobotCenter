@@ -4,53 +4,86 @@ import { Building2, Plus, Users } from "lucide-react";
 import { useState } from "react";
 
 import AppShell from "@/components/layout/AppShell";
+import { useAppData } from "@/data/AppDataProvider";
+import { TIPOS_USUARIO, type TipoUsuario } from "@/domain/entities";
+import { dadosCadastroClienteSchema, dadosCadastroUsuarioSchema, primeiraMensagemErro } from "@/domain/validation";
 
 type CadastroAtivo = "usuarios" | "clientes";
-type TipoUsuario = "Admin" | "Operador" | "Cliente";
-
-interface Usuario {
-  id: number;
-  login: string;
-  tipo: TipoUsuario;
-}
-
-interface Cliente {
-  id: number;
-  nome: string;
-  tenant: string;
-}
 
 export default function ConfiguracoesPage() {
+  const {
+    usuarios,
+    clientes,
+    cadastrarCliente: adicionarCliente,
+  } = useAppData();
   const [cadastroAtivo, setCadastroAtivo] = useState<CadastroAtivo>("usuarios");
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
-  const [clientes, setClientes] = useState<Cliente[]>([]);
   const [login, setLogin] = useState("");
+  const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [tipoUsuario, setTipoUsuario] = useState<TipoUsuario>("Operador");
   const [nomeCliente, setNomeCliente] = useState("");
   const [tenant, setTenant] = useState("");
+  const [erroUsuario, setErroUsuario] = useState("");
+  const [sucessoUsuario, setSucessoUsuario] = useState("");
+  const [salvandoUsuario, setSalvandoUsuario] = useState(false);
+  const [erroCliente, setErroCliente] = useState("");
 
-  function cadastrarUsuario(event: React.FormEvent<HTMLFormElement>) {
+  async function cadastrarUsuario(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    setUsuarios((itens) => [
-      ...itens,
-      { id: Date.now(), login: login.trim(), tipo: tipoUsuario },
-    ]);
-    setLogin("");
-    setSenha("");
-    setTipoUsuario("Operador");
+    const result = dadosCadastroUsuarioSchema.safeParse({ login, email, senha, tipo: tipoUsuario });
+    if (!result.success) {
+      setErroUsuario(primeiraMensagemErro(result.error));
+      return;
+    }
+
+    setErroUsuario("");
+    setSucessoUsuario("");
+    setSalvandoUsuario(true);
+
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          login: result.data.login,
+          email: result.data.email,
+          password: result.data.senha,
+          tipo: result.data.tipo,
+        }),
+      });
+      const payload = await response.json() as { error?: string };
+
+      if (!response.ok) {
+        setErroUsuario(payload.error ?? "Não foi possível cadastrar o usuário.");
+        return;
+      }
+
+      setLogin("");
+      setEmail("");
+      setSenha("");
+      setTipoUsuario("Operador");
+      setSucessoUsuario("Usuário cadastrado com sucesso.");
+    } catch {
+      setErroUsuario("Não foi possível comunicar com o servidor.");
+    } finally {
+      setSalvandoUsuario(false);
+    }
   }
 
   function cadastrarCliente(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    setClientes((itens) => [
-      ...itens,
-      { id: Date.now(), nome: nomeCliente.trim(), tenant: tenant.trim() },
-    ]);
+    const result = dadosCadastroClienteSchema.safeParse({ nome: nomeCliente, tenant });
+    if (!result.success) {
+      setErroCliente(primeiraMensagemErro(result.error));
+      return;
+    }
+
+    adicionarCliente(result.data);
     setNomeCliente("");
     setTenant("");
+    setErroCliente("");
   }
 
   return (
@@ -98,8 +131,21 @@ export default function ConfiguracoesPage() {
                 <span style={labelStyle}>Login</span>
                 <input
                   value={login}
-                  onChange={(event) => setLogin(event.target.value)}
+                  onChange={(event) => { setLogin(event.target.value); setErroUsuario(""); setSucessoUsuario(""); }}
                   placeholder="nome.sobrenome"
+                  required
+                  style={inputStyle}
+                />
+              </label>
+
+              <label style={fieldStyle}>
+                <span style={labelStyle}>Email</span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => { setEmail(event.target.value); setErroUsuario(""); setSucessoUsuario(""); }}
+                  placeholder="nome@empresa.com"
+                  autoComplete="email"
                   required
                   style={inputStyle}
                 />
@@ -110,10 +156,10 @@ export default function ConfiguracoesPage() {
                 <input
                   type="password"
                   value={senha}
-                  onChange={(event) => setSenha(event.target.value)}
+                  onChange={(event) => { setSenha(event.target.value); setErroUsuario(""); setSucessoUsuario(""); }}
                   placeholder="Digite uma senha"
                   required
-                  minLength={4}
+                  minLength={6}
                   style={inputStyle}
                 />
               </label>
@@ -122,19 +168,19 @@ export default function ConfiguracoesPage() {
                 <span style={labelStyle}>Tipo de usuário</span>
                 <select
                   value={tipoUsuario}
-                  onChange={(event) => setTipoUsuario(event.target.value as TipoUsuario)}
+                onChange={(event) => { setTipoUsuario(event.target.value as TipoUsuario); setErroUsuario(""); setSucessoUsuario(""); }}
                   style={inputStyle}
                 >
-                  <option value="Admin">Admin</option>
-                  <option value="Operador">Operador</option>
-                  <option value="Cliente">Cliente</option>
+                  {TIPOS_USUARIO.map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
                 </select>
               </label>
 
-              <button type="submit" style={primaryButtonStyle}>
+              <button type="submit" style={primaryButtonStyle} disabled={salvandoUsuario}>
                 <Plus size={17} />
-                Cadastrar usuário
+                {salvandoUsuario ? "Cadastrando..." : "Cadastrar usuário"}
               </button>
+              {erroUsuario && <p role="alert" style={formErrorStyle}>{erroUsuario}</p>}
+              {sucessoUsuario && <p role="status" style={formSuccessStyle}>{sucessoUsuario}</p>}
             </form>
 
             <CadastroLista
@@ -164,7 +210,7 @@ export default function ConfiguracoesPage() {
                 <span style={labelStyle}>Nome</span>
                 <input
                   value={nomeCliente}
-                  onChange={(event) => setNomeCliente(event.target.value)}
+                  onChange={(event) => { setNomeCliente(event.target.value); setErroCliente(""); }}
                   placeholder="Nome do cliente"
                   required
                   style={inputStyle}
@@ -175,7 +221,7 @@ export default function ConfiguracoesPage() {
                 <span style={labelStyle}>Tenant</span>
                 <input
                   value={tenant}
-                  onChange={(event) => setTenant(event.target.value)}
+                  onChange={(event) => { setTenant(event.target.value); setErroCliente(""); }}
                   placeholder="Identificador do tenant"
                   required
                   style={inputStyle}
@@ -186,6 +232,7 @@ export default function ConfiguracoesPage() {
                 <Plus size={17} />
                 Cadastrar cliente
               </button>
+              {erroCliente && <p role="alert" style={formErrorStyle}>{erroCliente}</p>}
             </form>
 
             <CadastroLista
@@ -275,7 +322,7 @@ const tabStyle: React.CSSProperties = {
 };
 
 const activeTabStyle: React.CSSProperties = {
-  borderColor: "rgba(124, 58, 237, 0.55)",
+  border: "1px solid rgba(124, 58, 237, 0.55)",
   background: "rgba(124, 58, 237, 0.16)",
   color: "#E9D5FF",
 };
@@ -435,4 +482,18 @@ const emptyStyle: React.CSSProperties = {
   margin: "16px 0 0",
   color: "#64748B",
   fontSize: 13,
+};
+
+const formErrorStyle: React.CSSProperties = {
+  gridColumn: "1 / -1",
+  margin: 0,
+  color: "#FCA5A5",
+  fontSize: 12,
+};
+
+const formSuccessStyle: React.CSSProperties = {
+  gridColumn: "1 / -1",
+  margin: 0,
+  color: "#86EFAC",
+  fontSize: 12,
 };

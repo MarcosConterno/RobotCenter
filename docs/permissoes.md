@@ -1,0 +1,33 @@
+# Permissões e acesso
+
+## Estado atual
+
+A aplicação não implementa autenticação, autorização, RLS, policies ou integração com Supabase Auth.
+
+`TipoUsuario` aceita Admin, Operador e Cliente, mas esses valores são apenas dados cadastrais. Nenhum componente restringe rotas, botões ou operações com base no tipo.
+
+## O que não deve ser inferido
+
+- Usuário do tipo Cliente ainda não pertence a um `Cliente` específico.
+- `Robo.responsavel` não identifica o usuário autenticado.
+- O texto `Admin` da Topbar não comprova uma sessão autenticada.
+
+## Decisões obrigatórias antes de RLS
+
+- Definir se Usuário será conta do Supabase Auth e como será o perfil de aplicação.
+- Definir as permissões efetivas de Admin, Operador e Cliente.
+- Definir se dados são globais ou isolados por Cliente/tenant.
+- Definir relações Cliente–Usuário e Cliente–Robô.
+- Definir quem pode cadastrar, editar, excluir e publicar Robôs.
+- Definir quem pode consultar Publicações e cadastros administrativos.
+
+Nenhuma policy deve ser criada antes dessas decisões, pois apenas usar o papel `authenticated` não implementaria autorização por registro.
+# Policies implementadas para a V1
+
+As migrations implementam autorização por tabelas RBAC e RLS deny-by-default:
+
+- **Admin**: gerencia clientes, profiles, papéis, permissões, robôs, regras e publicações conforme os grants disponíveis.
+- **Operador**: lê clientes, cria/edita/arquiva robôs e regras e registra/lê publicações; não gerencia usuários ou RBAC.
+- **Cliente**: lê somente seu próprio cliente, seus robôs, regras e publicações; não possui escrita nesses cadastros.
+
+As policies consultam `roles`, `permissions`, `user_roles` e `role_permissions` por funções no schema privado. `user_metadata` não participa da autorização. Todas as tabelas públicas da aplicação têm RLS habilitada, e `anon` não recebe acesso.

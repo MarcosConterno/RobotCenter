@@ -1,61 +1,60 @@
 "use client";
 
 import { Bot, FileText, GitBranch, Layers3, Plus, Save, Trash2, X } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
-import type { RobotEnvironment, RobotFormData } from "@/types/robot";
+import { useState, type ReactNode } from "react";
+import { AMBIENTES_ROBO, type DadosFormularioRobo } from "@/domain/entities";
+import { dadosFormularioRoboSchema, primeiraMensagemErro } from "@/domain/validation";
 
 interface RobotFormProps {
-  nome?: string;
-  sistema?: string;
-  pacote?: string;
-  ambiente?: RobotEnvironment;
-  descricao?: string;
-  stack?: string;
-  fila?: string;
-  versao?: string;
-  responsavel?: string;
-  ativo?: boolean;
-  alteracaoRealizada?: string;
-  regras?: string[];
-  submitText?: string;
-  isEdit?: boolean;
-  onCancel?: () => void;
+  initialValues?: DadosFormularioRobo;
+  mode: "create" | "edit";
+  onCancel: () => void;
   onDelete?: () => void;
-  onSubmit?: (data: RobotFormData) => void;
+  onSubmit: (data: DadosFormularioRobo) => void;
 }
 
 export default function RobotForm({
-  nome = "", sistema = "", pacote = "", ambiente = "Produção",
-  descricao = "", stack = "", fila = "", versao = "",
-  responsavel = "", ativo = true, alteracaoRealizada = "", regras = [], submitText = "Salvar",
-  isEdit = false, onCancel, onDelete, onSubmit,
+  initialValues = FORMULARIO_ROBO_INICIAL,
+  mode,
+  onCancel,
+  onDelete,
+  onSubmit,
 }: RobotFormProps) {
-  const [form, setForm] = useState<RobotFormData>({
-    nome, sistema, pacote, ambiente, descricao, stack, fila, versao, responsavel, ativo, alteracaoRealizada, regras,
-  });
+  const [form, setForm] = useState<DadosFormularioRobo>(initialValues);
+  const [formError, setFormError] = useState("");
 
-  useEffect(() => {
-    setForm({ nome, sistema, pacote, ambiente, descricao, stack, fila, versao, responsavel, ativo, alteracaoRealizada, regras });
-  }, [nome, sistema, pacote, ambiente, descricao, stack, fila, versao, responsavel, ativo, alteracaoRealizada, regras]);
-
-  function update<K extends keyof RobotFormData>(field: K, value: RobotFormData[K]) {
+  function update<K extends keyof DadosFormularioRobo>(field: K, value: DadosFormularioRobo[K]) {
     setForm((old) => ({ ...old, [field]: value }));
+    setFormError("");
   }
 
   return (
     <form
       onSubmit={(event) => {
         event.preventDefault();
-        onSubmit?.(form);
+        const normalizedForm = {
+          ...form,
+          regras: form.regras
+            .map((regra) => ({ descricao: regra.descricao.trim() }))
+            .filter((regra) => regra.descricao.length > 0),
+        };
+        const result = dadosFormularioRoboSchema.safeParse(normalizedForm);
+
+        if (!result.success) {
+          setFormError(primeiraMensagemErro(result.error));
+          return;
+        }
+
+        onSubmit(result.data);
       }}
       style={formStyle}
     >
       <FormSection icon={<Bot size={17} />} title="Informações gerais" description="Identificação e finalidade do robô.">
         <div style={fieldsGridStyle}>
-          <Field label="Nome" placeholder="Nome do robô" value={form.nome} onChange={(v) => update("nome", v)} />
-          <Field label="Sistema" placeholder="Ex.: Allianz" value={form.sistema} onChange={(v) => update("sistema", v)} />
-          <Field label="Pacote" placeholder="Ex.: Documentos" value={form.pacote} onChange={(v) => update("pacote", v)} />
-          <Field label="Responsável" placeholder="Nome do responsável" value={form.responsavel} onChange={(v) => update("responsavel", v)} />
+          <Field label="Nome" placeholder="Nome do robô" value={form.nome} onChange={(v) => update("nome", v)} required />
+          <Field label="Sistema" placeholder="Ex.: Legal One" value={form.sistema} onChange={(v) => update("sistema", v)} required />
+          <Field label="Pacote" placeholder="Ex.: Documentos" value={form.pacote} onChange={(v) => update("pacote", v)} required />
+          <Field label="Responsável" placeholder="Nome da pessoa ou equipe responsável" value={form.responsavel} onChange={(v) => update("responsavel", v)} required />
           <div style={fullWidthStyle}>
             <label style={labelStyle}>Descrição</label>
             <textarea
@@ -63,6 +62,7 @@ export default function RobotForm({
               onChange={(event) => update("descricao", event.target.value)}
               rows={3}
               placeholder="Descreva a função e o objetivo deste robô"
+              required
               style={textareaStyle}
             />
           </div>
@@ -76,12 +76,10 @@ export default function RobotForm({
               <label style={labelStyle}>Ambiente</label>
               <select
                 value={form.ambiente}
-                onChange={(event) => update("ambiente", event.target.value as RobotEnvironment)}
+                onChange={(event) => update("ambiente", event.target.value as DadosFormularioRobo["ambiente"])}
                 style={inputStyle}
               >
-                <option>Produção</option>
-                <option>Teste</option>
-                <option>Desenvolvimento</option>
+                {AMBIENTES_ROBO.map((ambiente) => <option key={ambiente}>{ambiente}</option>)}
               </select>
             </div>
 
@@ -105,10 +103,10 @@ export default function RobotForm({
 
         <FormSection icon={<Layers3 size={17} />} title="Informações técnicas" description="Tecnologia e integração.">
           <div style={fieldsGridStyle}>
-            <Field label="Stack" placeholder="Ex.: .NET 8" value={form.stack} onChange={(v) => update("stack", v)} />
-            <Field label="Versão" placeholder="Ex.: 1.0.0" value={form.versao} onChange={(v) => update("versao", v)} />
+            <Field label="Stack" placeholder="Ex.: .NET 8" value={form.stack} onChange={(v) => update("stack", v)} required />
+            <Field label="Versão" placeholder="Ex.: 1.0.0" value={form.versao} onChange={(v) => update("versao", v)} required />
             <div style={fullWidthStyle}>
-              <Field label="Fila" placeholder="Ex.: AWS SQS" value={form.fila} onChange={(v) => update("fila", v)} />
+              <Field label="Fila" placeholder="Ex.: AWS SQS" value={form.fila} onChange={(v) => update("fila", v)} required />
             </div>
           </div>
         </FormSection>
@@ -133,7 +131,7 @@ export default function RobotForm({
                 <span style={labelStyle}>Regras</span>
                 <span style={rulesHintStyle}>A numeração é criada automaticamente.</span>
               </div>
-              <button type="button" onClick={() => update("regras", [...form.regras, ""])} style={addRuleButtonStyle}>
+              <button type="button" onClick={() => update("regras", [...form.regras, { descricao: "" }])} style={addRuleButtonStyle}>
                 <Plus size={14} /> Adicionar regra
               </button>
             </div>
@@ -144,8 +142,8 @@ export default function RobotForm({
                 <div key={index} style={ruleRowStyle}>
                   <span style={ruleCodeStyle}>{`RF${String(index + 1).padStart(3, "0")}`}</span>
                   <input
-                    value={regra}
-                    onChange={(event) => update("regras", form.regras.map((item, itemIndex) => itemIndex === index ? event.target.value : item))}
+                    value={regra.descricao}
+                    onChange={(event) => update("regras", form.regras.map((item, itemIndex) => itemIndex === index ? { descricao: event.target.value } : item))}
                     placeholder="Escreva a regra funcional"
                     style={ruleInputStyle}
                   />
@@ -164,9 +162,11 @@ export default function RobotForm({
         </div>
       </FormSection>
 
+      {formError && <p role="alert" style={errorStyle}>{formError}</p>}
+
       <footer style={actionsStyle}>
         <div>
-          {isEdit && (
+          {mode === "edit" && onDelete && (
             <button type="button" onClick={onDelete} style={deleteButtonStyle}>
               <Trash2 size={15} />
               Excluir robô
@@ -177,7 +177,7 @@ export default function RobotForm({
           <button type="button" onClick={onCancel} style={cancelButtonStyle}>Cancelar</button>
           <button type="submit" style={submitButtonStyle}>
             <Save size={15} />
-            {submitText}
+            {mode === "create" ? "Cadastrar Robô" : "Salvar Alterações"}
           </button>
         </div>
       </footer>
@@ -200,11 +200,11 @@ function FormSection({ icon, title, description, children }: { icon: ReactNode; 
   );
 }
 
-function Field({ label, value, placeholder, onChange }: { label: string; value: string; placeholder: string; onChange: (value: string) => void }) {
+function Field({ label, value, placeholder, required = false, onChange }: { label: string; value: string; placeholder: string; required?: boolean; onChange: (value: string) => void }) {
   return (
     <div>
       <label style={labelStyle}>{label}</label>
-      <input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} style={inputStyle} />
+      <input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} required={required} style={inputStyle} />
     </div>
   );
 }
@@ -244,3 +244,19 @@ const ruleCodeStyle = { color: "#A78BFA", fontSize: 11, fontWeight: 800, fontFam
 const ruleInputStyle = { ...inputStyle, height: 38 } as const;
 const addRuleButtonStyle = { ...baseButtonStyle, padding: "7px 10px", border: "1px solid rgba(124,58,237,.4)", background: "rgba(124,58,237,.1)", color: "#C4B5FD" } as const;
 const removeRuleButtonStyle = { width: 30, height: 30, display: "inline-flex", alignItems: "center", justifyContent: "center", border: "none", borderRadius: 7, background: "transparent", color: "#94A3B8", cursor: "pointer" } as const;
+const errorStyle = { margin: 0, padding: "10px 12px", border: "1px solid rgba(239,68,68,.35)", borderRadius: 8, color: "#FCA5A5", background: "rgba(127,29,29,.18)", fontSize: 12 } as const;
+
+const FORMULARIO_ROBO_INICIAL: DadosFormularioRobo = {
+  nome: "",
+  sistema: "",
+  pacote: "",
+  descricao: "",
+  ambiente: "Produção",
+  ativo: true,
+  stack: "",
+  fila: "",
+  versao: "",
+  responsavel: "",
+  alteracaoRealizada: "",
+  regras: [],
+};

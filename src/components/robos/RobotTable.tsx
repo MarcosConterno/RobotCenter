@@ -1,10 +1,10 @@
 import RobotCard from "./RobotCard";
-import type { Robot } from "@/types/robot";
+import type { Robo } from "@/domain/entities";
 
 interface RobotTableProps {
-  robots: Robot[];
-  selectedRobot: Robot | null;
-  onSelectRobot: (robot: Robot) => void;
+  robots: Robo[];
+  selectedRobot: Robo | null;
+  onSelectRobot: (robot: Robo) => void;
 }
 
 export default function RobotTable({

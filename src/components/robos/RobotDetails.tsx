@@ -12,12 +12,13 @@ import {
   User,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import type { Robot } from "@/types/robot";
+import { formatarData } from "@/domain/formatters";
+import type { Robo } from "@/domain/entities";
 
 interface RobotDetailsProps {
-  robot: Robot | null;
-  onEdit?: (robot: Robot) => void;
-  onPublish?: (robot: Robot) => void;
+  robot: Robo | null;
+  onEdit?: (robot: Robo) => void;
+  onPublish?: (robot: Robo) => void;
 }
 
 const environmentColor = {
@@ -104,7 +105,7 @@ export default function RobotDetails({ robot, onEdit, onPublish }: RobotDetailsP
               </span>
             }
           />
-          <DetailRow icon={<Calendar size={17} />} label="Última publicação" value={robot.ultimaPublicacao} />
+          <DetailRow icon={<Calendar size={17} />} label="Última publicação" value={formatarData(robot.ultimaPublicacaoEm)} />
         </DetailSection>
 
         <DetailSection title="Informações técnicas">
@@ -127,10 +128,10 @@ export default function RobotDetails({ robot, onEdit, onPublish }: RobotDetailsP
           <div style={rulesStyle}>
             {regras.length === 0 && <div style={noRulesStyle}>Nenhuma regra cadastrada.</div>}
             {regras.map((regra, index) => (
-              <div key={`${regra}-${index}`} style={detailRuleStyle}>
+              <div key={`${regra.descricao}-${index}`} style={detailRuleStyle}>
                 <ListChecks size={16} style={{ color: "#8B5CF6", flexShrink: 0 }} />
                 <span style={detailRuleCodeStyle}>{`RF${String(index + 1).padStart(3, "0")}`}</span>
-                <span style={detailRuleTextStyle}>{regra}</span>
+                <span style={detailRuleTextStyle}>{regra.descricao}</span>
               </div>
             ))}
           </div>

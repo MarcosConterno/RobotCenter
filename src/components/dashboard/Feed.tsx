@@ -1,34 +1,28 @@
 "use client";
 
 import { ArrowRight, Bot, Clock3 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { robotsMock } from "@/components/robos/robots.mock";
-import type { Robot } from "@/types/robot";
+import { useMemo } from "react";
+import { formatarDataHoraRelativa } from "@/domain/formatters";
+import type { CategoriaPublicacao, Publicacao, Robo } from "@/domain/entities";
 
-interface FeedProps { onViewRobot: (robot: Robot) => void; }
-interface FeedItem {
-  id: number | string;
-  category: string;
-  robot: Robot;
-  description: string;
-  publishedAt: string;
-  color: string;
+interface FeedProps {
+  publicacoes: Publicacao[];
+  robos: Robo[];
+  onViewRobot: (robot: Robo) => void;
 }
 
-const feedItems: FeedItem[] = [
-  { id: "new-robot", category: "Novo Robô", robot: robotsMock[1], description: "O robô Cadastro de Documentos foi publicado em ambiente de Produção para a seguradora Allianz.", publishedAt: "há 2 horas", color: "#60A5FA" },
-  { id: "rule-update", category: "Atualização de Regra", robot: robotsMock[0], description: "A regra de validação de documentos foi atualizada para melhorar o tratamento de anexos recebidos.", publishedAt: "há 35 minutos", color: "#A78BFA" },
-];
+const categoryColors: Record<CategoriaPublicacao, string> = {
+  "Novo Robô": "#60A5FA",
+  "Atualização de Regra": "#A78BFA",
+  "Atualização do Robô": "#A78BFA",
+};
 
-export default function Feed({ onViewRobot }: FeedProps) {
-  const [items, setItems] = useState<FeedItem[]>(feedItems);
-
-  useEffect(() => {
-    try {
-      const publications = JSON.parse(localStorage.getItem("robot-center-publications") ?? "[]") as Array<Omit<FeedItem, "color">>;
-      setItems([...publications.map((publication) => ({ ...publication, color: "#A78BFA" })), ...feedItems]);
-    } catch { setItems(feedItems); }
-  }, []);
+export default function Feed({ publicacoes, robos, onViewRobot }: FeedProps) {
+  const robosPorId = useMemo(() => new Map(robos.map((robo) => [robo.id, robo])), [robos]);
+  const items = publicacoes.flatMap((publicacao) => {
+    const robo = robosPorId.get(publicacao.roboId);
+    return robo ? [{ publicacao, robo }] : [];
+  });
 
   return (
     <section style={sectionStyle}>
@@ -42,22 +36,22 @@ export default function Feed({ onViewRobot }: FeedProps) {
 
       <div>
         {items.map((item) => (
-          <article key={item.id} style={itemStyle}>
-            <span style={{ ...robotIconStyle, color: item.color, background: `${item.color}14` }}>
+          <article key={item.publicacao.id} style={itemStyle}>
+            <span style={{ ...robotIconStyle, color: categoryColors[item.publicacao.categoria], background: `${categoryColors[item.publicacao.categoria]}14` }}>
               <Bot size={17} />
             </span>
 
             <div style={contentStyle}>
               <div style={metadataStyle}>
-                <span style={{ ...categoryStyle, color: item.color }}>{item.category}</span>
+                <span style={{ ...categoryStyle, color: categoryColors[item.publicacao.categoria] }}>{item.publicacao.categoria}</span>
                 <span style={dotStyle}>•</span>
-                <span style={timeStyle}><Clock3 size={11} />{item.publishedAt}</span>
+                <span style={timeStyle}><Clock3 size={11} />{formatarDataHoraRelativa(item.publicacao.publicadaEm)}</span>
               </div>
-              <h3 style={robotNameStyle}>{item.robot.nome}</h3>
-              <p style={descriptionStyle}>{item.description}</p>
+              <h3 style={robotNameStyle}>{item.robo.nome}</h3>
+              <p style={descriptionStyle}>{item.publicacao.descricao}</p>
             </div>
 
-            <button type="button" onClick={() => onViewRobot(item.robot)} style={detailsButtonStyle}>
+            <button type="button" onClick={() => onViewRobot(item.robo)} style={detailsButtonStyle}>
               Ver detalhes <ArrowRight size={14} />
             </button>
           </article>
