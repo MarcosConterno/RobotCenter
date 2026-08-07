@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import { AdminAccessProvider } from "@/auth/AdminAccessProvider";
 import { AppDataProvider } from "@/data/AppDataProvider";
 
 export const metadata: Metadata = {
@@ -14,7 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body><AppDataProvider>{children}</AppDataProvider></body>
+      <body><AdminAccessProvider><AppDataProvider>{children}</AppDataProvider></AdminAccessProvider></body>
     </html>
   );
 }

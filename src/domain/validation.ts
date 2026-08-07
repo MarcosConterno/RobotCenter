@@ -11,7 +11,11 @@ export const regraRoboSchema = z.object({
 
 export const dadosFormularioRoboSchema = z.object({
   nome: textoObrigatorio("Nome"),
+  clienteId: z.number().int().positive("Selecione um cliente."),
   sistema: textoObrigatorio("Sistema"),
+  courtName: textoObrigatorio("CourtName"),
+  ideal: z.number().int().nonnegative("Ideal não pode ser negativo."),
+  max: z.number().int().nonnegative("Max não pode ser negativo."),
   pacote: textoObrigatorio("Pacote"),
   descricao: textoObrigatorio("Descrição"),
   ambiente: z.enum(AMBIENTES_ROBO),
@@ -20,8 +24,12 @@ export const dadosFormularioRoboSchema = z.object({
   fila: textoObrigatorio("Fila"),
   versao: textoObrigatorio("Versão"),
   responsavel: textoObrigatorio("Responsável"),
-  alteracaoRealizada: z.string().trim(),
+  alteracoesRealizadas: z.array(regraRoboSchema),
   regras: z.array(regraRoboSchema),
+  regrasForaDocumentacao: z.array(regraRoboSchema),
+}).refine((dados) => dados.max >= dados.ideal, {
+  message: "Max deve ser maior ou igual a Ideal.",
+  path: ["max"],
 });
 
 export const dadosCadastroUsuarioSchema = z.object({

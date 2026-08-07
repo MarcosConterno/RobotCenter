@@ -8,7 +8,9 @@ import RobotDetails from "@/components/robos/RobotDetails";
 import RobotDrawer from "@/components/robos/RobotDrawer";
 import RobotForm from "@/components/robos/RobotForm";
 import RobotHeader from "@/components/robos/RobotHeader";
+import RobotImportDialog from "@/components/robos/RobotImportDialog";
 import RobotTable from "@/components/robos/RobotTable";
+import { useAdminAccess } from "@/auth/AdminAccessProvider";
 import { useAppData } from "@/data/AppDataProvider";
 import { AMBIENTES_ROBO, type DadosFormularioRobo, type Robo } from "@/domain/entities";
 
@@ -18,13 +20,14 @@ const statusOptions = [TODAS_OPCOES, "Ativo", "Inativo"] as const;
 type DrawerMode = "create" | "edit";
 
 function obterDadosFormulario(robo: Robo): DadosFormularioRobo {
-  const { id: _id, ultimaPublicacaoEm: _ultimaPublicacaoEm, ...dados } = robo;
-  return dados;
+  const { id: _id, ultimaPublicacaoEm: _ultimaPublicacaoEm, alteracoes: _alteracoes, ...dados } = robo;
+  return { ...dados, alteracoesRealizadas: [] };
 }
 
 export default function RobosPage() {
   const router = useRouter();
-  const { robos, cadastrarRobo, atualizarRobo, excluirRobo, publicarAlteracoes } = useAppData();
+  const { isAdmin: canImport } = useAdminAccess();
+  const { robos, clientes, cadastrarRobo, importarRobos, atualizarRobo, excluirRobo, publicarAlteracoes } = useAppData();
   const [robotSelecionadoDoDashboard, setRobotSelecionadoDoDashboard] = useState<string | null>(null);
   const [pesquisa, setPesquisa] = useState("");
   const [pacote, setPacote] = useState(TODAS_OPCOES);
@@ -35,6 +38,7 @@ export default function RobosPage() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<DrawerMode>("edit");
+  const [importOpen, setImportOpen] = useState(false);
   const dashboardSelectionAppliedRef = useRef(false);
 
   useEffect(() => {
@@ -148,6 +152,8 @@ export default function RobosPage() {
             setDrawerMode("create");
             setDrawerOpen(true);
           }}
+          canImport={canImport}
+          onImport={() => setImportOpen(true)}
         />
 
         <div style={{ marginTop: 24 }}>
@@ -171,6 +177,7 @@ export default function RobosPage() {
               <div style={{ padding: 20 }}>
                 <RobotDetails
                   robot={selectedRobot}
+                  clientes={clientes}
                   onPublish={publicarRobotSelecionado}
                   onEdit={(robo) => {
                     setSelectedRobot(robo);
@@ -191,6 +198,8 @@ export default function RobosPage() {
         onClose={() => setDrawerOpen(false)}
       >
         <RobotForm
+          clientes={clientes}
+          alteracoesExistentes={drawerMode === "edit" && selectedRobot ? selectedRobot.alteracoes : []}
           key={`${drawerMode}-${selectedRobot?.id ?? "new"}`}
           initialValues={drawerMode === "edit" && selectedRobot ? obterDadosFormulario(selectedRobot) : undefined}
           mode={drawerMode}
@@ -199,6 +208,14 @@ export default function RobosPage() {
           onSubmit={salvarRobot}
         />
       </RobotDrawer>
+      <RobotImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImport={(items) => {
+          importarRobos(items);
+          setDetailsOpen(false);
+        }}
+      />
     </>
   );
 }

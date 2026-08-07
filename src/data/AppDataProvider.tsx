@@ -8,6 +8,7 @@ import {
   type DadosCadastroCliente,
   type DadosCadastroUsuario,
   type DadosFormularioRobo,
+  type DadosImportacaoRobo,
   type Publicacao,
   type Robo,
   type Usuario,
@@ -18,17 +19,34 @@ const PUBLICACOES_STORAGE_KEY = "robot-center-publications";
 const PUBLICACOES_STORAGE_VERSION = 1;
 const LIMITE_PUBLICACOES_LOCAIS = 20;
 
+function normalizarIdentificador(valor: string) {
+  return valor
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLocaleLowerCase("pt-BR");
+}
+
+function gerarTenant(nome: string) {
+  return normalizarIdentificador(nome)
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "") || "cliente-importado";
+}
+
 interface AppDataContextValue {
   robos: Robo[];
   publicacoes: Publicacao[];
   usuarios: Usuario[];
   clientes: Cliente[];
   cadastrarRobo: (dados: DadosFormularioRobo) => Robo;
+  importarRobos: (dados: DadosImportacaoRobo[]) => Robo[];
   atualizarRobo: (id: number, dados: DadosFormularioRobo) => Robo | null;
   excluirRobo: (id: number) => void;
   publicarAlteracoes: (id: number) => Robo | null;
   cadastrarUsuario: (dados: DadosCadastroUsuario) => void;
   cadastrarCliente: (dados: DadosCadastroCliente) => void;
+  atualizarCliente: (id: number, dados: DadosCadastroCliente) => Cliente | null;
+  excluirCliente: (id: number) => boolean;
 }
 
 const AppDataContext = createContext<AppDataContextValue | null>(null);
@@ -89,10 +107,17 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   function cadastrarRobo(dados: DadosFormularioRobo) {
+    const { alteracoesRealizadas, ...cadastro } = dados;
+    const agora = new Date().toISOString();
     const novoRobo: Robo = {
-      ...dados,
+      ...cadastro,
       id: Date.now(),
-      ultimaPublicacaoEm: new Date().toISOString(),
+      ultimaPublicacaoEm: agora,
+      alteracoes: alteracoesRealizadas.map((alteracao, index) => ({
+        id: Date.now() + index + 1,
+        descricao: alteracao.descricao,
+        realizadaEm: agora,
+      })),
     };
     setRobos((atuais) => [...atuais, novoRobo]);
     return novoRobo;
@@ -102,7 +127,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const atual = robos.find((robo) => robo.id === id);
     if (!atual) return null;
 
-    const atualizado = { ...atual, ...dados };
+    const { alteracoesRealizadas, ...cadastro } = dados;
+    const agora = new Date().toISOString();
+    const novasAlteracoes = alteracoesRealizadas.map((alteracao, index) => ({
+      id: Date.now() + index,
+      descricao: alteracao.descricao,
+      realizadaEm: agora,
+    }));
+    const novaAlteracao = [...novasAlteracoes, ...atual.alteracoes];
+    const atualizado = { ...atual, ...cadastro, alteracoes: novaAlteracao };
     setRobos((atuais) => atuais.map((robo) => (robo.id === id ? atualizado : robo)));
     return atualizado;
   }
@@ -121,7 +154,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       id: Date.now(),
       categoria: "Atualização do Robô",
       roboId: id,
-      descricao: atual.alteracaoRealizada.trim() || `Novas alterações foram publicadas para o robô ${atual.nome}.`,
+      descricao: atual.alteracoes[0]?.descricao || `Novas alterações foram publicadas para o robô ${atual.nome}.`,
       publicadaEm,
     };
     const proximasPublicacoes = [publicacao, ...publicacoesLocais].slice(0, LIMITE_PUBLICACOES_LOCAIS);
@@ -142,6 +175,62 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setClientes((atuais) => [...atuais, cliente]);
   }
 
+  function importarRobos(itens: DadosImportacaoRobo[]) {
+    const agora = new Date().toISOString();
+    const baseId = Date.now();
+    const clientesAtualizados = [...clientes];
+    const clientesPorNome = new Map(clientesAtualizados.map((cliente) => [normalizarIdentificador(cliente.nome), cliente]));
+    const tenantsEmUso = new Set(clientesAtualizados.map((cliente) => cliente.tenant));
+
+    const novosRobos = itens.map((dados, robotIndex): Robo => {
+      const { alteracoesRealizadas, clienteNome, ...cadastro } = dados;
+      const chaveCliente = normalizarIdentificador(clienteNome);
+      let cliente = clientesPorNome.get(chaveCliente);
+      if (!cliente) {
+        const nome = clienteNome.trim() || "Cliente não informado";
+        const tenantBase = gerarTenant(nome);
+        let tenant = tenantBase;
+        let suffix = 2;
+        while (tenantsEmUso.has(tenant)) {
+          tenant = `${tenantBase}-${suffix}`;
+          suffix += 1;
+        }
+        cliente = { id: baseId + robotIndex + 1, nome, tenant };
+        clientesAtualizados.push(cliente);
+        clientesPorNome.set(chaveCliente, cliente);
+        tenantsEmUso.add(tenant);
+      }
+      return {
+        ...cadastro,
+        clienteId: cliente.id,
+        id: baseId + robotIndex,
+        ultimaPublicacaoEm: agora,
+        alteracoes: alteracoesRealizadas.map((alteracao, alterationIndex) => ({
+          id: baseId + itens.length + robotIndex * 1000 + alterationIndex,
+          descricao: alteracao.descricao,
+          realizadaEm: agora,
+        })),
+      };
+    });
+    setClientes(clientesAtualizados);
+    setRobos((atuais) => [...atuais, ...novosRobos]);
+    return novosRobos;
+  }
+
+  function atualizarCliente(id: number, dados: DadosCadastroCliente) {
+    const atual = clientes.find((cliente) => cliente.id === id);
+    if (!atual) return null;
+    const atualizado = { ...atual, nome: dados.nome.trim(), tenant: dados.tenant.trim() };
+    setClientes((atuais) => atuais.map((cliente) => cliente.id === id ? atualizado : cliente));
+    return atualizado;
+  }
+
+  function excluirCliente(id: number) {
+    if (robos.some((robo) => robo.clienteId === id)) return false;
+    setClientes((atuais) => atuais.filter((cliente) => cliente.id !== id));
+    return true;
+  }
+
   const publicacoes = useMemo(
     () => [...publicacoesLocais, ...publicacoesMock],
     [publicacoesLocais],
@@ -153,11 +242,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     usuarios,
     clientes,
     cadastrarRobo,
+    importarRobos,
     atualizarRobo,
     excluirRobo,
     publicarAlteracoes,
     cadastrarUsuario,
     cadastrarCliente,
+    atualizarCliente,
+    excluirCliente,
   };
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;

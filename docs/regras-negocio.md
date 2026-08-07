@@ -17,7 +17,9 @@
 1. Um Robô pode ter zero ou várias regras.
 2. Regras adicionadas sem descrição são descartadas ao salvar.
 3. A ordem visual é a ordem do array.
-4. O código `RF001`, `RF002` etc. é calculado pela posição e não é persistido.
+4. O código `RF001`, `RF002` etc. é calculado pela posição da regra no documento técnico e não é persistido.
+5. As RFs do documento técnico podem ser reordenadas por arrastar e soltar; após cada mudança, a numeração é recalculada automaticamente.
+6. Regras fora da documentação são mantidas em lista separada e usam o código visual `RFD001`, `RFD002` etc.
 
 ## Publicações
 
@@ -58,8 +60,23 @@
 # Regras de persistência e integridade V1
 
 - Todo robô pertence a um cliente ativo.
+- Somente administradores podem baixar o modelo ou importar robôs em lote.
+- A importação aceita arquivos `.xlsx` de até 5 MB e no máximo 500 robôs por arquivo.
+- Nenhuma coluna do modelo é obrigatória: valores vazios recebem padrões compatíveis com o cadastro; cliente vazio utiliza o primeiro cliente disponível.
+- O cliente da planilha é localizado pelo nome normalizado. Quando ainda não existe, é criado uma única vez com o nome informado e tenant técnico único; as demais linhas do lote reutilizam o mesmo `clienteId`.
+- Quando a coluna Cliente estiver vazia, a importação usa o nome `Cliente não informado`, também reutilizado dentro do lote.
+- `Max` nunca é importado abaixo de `Ideal`; quando necessário, assume o mesmo valor de `Ideal`.
+- Somente administradores podem editar ou arquivar usuários e clientes.
+- Um administrador não pode arquivar o próprio usuário autenticado.
+- A exclusão de usuários e clientes é lógica, preservando histórico e auditoria.
+- Um cliente com robôs ou usuários ativos vinculados não pode ser arquivado.
 - Ambiente aceita somente Produção, Teste ou Desenvolvimento.
-- Regras de robô possuem ordem única entre regras ativas do mesmo robô.
+- Regras de robô possuem ordem única entre regras ativas do mesmo robô e tipo.
+- Regras existentes anteriores à categorização pertencem ao tipo `documentacao`.
+- Todo cadastro de robô deve selecionar um cliente existente.
+- `CourtName` é obrigatório; `Ideal` e `Max` são inteiros não negativos; `Max` deve ser maior ou igual a `Ideal`.
+- Cada texto informado em “Alteração realizada” gera uma nova entrada histórica com data/hora. Entradas anteriores não podem ser sobrescritas ou excluídas pela aplicação.
+- Detalhes e tabela consolidada exibem Cliente, Sistema, Robô, CourtName, Fila, Stack, Ideal, Max, Pacote e Versão, nessa ordem.
 - Publicações são imutáveis no fluxo normal.
 - `ultimaPublicacaoEm` é calculado pela maior `publicada_em` do robô.
 - Cadastros com soft delete não aparecem nas consultas funcionais comuns.

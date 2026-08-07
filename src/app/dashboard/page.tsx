@@ -12,7 +12,7 @@ import { useAppData } from "@/data/AppDataProvider";
 import type { Robo } from "@/domain/entities";
 
 export default function DashboardPage() {
-  const { robos, publicacoes } = useAppData();
+  const { robos, publicacoes, clientes } = useAppData();
   const [selectedRobot, setSelectedRobot] = useState<Robo | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "robots">("overview");
 
@@ -74,7 +74,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div id="dashboard-robots-panel" role="tabpanel" className="dashboard-tab-panel">
-              <RobotsOverviewTable robos={robos} onViewRobot={openRobotDetails} />
+              <RobotsOverviewTable robos={robos} clientes={clientes} onViewRobot={openRobotDetails} />
             </div>
           )}
         </div>
@@ -97,7 +97,7 @@ export default function DashboardPage() {
             </div>
 
             <div style={{ padding: 20 }}>
-              <RobotDetails robot={selectedRobot} />
+              <RobotDetails robot={selectedRobot} clientes={clientes} />
             </div>
           </section>
         </div>

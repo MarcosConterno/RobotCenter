@@ -1,6 +1,7 @@
+"use client";
+
 import {
   Bot,
-  Calendar,
   FileText,
   GitBranch,
   Layers3,
@@ -11,23 +12,19 @@ import {
   Server,
   User,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { formatarData } from "@/domain/formatters";
-import type { Robo } from "@/domain/entities";
+import type { Cliente, Robo } from "@/domain/entities";
 
 interface RobotDetailsProps {
   robot: Robo | null;
+  clientes?: Cliente[];
   onEdit?: (robot: Robo) => void;
   onPublish?: (robot: Robo) => void;
 }
 
-const environmentColor = {
-  Produção: "#22C55E",
-  Teste: "#F59E0B",
-  Desenvolvimento: "#3B82F6",
-} as const;
-
-export default function RobotDetails({ robot, onEdit, onPublish }: RobotDetailsProps) {
+export default function RobotDetails({ robot, clientes = [], onEdit, onPublish }: RobotDetailsProps) {
+  const [rulesTab, setRulesTab] = useState<"documentacao" | "fora-documentacao">("documentacao");
   if (!robot) {
     return (
       <div style={emptyStyle}>
@@ -37,6 +34,9 @@ export default function RobotDetails({ robot, onEdit, onPublish }: RobotDetailsP
   }
 
   const regras = robot.regras ?? [];
+  const regrasForaDocumentacao = robot.regrasForaDocumentacao ?? [];
+  const regrasVisiveis = rulesTab === "documentacao" ? regras : regrasForaDocumentacao;
+  const cliente = clientes.find((item) => item.id === robot.clienteId);
 
   return (
     <article style={containerStyle}>
@@ -92,45 +92,56 @@ export default function RobotDetails({ robot, onEdit, onPublish }: RobotDetailsP
         <p style={descriptionTextStyle}>{robot.descricao}</p>
       </section>
 
-      <div style={sectionsGridStyle}>
-        <DetailSection title="Configuração">
-          <DetailRow icon={<Package size={17} />} label="Pacote" value={robot.pacote} />
-          <DetailRow
-            icon={<GitBranch size={17} />}
-            label="Ambiente"
-            value={
-              <span style={{ ...environmentBadgeStyle, color: environmentColor[robot.ambiente] }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: environmentColor[robot.ambiente] }} />
-                {robot.ambiente}
-              </span>
-            }
-          />
-          <DetailRow icon={<Calendar size={17} />} label="Última publicação" value={formatarData(robot.ultimaPublicacaoEm)} />
-        </DetailSection>
-
+      <div style={detailsBlockStyle}>
         <DetailSection title="Informações técnicas">
-          <DetailRow icon={<Layers3 size={17} />} label="Stack" value={robot.stack} />
-          <DetailRow icon={<Server size={17} />} label="Fila" value={robot.fila} />
-          <DetailRow icon={<Bot size={17} />} label="Versão" value={robot.versao} />
-          <DetailRow icon={<User size={17} />} label="Responsável" value={robot.responsavel} />
+          <div style={technicalGridStyle}>
+            <DetailRow icon={<User size={17} />} label="Cliente" value={cliente?.nome ?? "Cliente não encontrado"} />
+            <DetailRow icon={<GitBranch size={17} />} label="Sistema" value={robot.sistema} />
+            <DetailRow icon={<Bot size={17} />} label="Robô" value={robot.nome} />
+            <DetailRow icon={<FileText size={17} />} label="CourtName" value={robot.courtName} />
+            <DetailRow icon={<Server size={17} />} label="Fila" value={robot.fila} />
+            <DetailRow icon={<Layers3 size={17} />} label="Stack" value={robot.stack} />
+            <DetailRow icon={<Bot size={17} />} label="Ideal" value={robot.ideal} />
+            <DetailRow icon={<Bot size={17} />} label="Max" value={robot.max} />
+            <DetailRow icon={<Package size={17} />} label="Pacote" value={robot.pacote} />
+            <DetailRow icon={<Bot size={17} />} label="Versão" value={robot.versao} />
+          </div>
         </DetailSection>
       </div>
 
-      <div style={documentationGridStyle}>
-        <DetailSection title="Alteração realizada">
-          <div style={documentContentStyle}>
-            <FileText size={17} style={{ color: "#8B5CF6", flexShrink: 0 }} />
-            <span>{robot.alteracaoRealizada || "Nenhuma alteração registrada."}</span>
+      <div style={followingBlockStyle}>
+        <DetailSection title="Alterações realizadas">
+          <div style={changesListStyle}>
+            {robot.alteracoes.length === 0 && <div style={noRulesStyle}>Nenhuma alteração registrada.</div>}
+            {robot.alteracoes.map((alteracao) => (
+              <div key={alteracao.id} style={changeItemStyle}>
+                <FileText size={16} style={{ color: "#8B5CF6", flexShrink: 0 }} />
+                <span>
+                  <span style={changeDateStyle}>{formatarData(alteracao.realizadaEm)}</span>
+                  <span style={changeTextStyle}>{alteracao.descricao}</span>
+                </span>
+              </div>
+            ))}
           </div>
         </DetailSection>
+      </div>
 
-        <DetailSection title="Regras funcionais">
+      <div style={rulesSectionStyle}>
+        <DetailSection title="Regras do robô">
+          <div role="tablist" aria-label="Tipos de regras" style={detailTabsStyle}>
+            <button type="button" role="tab" aria-selected={rulesTab === "documentacao"} onClick={() => setRulesTab("documentacao")} style={{ ...detailTabStyle, ...(rulesTab === "documentacao" ? activeDetailTabStyle : {}) }}>
+              Documento técnico
+            </button>
+            <button type="button" role="tab" aria-selected={rulesTab === "fora-documentacao"} onClick={() => setRulesTab("fora-documentacao")} style={{ ...detailTabStyle, ...(rulesTab === "fora-documentacao" ? activeDetailTabStyle : {}) }}>
+              Fora da documentação
+            </button>
+          </div>
           <div style={rulesStyle}>
-            {regras.length === 0 && <div style={noRulesStyle}>Nenhuma regra cadastrada.</div>}
-            {regras.map((regra, index) => (
+            {regrasVisiveis.length === 0 && <div style={noRulesStyle}>Nenhuma regra cadastrada nesta categoria.</div>}
+            {regrasVisiveis.map((regra, index) => (
               <div key={`${regra.descricao}-${index}`} style={detailRuleStyle}>
                 <ListChecks size={16} style={{ color: "#8B5CF6", flexShrink: 0 }} />
-                <span style={detailRuleCodeStyle}>{`RF${String(index + 1).padStart(3, "0")}`}</span>
+                <span style={detailRuleCodeStyle}>{`${rulesTab === "documentacao" ? "RF" : "RFD"}${String(index + 1).padStart(3, "0")}`}</span>
                 <span style={detailRuleTextStyle}>{regra.descricao}</span>
               </div>
             ))}
@@ -168,6 +179,14 @@ const containerStyle = {
   boxShadow: "0 18px 40px rgba(2, 6, 23, 0.3)",
 } as const;
 
+const detailTabsStyle = { display: "flex", gap: 4, marginBottom: 12, padding: 4, borderRadius: 8, background: "#0B1422" } as const;
+const detailsBlockStyle = { padding: "20px 26px 0" } as const;
+const followingBlockStyle = { padding: "16px 26px 0" } as const;
+const rulesSectionStyle = { padding: "16px 26px 26px" } as const;
+const technicalGridStyle = { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" } as const;
+const detailTabStyle = { flex: 1, padding: "7px 8px", border: "none", borderRadius: 6, background: "transparent", color: "#8291A8", cursor: "pointer", fontSize: 11, fontWeight: 700 } as const;
+const activeDetailTabStyle = { background: "#1E293B", color: "#EDE9FE" } as const;
+
 const emptyStyle = { ...containerStyle, minHeight: 240, display: "flex", alignItems: "center", justifyContent: "center", color: "#94A3B8" } as const;
 const headerStyle = { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20, padding: "24px 26px", background: "linear-gradient(135deg, rgba(124,58,237,.1), rgba(79,70,229,.025))", borderBottom: "1px solid #273449" } as const;
 const identityStyle = { display: "flex", alignItems: "center", gap: 16, minWidth: 0 } as const;
@@ -190,9 +209,10 @@ const rowStyle = { display: "grid", gridTemplateColumns: "24px minmax(105px, .8f
 const rowIconStyle = { display: "flex", color: "#8B5CF6" } as const;
 const rowLabelStyle = { color: "#8B9CB3", fontSize: 12 } as const;
 const rowValueStyle = { color: "#F1F5F9", fontSize: 13, fontWeight: 600, textAlign: "right", overflowWrap: "anywhere" } as const;
-const environmentBadgeStyle = { display: "inline-flex", alignItems: "center", justifyContent: "flex-end", gap: 6, fontSize: 12 } as const;
-const documentationGridStyle = { ...sectionsGridStyle, paddingTop: 0 } as const;
-const documentContentStyle = { display: "flex", alignItems: "flex-start", gap: 10, padding: 14, color: "#CBD5E1", fontSize: 13, lineHeight: 1.55 } as const;
+const changesListStyle = { display: "grid", maxHeight: 430, overflowY: "auto" } as const;
+const changeItemStyle = { display: "flex", alignItems: "flex-start", gap: 10, padding: 14, borderBottom: "1px solid rgba(39,52,73,.7)" } as const;
+const changeDateStyle = { display: "block", color: "#8B9CB3", fontSize: 10.5, marginBottom: 4 } as const;
+const changeTextStyle = { display: "block", color: "#CBD5E1", fontSize: 12.5, lineHeight: 1.5 } as const;
 const rulesStyle = { display: "grid" } as const;
 const noRulesStyle = { padding: 14, color: "#718198", fontSize: 12 } as const;
 const detailRuleStyle = { display: "grid", gridTemplateColumns: "20px 48px minmax(0, 1fr)", alignItems: "start", gap: 7, padding: "10px 14px", borderBottom: "1px solid rgba(39,52,73,.7)" } as const;

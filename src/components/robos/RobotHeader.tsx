@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronUp, Filter, Plus, Search, X } from "lucide-react";
+import { ChevronDown, ChevronUp, FileUp, Filter, Plus, Search, X } from "lucide-react";
 import { useState, type CSSProperties } from "react";
 
 interface RobotHeaderProps {
@@ -20,6 +20,8 @@ interface RobotHeaderProps {
   onStatusChange: (value: string) => void;
   totalRobots: number;
   onNovoRobot: () => void;
+  canImport: boolean;
+  onImport: () => void;
   onLimparFiltros: () => void;
 }
 
@@ -76,6 +78,8 @@ export default function RobotHeader({
   onStatusChange,
   totalRobots,
   onNovoRobot,
+  canImport,
+  onImport,
   onLimparFiltros,
 }: RobotHeaderProps) {
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -92,10 +96,18 @@ export default function RobotHeader({
       <div style={titleRowStyle}>
         <h1 style={pageTitleStyle}>Robôs Integradores</h1>
 
-        <button type="button" onClick={onNovoRobot} style={buttonStyle}>
-          <Plus size={16} />
-          Novo Robô
-        </button>
+        <div style={actionsStyle}>
+          {canImport && (
+            <button type="button" onClick={onImport} style={secondaryButtonStyle}>
+              <FileUp size={16} />
+              Importar
+            </button>
+          )}
+          <button type="button" onClick={onNovoRobot} style={buttonStyle}>
+            <Plus size={16} />
+            Novo Robô
+          </button>
+        </div>
       </div>
 
       <section style={panelStyle} aria-label="Filtros de robôs">
@@ -206,6 +218,24 @@ const titleRowStyle: CSSProperties = {
   justifyContent: "space-between",
   gap: 16,
   width: "100%",
+};
+
+const actionsStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 10 };
+
+const secondaryButtonStyle: CSSProperties = {
+  display: "inline-flex",
+  minHeight: 40,
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+  border: "1px solid #6D28D9",
+  borderRadius: 9,
+  padding: "0 15px",
+  background: "rgba(109,40,217,.12)",
+  color: "#DDD6FE",
+  fontSize: 13,
+  fontWeight: 700,
+  cursor: "pointer",
 };
 
 const pageTitleStyle: CSSProperties = {

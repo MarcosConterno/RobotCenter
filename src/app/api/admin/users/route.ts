@@ -12,6 +12,15 @@ const createUserSchema = z.object({
   tipo: z.enum(TIPOS_USUARIO),
 });
 
+const updateUserSchema = z.object({
+  id: z.string().uuid(),
+  login: z.string().trim().min(1, "Login é obrigatório."),
+  email: z.string().trim().email("Informe um email válido."),
+  tipo: z.enum(TIPOS_USUARIO),
+});
+
+const deleteUserSchema = z.object({ id: z.string().uuid() });
+
 function roleName(roleRelation: unknown) {
   if (Array.isArray(roleRelation)) {
     return roleRelation.some(
@@ -27,27 +36,58 @@ function roleName(roleRelation: unknown) {
   );
 }
 
-export async function POST(request: Request) {
+async function requireAdmin() {
   const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Sessão inválida." }, { status: 401 });
-  }
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) return { error: "Sessão inválida.", status: 401 } as const;
 
   const { data: userRoles, error: rolesError } = await supabase
     .from("user_roles")
     .select("roles(codigo)")
     .eq("user_id", user.id);
-
   const isAdmin = !rolesError && userRoles?.some((item) => roleName(item.roles));
+  if (!isAdmin) return { error: "Somente administradores podem gerenciar usuários.", status: 403 } as const;
+  return { user } as const;
+}
 
-  if (!isAdmin) {
-    return NextResponse.json(
-      { error: "Somente administradores podem cadastrar usuários." },
-      { status: 403 },
-    );
+export async function GET() {
+  const access = await requireAdmin();
+  if ("error" in access) return NextResponse.json({ error: access.error }, { status: access.status });
+
+  const admin = createAdminClient();
+  const [{ data: authData, error: authListError }, { data: profiles, error: profilesError }] = await Promise.all([
+    admin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+    admin
+      .from("profiles")
+      .select("id, login, user_roles:user_roles!user_roles_user_id_fkey(roles(codigo))")
+      .is("deleted_at", null)
+      .eq("ativo", true),
+  ]);
+
+  if (authListError || profilesError) {
+    console.error("[api/admin/users] list failed", {
+      auth: authListError ? { name: authListError.name, status: authListError.status } : null,
+      profiles: profilesError ? { code: profilesError.code, message: profilesError.message } : null,
+    });
+    return NextResponse.json({ error: "Não foi possível listar os usuários." }, { status: 500 });
   }
+
+  const emailById = new Map<string, string>(
+    authData.users.map((user): [string, string] => [user.id, user.email ?? ""]),
+  );
+  const users = (profiles ?? []).map((profile) => {
+    const assignments = profile.user_roles as unknown as Array<{ roles: { codigo?: string } | Array<{ codigo?: string }> | null }>;
+    const code = assignments?.flatMap((assignment) => Array.isArray(assignment.roles) ? assignment.roles : [assignment.roles]).find(Boolean)?.codigo;
+    const tipo = TIPOS_USUARIO.find((item) => item.toLowerCase() === code) ?? "Operador";
+    return { id: profile.id, login: profile.login, email: emailById.get(profile.id) ?? "", tipo };
+  });
+
+  return NextResponse.json({ users, currentUserId: access.user.id }, { headers: { "Cache-Control": "no-store" } });
+}
+
+export async function POST(request: Request) {
+  const access = await requireAdmin();
+  if ("error" in access) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const parsed = createUserSchema.safeParse(await request.json());
 
@@ -116,4 +156,44 @@ export async function POST(request: Request) {
     { id: userId, login, email, tipo },
     { status: 201, headers: { "Cache-Control": "no-store" } },
   );
+}
+
+export async function PATCH(request: Request) {
+  const access = await requireAdmin();
+  if ("error" in access) return NextResponse.json({ error: access.error }, { status: access.status });
+  const parsed = updateUserSchema.safeParse(await request.json());
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Dados inválidos." }, { status: 400 });
+
+  const admin = createAdminClient();
+  const { id, login, email, tipo } = parsed.data;
+  const { data: role, error: roleError } = await admin.from("roles").select("id").eq("codigo", tipo.toLowerCase()).eq("ativo", true).single();
+  if (roleError || !role) return NextResponse.json({ error: "Papel de usuário não encontrado." }, { status: 400 });
+
+  const { error: authUpdateError } = await admin.auth.admin.updateUserById(id, { email });
+  if (authUpdateError) return NextResponse.json({ error: "Não foi possível atualizar o email." }, { status: 400 });
+  const { error: profileError } = await admin.from("profiles").update({ login }).eq("id", id).is("deleted_at", null);
+  if (profileError) return NextResponse.json({ error: "Não foi possível atualizar o perfil." }, { status: 400 });
+
+  const { error: removeRoleError } = await admin.from("user_roles").delete().eq("user_id", id);
+  const { error: addRoleError } = removeRoleError ? { error: removeRoleError } : await admin.from("user_roles").insert({ user_id: id, role_id: role.id });
+  if (addRoleError) return NextResponse.json({ error: "Não foi possível atualizar o papel do usuário." }, { status: 500 });
+
+  return NextResponse.json({ id, login, email, tipo });
+}
+
+export async function DELETE(request: Request) {
+  const access = await requireAdmin();
+  if ("error" in access) return NextResponse.json({ error: access.error }, { status: access.status });
+  const parsed = deleteUserSchema.safeParse(await request.json());
+  if (!parsed.success) return NextResponse.json({ error: "Usuário inválido." }, { status: 400 });
+  if (parsed.data.id === access.user.id) return NextResponse.json({ error: "Você não pode excluir o próprio usuário." }, { status: 400 });
+
+  const admin = createAdminClient();
+  const now = new Date().toISOString();
+  const { error: profileError } = await admin.from("profiles").update({ ativo: false, deleted_at: now, deleted_by: access.user.id }).eq("id", parsed.data.id).is("deleted_at", null);
+  if (profileError) return NextResponse.json({ error: "Não foi possível excluir o perfil." }, { status: 400 });
+
+  const { error: authError } = await admin.auth.admin.updateUserById(parsed.data.id, { ban_duration: "876000h" });
+  if (authError) return NextResponse.json({ error: "Perfil excluído, mas o acesso não pôde ser bloqueado." }, { status: 500 });
+  return NextResponse.json({ success: true });
 }

@@ -1,21 +1,25 @@
 "use client";
 
-import { Building2, Plus, Users } from "lucide-react";
-import { useState } from "react";
+import { Building2, Pencil, Plus, Save, Trash2, Users, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 
 import AppShell from "@/components/layout/AppShell";
+import { useAdminAccess } from "@/auth/AdminAccessProvider";
 import { useAppData } from "@/data/AppDataProvider";
-import { TIPOS_USUARIO, type TipoUsuario } from "@/domain/entities";
+import { TIPOS_USUARIO, type TipoUsuario, type Usuario } from "@/domain/entities";
 import { dadosCadastroClienteSchema, dadosCadastroUsuarioSchema, primeiraMensagemErro } from "@/domain/validation";
 
 type CadastroAtivo = "usuarios" | "clientes";
 
 export default function ConfiguracoesPage() {
   const {
-    usuarios,
     clientes,
     cadastrarCliente: adicionarCliente,
+    atualizarCliente,
+    excluirCliente,
   } = useAppData();
+  const { isAdmin: adminAutorizado, status: statusAutorizacao, error: erroAutorizacao } = useAdminAccess();
+  const carregandoAutorizacao = statusAutorizacao === "loading";
   const [cadastroAtivo, setCadastroAtivo] = useState<CadastroAtivo>("usuarios");
   const [login, setLogin] = useState("");
   const [email, setEmail] = useState("");
@@ -27,6 +31,47 @@ export default function ConfiguracoesPage() {
   const [sucessoUsuario, setSucessoUsuario] = useState("");
   const [salvandoUsuario, setSalvandoUsuario] = useState(false);
   const [erroCliente, setErroCliente] = useState("");
+  const [usuariosGerenciados, setUsuariosGerenciados] = useState<Usuario[]>([]);
+  const [carregandoUsuarios, setCarregandoUsuarios] = useState(false);
+  const [erroListaUsuarios, setErroListaUsuarios] = useState("");
+  const [usuarioAtualId, setUsuarioAtualId] = useState<string | null>(null);
+  const [usuarioEditandoId, setUsuarioEditandoId] = useState<string | number | null>(null);
+  const [usuarioEditandoLogin, setUsuarioEditandoLogin] = useState("");
+  const [usuarioEditandoEmail, setUsuarioEditandoEmail] = useState("");
+  const [usuarioEditandoTipo, setUsuarioEditandoTipo] = useState<TipoUsuario>("Operador");
+  const [clienteEditandoId, setClienteEditandoId] = useState<number | null>(null);
+  const [clienteEditandoNome, setClienteEditandoNome] = useState("");
+  const [clienteEditandoTenant, setClienteEditandoTenant] = useState("");
+  const [acaoEmAndamento, setAcaoEmAndamento] = useState<string | number | null>(null);
+
+  const carregarUsuarios = useCallback(async () => {
+    setCarregandoUsuarios(true);
+    setErroListaUsuarios("");
+    try {
+      const response = await fetch("/api/admin/users", { cache: "no-store" });
+      const payload = await response.json() as {
+        users?: Usuario[];
+        currentUserId?: string;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        setErroListaUsuarios(payload.error ?? "Não foi possível listar os usuários.");
+        return;
+      }
+
+      setUsuariosGerenciados(payload.users ?? []);
+      setUsuarioAtualId(payload.currentUserId ?? null);
+    } catch {
+      setErroListaUsuarios("Não foi possível listar os usuários.");
+    } finally {
+      setCarregandoUsuarios(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (adminAutorizado) void carregarUsuarios();
+  }, [adminAutorizado, carregarUsuarios]);
 
   async function cadastrarUsuario(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -64,11 +109,123 @@ export default function ConfiguracoesPage() {
       setSenha("");
       setTipoUsuario("Operador");
       setSucessoUsuario("Usuário cadastrado com sucesso.");
+      setUsuariosGerenciados((atuais) => [...atuais, payload as Usuario]);
     } catch {
       setErroUsuario("Não foi possível comunicar com o servidor.");
     } finally {
       setSalvandoUsuario(false);
     }
+  }
+
+  function iniciarEdicaoUsuario(usuario: Usuario) {
+    setUsuarioEditandoId(usuario.id);
+    setUsuarioEditandoLogin(usuario.login);
+    setUsuarioEditandoEmail(usuario.email ?? "");
+    setUsuarioEditandoTipo(usuario.tipo);
+    setErroUsuario("");
+    setSucessoUsuario("");
+  }
+
+  async function salvarUsuario(usuarioId: string | number) {
+    const identificador = String(usuarioId);
+    const loginNormalizado = usuarioEditandoLogin.trim();
+    const emailNormalizado = usuarioEditandoEmail.trim();
+    if (!loginNormalizado || !emailNormalizado) {
+      setErroUsuario("Informe o login e o email do usuário.");
+      return;
+    }
+
+    setAcaoEmAndamento(usuarioId);
+    setErroUsuario("");
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: identificador,
+          login: loginNormalizado,
+          email: emailNormalizado,
+          tipo: usuarioEditandoTipo,
+        }),
+      });
+      const payload = await response.json() as { error?: string };
+      if (!response.ok) {
+        setErroUsuario(payload.error ?? "Não foi possível atualizar o usuário.");
+        return;
+      }
+
+      setUsuarioEditandoId(null);
+      setSucessoUsuario("Usuário atualizado com sucesso.");
+      setUsuariosGerenciados((atuais) =>
+        atuais.map((usuario) => String(usuario.id) === identificador ? payload as Usuario : usuario),
+      );
+    } catch {
+      setErroUsuario("Não foi possível comunicar com o servidor.");
+    } finally {
+      setAcaoEmAndamento(null);
+    }
+  }
+
+  async function removerUsuario(usuario: Usuario) {
+    if (String(usuario.id) === usuarioAtualId) {
+      setErroUsuario("Você não pode excluir o próprio usuário.");
+      return;
+    }
+    if (!window.confirm(`Excluir o usuário ${usuario.login}? O acesso será desativado.`)) return;
+
+    setAcaoEmAndamento(usuario.id);
+    setErroUsuario("");
+    setSucessoUsuario("");
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: String(usuario.id) }),
+      });
+      const payload = await response.json() as { error?: string };
+      if (!response.ok) {
+        setErroUsuario(payload.error ?? "Não foi possível excluir o usuário.");
+        return;
+      }
+
+      setUsuariosGerenciados((atuais) => atuais.filter((item) => item.id !== usuario.id));
+      setSucessoUsuario("Usuário excluído e acesso desativado.");
+    } catch {
+      setErroUsuario("Não foi possível comunicar com o servidor.");
+    } finally {
+      setAcaoEmAndamento(null);
+    }
+  }
+
+  function iniciarEdicaoCliente(cliente: (typeof clientes)[number]) {
+    setClienteEditandoId(cliente.id);
+    setClienteEditandoNome(cliente.nome);
+    setClienteEditandoTenant(cliente.tenant);
+    setErroCliente("");
+  }
+
+  function salvarCliente(clienteId: number) {
+    const result = dadosCadastroClienteSchema.safeParse({
+      nome: clienteEditandoNome,
+      tenant: clienteEditandoTenant,
+    });
+    if (!result.success) {
+      setErroCliente(primeiraMensagemErro(result.error));
+      return;
+    }
+
+    atualizarCliente(clienteId, result.data);
+    setClienteEditandoId(null);
+    setErroCliente("");
+  }
+
+  function removerCliente(cliente: (typeof clientes)[number]) {
+    if (!window.confirm(`Excluir o cliente ${cliente.nome}?`)) return;
+    if (!excluirCliente(cliente.id)) {
+      setErroCliente("O cliente não pode ser excluído porque possui robôs vinculados.");
+      return;
+    }
+    setErroCliente("");
   }
 
   function cadastrarCliente(event: React.FormEvent<HTMLFormElement>) {
@@ -126,7 +283,7 @@ export default function ConfiguracoesPage() {
               </div>
             </div>
 
-            <form onSubmit={cadastrarUsuario} style={formStyle}>
+            {adminAutorizado ? <form onSubmit={cadastrarUsuario} style={formStyle}>
               <label style={fieldStyle}>
                 <span style={labelStyle}>Login</span>
                 <input
@@ -181,19 +338,52 @@ export default function ConfiguracoesPage() {
               </button>
               {erroUsuario && <p role="alert" style={formErrorStyle}>{erroUsuario}</p>}
               {sucessoUsuario && <p role="status" style={formSuccessStyle}>{sucessoUsuario}</p>}
-            </form>
+            </form> : <p role={erroAutorizacao ? "alert" : "status"} style={accessNoticeStyle}>
+              {carregandoAutorizacao ? "Validando permissões..." : erroAutorizacao || "Somente administradores podem cadastrar ou alterar usuários."}
+            </p>}
+
+            {adminAutorizado && carregandoUsuarios && <p role="status" style={accessNoticeStyle}>Carregando usuários cadastrados...</p>}
+            {erroListaUsuarios && <p role="alert" style={accessNoticeStyle}>{erroListaUsuarios}</p>}
 
             <CadastroLista
               titulo="Usuários cadastrados"
               vazio="Nenhum usuário cadastrado."
-              quantidade={usuarios.length}
+              quantidade={usuariosGerenciados.length}
             >
-              {usuarios.map((usuario) => (
+              {usuariosGerenciados.map((usuario) => (
                 <div key={usuario.id} style={listItemStyle}>
-                  <span style={itemNameStyle}>{usuario.login}</span>
-                  <span style={userTypeStyle}>{usuario.tipo}</span>
+                  {usuarioEditandoId === usuario.id ? (
+                    <div style={editGridStyle}>
+                      <input aria-label="Login" value={usuarioEditandoLogin} onChange={(event) => setUsuarioEditandoLogin(event.target.value)} style={compactInputStyle} />
+                      <input aria-label="Email" type="email" value={usuarioEditandoEmail} onChange={(event) => setUsuarioEditandoEmail(event.target.value)} style={compactInputStyle} />
+                      <select aria-label="Tipo de usuário" value={usuarioEditandoTipo} onChange={(event) => setUsuarioEditandoTipo(event.target.value as TipoUsuario)} style={compactInputStyle}>
+                        {TIPOS_USUARIO.map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
+                      </select>
+                    </div>
+                  ) : (
+                    <div style={itemContentStyle}>
+                      <span style={itemNameStyle}>{usuario.login}</span>
+                      {usuario.email && <span style={itemSecondaryStyle}>{usuario.email}</span>}
+                    </div>
+                  )}
+                  <div style={itemActionsStyle}>
+                    {usuarioEditandoId === usuario.id ? (
+                      <>
+                        <IconButton label="Salvar usuário" onClick={() => void salvarUsuario(usuario.id)} disabled={acaoEmAndamento === usuario.id}><Save size={16} /></IconButton>
+                        <IconButton label="Cancelar edição" onClick={() => setUsuarioEditandoId(null)}><X size={16} /></IconButton>
+                      </>
+                    ) : (
+                      <>
+                        <span style={userTypeStyle}>{usuario.tipo}</span>
+                        {adminAutorizado && <IconButton label={`Editar ${usuario.login}`} onClick={() => iniciarEdicaoUsuario(usuario)}><Pencil size={16} /></IconButton>}
+                        {adminAutorizado && <IconButton label={`Excluir ${usuario.login}`} danger onClick={() => void removerUsuario(usuario)} disabled={String(usuario.id) === usuarioAtualId || acaoEmAndamento === usuario.id}><Trash2 size={16} /></IconButton>}
+                      </>
+                    )}
+                  </div>
                 </div>
               ))}
+              {erroUsuario && <p role="alert" style={formErrorStyle}>{erroUsuario}</p>}
+              {sucessoUsuario && <p role="status" style={formSuccessStyle}>{sucessoUsuario}</p>}
             </CadastroLista>
           </section>
         ) : (
@@ -205,7 +395,7 @@ export default function ConfiguracoesPage() {
               </div>
             </div>
 
-            <form onSubmit={cadastrarCliente} style={formStyle}>
+            {adminAutorizado ? <form onSubmit={cadastrarCliente} style={formStyle}>
               <label style={fieldStyle}>
                 <span style={labelStyle}>Nome</span>
                 <input
@@ -233,7 +423,9 @@ export default function ConfiguracoesPage() {
                 Cadastrar cliente
               </button>
               {erroCliente && <p role="alert" style={formErrorStyle}>{erroCliente}</p>}
-            </form>
+            </form> : <p role={erroAutorizacao ? "alert" : "status"} style={accessNoticeStyle}>
+              {carregandoAutorizacao ? "Validando permissões..." : erroAutorizacao || "Somente administradores podem cadastrar ou alterar clientes."}
+            </p>}
 
             <CadastroLista
               titulo="Clientes cadastrados"
@@ -242,15 +434,67 @@ export default function ConfiguracoesPage() {
             >
               {clientes.map((cliente) => (
                 <div key={cliente.id} style={listItemStyle}>
-                  <span style={itemNameStyle}>{cliente.nome}</span>
-                  <span style={tenantStyle}>{cliente.tenant}</span>
+                  {clienteEditandoId === cliente.id ? (
+                    <div style={editGridStyle}>
+                      <input aria-label="Nome do cliente" value={clienteEditandoNome} onChange={(event) => setClienteEditandoNome(event.target.value)} style={compactInputStyle} />
+                      <input aria-label="Tenant do cliente" value={clienteEditandoTenant} onChange={(event) => setClienteEditandoTenant(event.target.value)} style={compactInputStyle} />
+                    </div>
+                  ) : (
+                    <div style={itemContentStyle}>
+                      <span style={itemNameStyle}>{cliente.nome}</span>
+                      <span style={tenantStyle}>{cliente.tenant}</span>
+                    </div>
+                  )}
+                  {adminAutorizado && (
+                    <div style={itemActionsStyle}>
+                      {clienteEditandoId === cliente.id ? (
+                        <>
+                          <IconButton label="Salvar cliente" onClick={() => salvarCliente(cliente.id)}><Save size={16} /></IconButton>
+                          <IconButton label="Cancelar edição" onClick={() => setClienteEditandoId(null)}><X size={16} /></IconButton>
+                        </>
+                      ) : (
+                        <>
+                          <IconButton label={`Editar ${cliente.nome}`} onClick={() => iniciarEdicaoCliente(cliente)}><Pencil size={16} /></IconButton>
+                          <IconButton label={`Excluir ${cliente.nome}`} danger onClick={() => removerCliente(cliente)}><Trash2 size={16} /></IconButton>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
+              {erroCliente && <p role="alert" style={formErrorStyle}>{erroCliente}</p>}
             </CadastroLista>
           </section>
         )}
       </div>
     </AppShell>
+  );
+}
+
+function IconButton({
+  label,
+  danger = false,
+  disabled = false,
+  onClick,
+  children,
+}: {
+  label: string;
+  danger?: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      disabled={disabled}
+      onClick={onClick}
+      style={{ ...iconButtonStyle, ...(danger ? dangerButtonStyle : {}), ...(disabled ? disabledButtonStyle : {}) }}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -280,7 +524,8 @@ const pageStyle: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
   gap: 24,
-  maxWidth: 1000,
+  width: "100%",
+  maxWidth: 1120,
 };
 
 const titleStyle: React.CSSProperties = {
@@ -354,7 +599,7 @@ const sectionSubtitleStyle: React.CSSProperties = {
 
 const formStyle: React.CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "repeat(3, minmax(0, 1fr)) auto",
+  gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
   gap: 14,
   alignItems: "end",
   padding: 22,
@@ -462,6 +707,69 @@ const itemNameStyle: React.CSSProperties = {
   whiteSpace: "nowrap",
 };
 
+const itemContentStyle: React.CSSProperties = {
+  display: "flex",
+  minWidth: 0,
+  flex: 1,
+  alignItems: "center",
+  gap: 12,
+};
+
+const itemSecondaryStyle: React.CSSProperties = {
+  minWidth: 0,
+  overflow: "hidden",
+  color: "#94A3B8",
+  fontSize: 12,
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+};
+
+const itemActionsStyle: React.CSSProperties = {
+  display: "flex",
+  flex: "0 0 auto",
+  alignItems: "center",
+  gap: 8,
+};
+
+const editGridStyle: React.CSSProperties = {
+  display: "grid",
+  minWidth: 0,
+  flex: 1,
+  gridTemplateColumns: "repeat(3, minmax(120px, 1fr))",
+  gap: 8,
+  padding: "8px 0",
+};
+
+const compactInputStyle: React.CSSProperties = {
+  ...inputStyle,
+  height: 36,
+  fontSize: 13,
+};
+
+const iconButtonStyle: React.CSSProperties = {
+  display: "inline-flex",
+  width: 34,
+  height: 34,
+  alignItems: "center",
+  justifyContent: "center",
+  border: "1px solid #334155",
+  borderRadius: 7,
+  background: "#162130",
+  color: "#CBD5E1",
+  cursor: "pointer",
+};
+
+const dangerButtonStyle: React.CSSProperties = {
+  borderColor: "rgba(239, 68, 68, 0.45)",
+  background: "rgba(127, 29, 29, 0.24)",
+  color: "#FCA5A5",
+};
+
+const disabledButtonStyle: React.CSSProperties = {
+  cursor: "not-allowed",
+  opacity: 0.45,
+};
+
 const userTypeStyle: React.CSSProperties = {
   flex: "0 0 auto",
   borderRadius: 999,
@@ -496,4 +804,12 @@ const formSuccessStyle: React.CSSProperties = {
   margin: 0,
   color: "#86EFAC",
   fontSize: 12,
+};
+
+const accessNoticeStyle: React.CSSProperties = {
+  margin: 0,
+  padding: 22,
+  borderBottom: "1px solid #273449",
+  color: "#94A3B8",
+  fontSize: 13,
 };

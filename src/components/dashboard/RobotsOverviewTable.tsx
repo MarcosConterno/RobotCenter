@@ -1,22 +1,16 @@
 "use client";
 
-import { ArrowUpRight, Bot, TableProperties } from "lucide-react";
+import { TableProperties } from "lucide-react";
 
-import { formatarData } from "@/domain/formatters";
-import type { AmbienteRobo, Robo } from "@/domain/entities";
+import type { Cliente, Robo } from "@/domain/entities";
 
 interface RobotsOverviewTableProps {
   robos: Robo[];
+  clientes: Cliente[];
   onViewRobot: (robot: Robo) => void;
 }
 
-const environmentColors: Record<AmbienteRobo, { color: string; background: string }> = {
-  Produção: { color: "#4ADE80", background: "rgba(34,197,94,.1)" },
-  Teste: { color: "#FBBF24", background: "rgba(245,158,11,.1)" },
-  Desenvolvimento: { color: "#A78BFA", background: "rgba(139,92,246,.1)" },
-};
-
-export default function RobotsOverviewTable({ robos, onViewRobot }: RobotsOverviewTableProps) {
+export default function RobotsOverviewTable({ robos, clientes, onViewRobot }: RobotsOverviewTableProps) {
   return (
     <section className="dashboard-robots-table">
       <header className="dashboard-robots-table__header">
@@ -36,19 +30,21 @@ export default function RobotsOverviewTable({ robos, onViewRobot }: RobotsOvervi
         <table>
           <thead>
             <tr>
+              <th>Cliente</th>
+              <th>Sistema</th>
               <th>Robô</th>
-              <th>Sistema / pacote</th>
-              <th>Ambiente</th>
-              <th>Status</th>
-              <th>Dados técnicos</th>
-              <th>Responsável</th>
-              <th>Publicação</th>
-              <th><span className="sr-only">Ações</span></th>
+              <th>CourtName</th>
+              <th>Fila</th>
+              <th>Stack</th>
+              <th>Ideal</th>
+              <th>Max</th>
+              <th>Pacote</th>
+              <th>Versão</th>
             </tr>
           </thead>
           <tbody>
             {robos.map((robot) => {
-              const environment = environmentColors[robot.ambiente];
+              const cliente = clientes.find((item) => item.id === robot.clienteId);
 
               return (
                 <tr
@@ -63,46 +59,21 @@ export default function RobotsOverviewTable({ robos, onViewRobot }: RobotsOvervi
                   }}
                 >
                   <td>
-                    <div className="dashboard-robots-table__robot">
-                      <span><Bot size={15} /></span>
-                      <div>
-                        <strong>{robot.nome}</strong>
-                        <small>{robot.descricao}</small>
-                      </div>
-                    </div>
+                    <strong className="dashboard-robots-table__primary">{cliente?.nome ?? "—"}</strong>
                   </td>
                   <td>
                     <strong className="dashboard-robots-table__primary">{robot.sistema}</strong>
-                    <small className="dashboard-robots-table__secondary">{robot.pacote}</small>
                   </td>
                   <td>
-                    <span className="dashboard-robots-table__badge" style={environment}>
-                      {robot.ambiente}
-                    </span>
+                    <strong className="dashboard-robots-table__primary">{robot.nome}</strong>
                   </td>
-                  <td>
-                    <span className={`dashboard-robots-table__status ${robot.ativo ? "is-active" : "is-inactive"}`}>
-                      <i /> {robot.ativo ? "Ativo" : "Inativo"}
-                    </span>
-                  </td>
-                  <td>
-                    <strong className="dashboard-robots-table__primary">{robot.stack} · {robot.versao}</strong>
-                    <small className="dashboard-robots-table__secondary">{robot.fila}</small>
-                  </td>
-                  <td className="dashboard-robots-table__muted">{robot.responsavel}</td>
-                  <td className="dashboard-robots-table__muted">{formatarData(robot.ultimaPublicacaoEm)}</td>
-                  <td>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onViewRobot(robot);
-                      }}
-                      aria-label={`Ver detalhes de ${robot.nome}`}
-                    >
-                      Detalhes <ArrowUpRight size={13} />
-                    </button>
-                  </td>
+                  <td className="dashboard-robots-table__muted">{robot.courtName}</td>
+                  <td className="dashboard-robots-table__muted">{robot.fila}</td>
+                  <td className="dashboard-robots-table__muted">{robot.stack}</td>
+                  <td className="dashboard-robots-table__muted">{robot.ideal}</td>
+                  <td className="dashboard-robots-table__muted">{robot.max}</td>
+                  <td className="dashboard-robots-table__muted">{robot.pacote}</td>
+                  <td className="dashboard-robots-table__muted">{robot.versao}</td>
                 </tr>
               );
             })}

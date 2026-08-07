@@ -14,10 +14,20 @@ export interface RegraRobo {
   descricao: string;
 }
 
+export interface AlteracaoRobo {
+  id: number;
+  descricao: string;
+  realizadaEm: string;
+}
+
 export interface Robo {
   id: number;
+  clienteId: number;
   nome: string;
   sistema: string;
+  courtName: string;
+  ideal: number;
+  max: number;
   pacote: string;
   descricao: string;
   ambiente: AmbienteRobo;
@@ -27,11 +37,18 @@ export interface Robo {
   versao: string;
   responsavel: string;
   ultimaPublicacaoEm: string;
-  alteracaoRealizada: string;
+  alteracoes: AlteracaoRobo[];
   regras: RegraRobo[];
+  regrasForaDocumentacao: RegraRobo[];
 }
 
-export type DadosFormularioRobo = Omit<Robo, "id" | "ultimaPublicacaoEm">;
+export type DadosFormularioRobo = Omit<Robo, "id" | "ultimaPublicacaoEm" | "alteracoes"> & {
+  alteracoesRealizadas: RegraRobo[];
+};
+
+export type DadosImportacaoRobo = Omit<DadosFormularioRobo, "clienteId"> & {
+  clienteNome: string;
+};
 
 export interface Publicacao {
   id: number;
@@ -42,8 +59,9 @@ export interface Publicacao {
 }
 
 export interface Usuario {
-  id: number;
+  id: number | string;
   login: string;
+  email?: string;
   tipo: TipoUsuario;
 }
 

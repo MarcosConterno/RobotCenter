@@ -2,7 +2,7 @@
 
 ## 1. Escopo
 
-Este documento descreve o domínio após a refatoração pré-banco. A aplicação ainda não possui integração com Supabase, tabelas, migrations, SQL, policies ou acesso ao banco remoto.
+Este documento descreve o domínio e sua preparação para persistência no Supabase. As alterações estruturais e regras de integridade são rastreadas em `supabase/migrations`.
 
 A fonte temporária de dados é `AppDataProvider`, inicializada pelo conjunto único de mocks de `src/mocks/app.mock.ts`. Publicações criadas durante o uso continuam persistidas no `localStorage`; os demais dados permanecem em memória.
 
@@ -12,10 +12,14 @@ A fonte temporária de dados é `AppDataProvider`, inicializada pelo conjunto ú
 |---|---|---|
 | `/` | Redirecionar para `/robos`. | Nenhuma. |
 | `/dashboard` | Indicadores calculados, feed e tabela consolidada. | `useAppData()`. |
-| `/robos` | Filtrar, cadastrar, editar, excluir e publicar robôs. | `useAppData()`. |
-| `/configuracoes` | Cadastrar/listar usuários e clientes. | `useAppData()`. |
+| `/robos` | Filtrar, cadastrar, importar, editar, excluir e publicar robôs. | `useAppData()` e autorização administrativa. |
+| `/configuracoes` | Cadastrar, editar e arquivar usuários e clientes como administrador. | API administrativa e `useAppData()`. |
+
+Usuários e clientes são arquivados por exclusão lógica, preservando histórico e auditoria. O banco impede o arquivamento de clientes que ainda possuam perfis ou robôs ativos vinculados; a API administrativa bloqueia o acesso de usuários arquivados no Supabase Auth.
 
 Dashboard e telas operacionais usam a mesma instância de estado enquanto a aplicação permanece carregada.
+
+A importação Excel reutiliza o contrato do formulário e não altera o schema. O nome do cliente é normalizado para localizar ou criar um registro, cujo `id` é atribuído aos robôs do lote; o tenant obrigatório é gerado de forma única quando o cliente é novo. No estágio atual, cadastro manual e lote entram pelo `AppDataProvider`; a futura troca pelo repository Supabase deve manter a autorização no servidor e executar a criação do cliente e do lote transacionalmente.
 
 ## 3. Entidades
 
@@ -65,7 +69,7 @@ Relacionamentos:
 |---|---|---:|---|
 | `descricao` | `string` | Sim | Texto não vazio após normalização. |
 
-O código visual `RF001`, `RF002` etc. é derivado da posição e não pertence à entidade persistida atual. A ordem também permanece implícita no array.
+Os códigos visuais `RF001`, `RF002`, `RFD001` etc. são derivados da posição e não pertencem à entidade persistida. Enquanto a aplicação opera com mocks, a ordem é representada pela posição nos arrays `regras` e `regrasForaDocumentacao`.
 
 ### 3.3. Publicação (`Publicacao`)
 
@@ -147,11 +151,17 @@ Nenhuma tabela foi criada. A tradução inicial, ainda dependente de confirmaç�
 
 ### `robos`
 
+Além dos campos existentes, armazena `court_name`, `ideal` e `max`. `cliente_id` é obrigatório e o formulário seleciona um registro existente de `clientes`.
+
+### `alteracoes_robo`
+
+Histórico imutável vinculado por `robo_id`, com `descricao`, `realizada_em`, `created_at` e `created_by`. A migration copia todo `robos.alteracao_realizada` não vazio para esta tabela e preserva a coluna legada para evitar perda de dados.
+
 `id`, `nome`, `sistema`, `pacote`, `descricao`, `ambiente`, `ativo`, `stack`, `fila`, `versao`, `responsavel`, `ultima_publicacao_em`, `alteracao_realizada`.
 
 ### `regras_robo`
 
-Materializa `RegraRobo.descricao` e a relação com Robô. Antes de implementar, precisam ser definidos identificador, coluna de ordem e estabilidade do código RF.
+Materializa `RegraRobo.descricao` e a relação com Robô. A coluna `tipo` separa `documentacao` de `fora_documentacao`; `ordem` é independente por robô e tipo. Os códigos RF/RFD continuam derivados na interface.
 
 ### `publicacoes`
 
@@ -212,6 +222,6 @@ A persistência inicial está definida pelas migrations em `supabase/migrations`
 2. grants, funções privadas de autorização, RLS e policies;
 3. catálogo mínimo e idempotente de papéis e permissões.
 
-`auth.users` é gerida pelo Supabase Auth e relacionada 1:1 com `profiles`. `robos.cliente_id` estabelece o isolamento por cliente. `regras_robo` preserva a ordem do array atual, e a última publicação permanece um dado derivado de `publicacoes`.
+`auth.users` é gerida pelo Supabase Auth e relacionada 1:1 com `profiles`. `robos.cliente_id` estabelece o isolamento por cliente. `regras_robo` preserva categoria e ordem das duas listas de regras, e a última publicação permanece um dado derivado de `publicacoes`.
 
 Os tipos do schema ficam em `src/types/database.types.ts`. Após aplicar as migrations no Supabase Cloud, esse arquivo deve ser regenerado pela CLI para refletir o schema remoto como fonte final.

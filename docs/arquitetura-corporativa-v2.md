@@ -48,9 +48,9 @@ Essa decisão mantém compatibilidade integral com os formulários, filtros, moc
 
 ### 2.3 Regras
 
-As regras deixam de ser armazenadas como array dentro do registro do robô e passam a linhas de `regras_robo`. Isso é necessário porque PostgreSQL relacional precisa preservar ordem, identidade e integridade de cada regra.
+As regras deixam de ser armazenadas como array dentro do registro do robô e passam a linhas de `regras_robo`. A coluna `tipo` separa as regras do documento técnico das regras fora da documentação, cada categoria com ordem própria. Isso permite ao PostgreSQL preservar categoria, ordem, identidade e integridade de cada regra.
 
-A interface continua recebendo `regras: RegraRobo[]`; a camada de acesso recompõe o array ordenando pelo campo `ordem`.
+A interface recebe `regras: RegraRobo[]` e `regrasForaDocumentacao: RegraRobo[]`; a camada de acesso recompõe cada array filtrando por `tipo` e ordenando pelo campo `ordem`.
 
 ### 2.4 Publicações
 
@@ -288,7 +288,7 @@ O cliente de um robô não pode ser trocado por usuário Cliente. Inserção ou 
 | `user_roles` | combinação usuário + papel única |
 | `role_permissions` | combinação papel + permissão única |
 | `robos` | nome, sistema, pacote, descrição, stack, fila, versão e responsável não vazios; ambiente limitado aos três valores atuais; cliente obrigatório |
-| `regras_robo` | descrição não vazia; ordem inteira não negativa; ordem única por robô entre regras ativas |
+| `regras_robo` | descrição não vazia; tipo limitado a `documentacao` ou `fora_documentacao`; ordem inteira não negativa; ordem única por robô e tipo entre regras ativas |
 | `publicacoes` | categoria limitada aos quatro valores atuais; descrição não vazia; data obrigatória |
 
 ### Regras que permanecem na aplicação
@@ -333,7 +333,7 @@ Serão criados apenas índices ligados a constraints, RLS, filtros e ordenaçõe
 - `robos(cliente_id, deleted_at)` para RLS e listagem;
 - `robos(cliente_id, ativo, ambiente)` para filtros atuais;
 - índices de busca/filtro em sistema, pacote e responsável somente após validar o padrão real de pesquisa;
-- `regras_robo(robo_id, ordem)` entre regras ativas;
+- `regras_robo(robo_id, tipo, ordem)` entre regras ativas;
 - `publicacoes(robo_id, publicada_em desc)`;
 - `publicacoes(publicada_em desc)` para o feed permitido ao papel;
 - índices nas foreign keys de auditoria técnica (`created_by`, etc.) apenas quando usados por consulta ou necessários ao volume.
@@ -383,7 +383,7 @@ São nove tabelas de aplicação. Não serão adicionadas tabelas de ambientes, 
 
 ### `regras_robo`
 
-`id`, `robo_id`, `descricao`, `ordem`, `created_at`, `updated_at`, `created_by`, `updated_by`, `deleted_at`, `deleted_by`.
+`id`, `robo_id`, `descricao`, `tipo`, `ordem`, `created_at`, `updated_at`, `created_by`, `updated_by`, `deleted_at`, `deleted_by`.
 
 ### `publicacoes`
 
@@ -412,6 +412,7 @@ roles N ─── N permissions
       por role_permissions
 
 robos 1 ─── N regras_robo
+robos 1 ─── N alteracoes_robo
 robos 1 ─── N publicacoes
 
 profiles 1 ─── N registros criados/alterados/excluídos

@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      alteracoes_robo: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          descricao: string
+          id: string
+          realizada_em: string
+          robo_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          descricao: string
+          id?: string
+          realizada_em?: string
+          robo_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          descricao?: string
+          id?: string
+          realizada_em?: string
+          robo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alteracoes_robo_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alteracoes_robo_robo_id_fkey"
+            columns: ["robo_id"]
+            isOneToOne: false
+            referencedRelation: "robos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clientes: {
         Row: {
           created_at: string
@@ -249,6 +291,7 @@ export type Database = {
           id: string
           ordem: number
           robo_id: string
+          tipo: string
           updated_at: string
           updated_by: string | null
         }
@@ -261,6 +304,7 @@ export type Database = {
           id?: string
           ordem: number
           robo_id: string
+          tipo?: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -273,6 +317,7 @@ export type Database = {
           id?: string
           ordem?: number
           robo_id?: string
+          tipo?: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -313,6 +358,7 @@ export type Database = {
           ambiente: string
           ativo: boolean
           cliente_id: string
+          court_name: string
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -320,6 +366,8 @@ export type Database = {
           descricao: string
           fila: string
           id: string
+          ideal: number
+          max: number
           nome: string
           pacote: string
           responsavel: string
@@ -334,6 +382,7 @@ export type Database = {
           ambiente: string
           ativo?: boolean
           cliente_id: string
+          court_name: string
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -341,6 +390,8 @@ export type Database = {
           descricao: string
           fila: string
           id?: string
+          ideal?: number
+          max?: number
           nome: string
           pacote: string
           responsavel: string
@@ -355,6 +406,7 @@ export type Database = {
           ambiente?: string
           ativo?: boolean
           cliente_id?: string
+          court_name?: string
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -362,6 +414,8 @@ export type Database = {
           descricao?: string
           fila?: string
           id?: string
+          ideal?: number
+          max?: number
           nome?: string
           pacote?: string
           responsavel?: string
