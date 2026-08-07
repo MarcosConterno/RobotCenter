@@ -8,6 +8,10 @@ Pode ser cadastrado individualmente ou importado em lote por administradores. O 
 
 Na importação, Cliente é identificado pelo nome. Um nome ainda não cadastrado cria um Cliente com tenant técnico único, e todos os Robôs subsequentes com o mesmo nome recebem o mesmo `clienteId`. Assim, o vínculo permanece estável para consultas e filtros por Cliente.
 
+Os identificadores de Cliente, Robô, Alteração e Publicação usados pela aplicação são UUIDs compatíveis com as chaves do PostgreSQL. A listagem de Robôs e Clientes é montada a partir do Supabase, sem registros mock iniciais.
+
+Cada Robô possui as configurações visuais `clienteCor` e `pacoteCor`. Elas selecionam uma entre seis paletas controladas para os badges de Cliente e Pacote, sem permitir CSS livre e sem alterar o cadastro global do Cliente.
+
 Automação cadastrada e gerenciada pelo sistema. Possui identificação, sistema, pacote, ambiente, estado operacional, configuração técnica, responsável textual, versão, documentação da última alteração e regras funcionais.
 
 ### Sistema

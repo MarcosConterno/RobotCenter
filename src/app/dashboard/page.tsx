@@ -23,7 +23,7 @@ export default function DashboardPage() {
   return (
     <>
       <AppShell title="Dashboard">
-        <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 1180, margin: "0 auto" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%", maxWidth: 1480, margin: "0 auto" }}>
           <nav className="dashboard-tabs" role="tablist" aria-label="Visualizações da Dashboard">
             <button
               type="button"

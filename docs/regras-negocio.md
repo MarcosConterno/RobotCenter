@@ -64,6 +64,8 @@
 - A importação aceita arquivos `.xlsx` de até 5 MB e no máximo 500 robôs por arquivo.
 - Nenhuma coluna do modelo é obrigatória: valores vazios recebem padrões compatíveis com o cadastro; cliente vazio utiliza o primeiro cliente disponível.
 - O cliente da planilha é localizado pelo nome normalizado. Quando ainda não existe, é criado uma única vez com o nome informado e tenant técnico único; as demais linhas do lote reutilizam o mesmo `clienteId`.
+- Clientes já existentes são carregados do Supabase; os registros estáticos de demonstração não participam da correspondência.
+- As cores dos badges de Cliente e Pacote são escolhidas por robô entre azul, violeta, verde, âmbar, rosa e ciano. Cada paleta define conjuntamente fundo e texto para preservar contraste e consistência visual.
 - Quando a coluna Cliente estiver vazia, a importação usa o nome `Cliente não informado`, também reutilizado dentro do lote.
 - `Max` nunca é importado abaixo de `Ideal`; quando necessário, assume o mesmo valor de `Ideal`.
 - Somente administradores podem editar ou arquivar usuários e clientes.

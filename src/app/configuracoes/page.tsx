@@ -39,7 +39,7 @@ export default function ConfiguracoesPage() {
   const [usuarioEditandoLogin, setUsuarioEditandoLogin] = useState("");
   const [usuarioEditandoEmail, setUsuarioEditandoEmail] = useState("");
   const [usuarioEditandoTipo, setUsuarioEditandoTipo] = useState<TipoUsuario>("Operador");
-  const [clienteEditandoId, setClienteEditandoId] = useState<number | null>(null);
+  const [clienteEditandoId, setClienteEditandoId] = useState<string | null>(null);
   const [clienteEditandoNome, setClienteEditandoNome] = useState("");
   const [clienteEditandoTenant, setClienteEditandoTenant] = useState("");
   const [acaoEmAndamento, setAcaoEmAndamento] = useState<string | number | null>(null);
@@ -204,7 +204,7 @@ export default function ConfiguracoesPage() {
     setErroCliente("");
   }
 
-  function salvarCliente(clienteId: number) {
+  function salvarCliente(clienteId: string) {
     const result = dadosCadastroClienteSchema.safeParse({
       nome: clienteEditandoNome,
       tenant: clienteEditandoTenant,

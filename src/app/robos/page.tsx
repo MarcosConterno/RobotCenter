@@ -95,11 +95,11 @@ export default function RobosPage() {
     setDetailsOpen(false);
   }
 
-  function salvarRobot(dados: DadosFormularioRobo) {
+  async function salvarRobot(dados: DadosFormularioRobo) {
     const roboSalvo = drawerMode === "create"
       ? cadastrarRobo(dados)
       : selectedRobot
-        ? atualizarRobo(selectedRobot.id, dados)
+        ? await atualizarRobo(selectedRobot.id, dados)
         : null;
 
     if (roboSalvo) setSelectedRobot(roboSalvo);
@@ -211,8 +211,8 @@ export default function RobosPage() {
       <RobotImportDialog
         open={importOpen}
         onClose={() => setImportOpen(false)}
-        onImport={(items) => {
-          importarRobos(items);
+        onImport={async (items) => {
+          await importarRobos(items);
           setDetailsOpen(false);
         }}
       />

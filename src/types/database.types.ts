@@ -358,6 +358,7 @@ export type Database = {
           ambiente: string
           ativo: boolean
           cliente_id: string
+          cliente_cor: string
           court_name: string
           created_at: string
           created_by: string | null
@@ -370,6 +371,7 @@ export type Database = {
           max: number
           nome: string
           pacote: string
+          pacote_cor: string
           responsavel: string
           sistema: string
           stack: string
@@ -382,6 +384,7 @@ export type Database = {
           ambiente: string
           ativo?: boolean
           cliente_id: string
+          cliente_cor?: string
           court_name: string
           created_at?: string
           created_by?: string | null
@@ -394,6 +397,7 @@ export type Database = {
           max?: number
           nome: string
           pacote: string
+          pacote_cor?: string
           responsavel: string
           sistema: string
           stack: string
@@ -406,6 +410,7 @@ export type Database = {
           ambiente?: string
           ativo?: boolean
           cliente_id?: string
+          cliente_cor?: string
           court_name?: string
           created_at?: string
           created_by?: string | null
@@ -418,6 +423,7 @@ export type Database = {
           max?: number
           nome?: string
           pacote?: string
+          pacote_cor?: string
           responsavel?: string
           sistema?: string
           stack?: string

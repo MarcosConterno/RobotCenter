@@ -19,7 +19,11 @@ Usuários e clientes são arquivados por exclusão lógica, preservando históri
 
 Dashboard e telas operacionais usam a mesma instância de estado enquanto a aplicação permanece carregada.
 
-A importação Excel reutiliza o contrato do formulário e não altera o schema. O nome do cliente é normalizado para localizar ou criar um registro, cujo `id` é atribuído aos robôs do lote; o tenant obrigatório é gerado de forma única quando o cliente é novo. No estágio atual, cadastro manual e lote entram pelo `AppDataProvider`; a futura troca pelo repository Supabase deve manter a autorização no servidor e executar a criação do cliente e do lote transacionalmente.
+A importação Excel reutiliza o contrato do formulário e não altera o schema. O nome do cliente é normalizado para localizar ou criar um registro no Supabase, cujo UUID é atribuído aos robôs do lote; o tenant obrigatório é gerado de forma única quando o cliente é novo. Robôs, regras e alterações são persistidos nas tabelas correspondentes e a leitura inicial não depende mais de mocks.
+
+A migration `20260807194902_clear_existing_robots_for_import.sql` prepara uma nova carga removendo, nessa ordem, publicações, alterações, regras e robôs. Clientes, profiles, usuários e RBAC são preservados.
+
+A migration `20260807201615_add_robot_badge_colors.sql` adiciona `robos.cliente_cor` e `robos.pacote_cor`, ambas obrigatórias, com defaults compatíveis e constraints limitando os valores às seis paletas suportadas pela interface.
 
 ## 3. Entidades
 

@@ -1,5 +1,6 @@
 export const AMBIENTES_ROBO = ["Produção", "Teste", "Desenvolvimento"] as const;
 export const TIPOS_USUARIO = ["Admin", "Operador", "Cliente"] as const;
+export const CORES_BADGE_ROBO = ["azul", "violeta", "verde", "ambar", "rosa", "ciano"] as const;
 export const CATEGORIAS_PUBLICACAO = [
   "Novo Robô",
   "Atualização de Regra",
@@ -8,6 +9,7 @@ export const CATEGORIAS_PUBLICACAO = [
 
 export type AmbienteRobo = (typeof AMBIENTES_ROBO)[number];
 export type TipoUsuario = (typeof TIPOS_USUARIO)[number];
+export type CorBadgeRobo = (typeof CORES_BADGE_ROBO)[number];
 export type CategoriaPublicacao = (typeof CATEGORIAS_PUBLICACAO)[number];
 
 export interface RegraRobo {
@@ -15,20 +17,22 @@ export interface RegraRobo {
 }
 
 export interface AlteracaoRobo {
-  id: number;
+  id: string;
   descricao: string;
   realizadaEm: string;
 }
 
 export interface Robo {
-  id: number;
-  clienteId: number;
+  id: string;
+  clienteId: string;
+  clienteCor: CorBadgeRobo;
   nome: string;
   sistema: string;
   courtName: string;
   ideal: number;
   max: number;
   pacote: string;
+  pacoteCor: CorBadgeRobo;
   descricao: string;
   ambiente: AmbienteRobo;
   ativo: boolean;
@@ -51,9 +55,9 @@ export type DadosImportacaoRobo = Omit<DadosFormularioRobo, "clienteId"> & {
 };
 
 export interface Publicacao {
-  id: number;
+  id: string;
   categoria: CategoriaPublicacao;
-  roboId: number;
+  roboId: string;
   descricao: string;
   publicadaEm: string;
 }
@@ -73,7 +77,7 @@ export interface DadosCadastroUsuario {
 }
 
 export interface Cliente {
-  id: number;
+  id: string;
   nome: string;
   tenant: string;
 }

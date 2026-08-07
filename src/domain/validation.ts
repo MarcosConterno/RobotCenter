@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { AMBIENTES_ROBO, TIPOS_USUARIO } from "@/domain/entities";
+import { AMBIENTES_ROBO, CORES_BADGE_ROBO, TIPOS_USUARIO } from "@/domain/entities";
 
 const textoObrigatorio = (campo: string) =>
   z.string().trim().min(1, `${campo} é obrigatório.`);
@@ -11,12 +11,14 @@ export const regraRoboSchema = z.object({
 
 export const dadosFormularioRoboSchema = z.object({
   nome: textoObrigatorio("Nome"),
-  clienteId: z.number().int().positive("Selecione um cliente."),
+  clienteId: z.string().uuid("Selecione um cliente."),
+  clienteCor: z.enum(CORES_BADGE_ROBO),
   sistema: textoObrigatorio("Sistema"),
   courtName: textoObrigatorio("CourtName"),
   ideal: z.number().int().nonnegative("Ideal não pode ser negativo."),
   max: z.number().int().nonnegative("Max não pode ser negativo."),
   pacote: textoObrigatorio("Pacote"),
+  pacoteCor: z.enum(CORES_BADGE_ROBO),
   descricao: textoObrigatorio("Descrição"),
   ambiente: z.enum(AMBIENTES_ROBO),
   ativo: z.boolean(),

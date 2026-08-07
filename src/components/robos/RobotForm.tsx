@@ -5,6 +5,8 @@ import { useState, type ReactNode } from "react";
 import { formatarData } from "@/domain/formatters";
 import { AMBIENTES_ROBO, type AlteracaoRobo, type Cliente, type DadosFormularioRobo } from "@/domain/entities";
 import { dadosFormularioRoboSchema, primeiraMensagemErro } from "@/domain/validation";
+import { PALETAS_BADGE_ROBO } from "@/domain/badge-colors";
+import { CORES_BADGE_ROBO, type CorBadgeRobo } from "@/domain/entities";
 
 interface RobotFormProps {
   clientes: Cliente[];
@@ -13,7 +15,7 @@ interface RobotFormProps {
   mode: "create" | "edit";
   onCancel: () => void;
   onDelete?: () => void;
-  onSubmit: (data: DadosFormularioRobo) => void;
+  onSubmit: (data: DadosFormularioRobo) => void | Promise<void>;
 }
 
 export default function RobotForm({
@@ -46,7 +48,7 @@ export default function RobotForm({
 
   return (
     <form
-      onSubmit={(event) => {
+      onSubmit={async (event) => {
         event.preventDefault();
         const normalizedForm = {
           ...form,
@@ -67,7 +69,7 @@ export default function RobotForm({
           return;
         }
 
-        onSubmit(result.data);
+        await onSubmit(result.data);
       }}
       style={formStyle}
     >
@@ -115,11 +117,12 @@ export default function RobotForm({
         <div style={technicalFieldsGridStyle}>
           <div>
             <label style={labelStyle}>Cliente</label>
-            <select value={form.clienteId || ""} onChange={(event) => update("clienteId", Number(event.target.value))} required style={inputStyle}>
+            <select value={form.clienteId || ""} onChange={(event) => update("clienteId", event.target.value)} required style={inputStyle}>
               <option value="" disabled>Selecione um cliente</option>
               {clientes.map((cliente) => <option key={cliente.id} value={cliente.id}>{cliente.nome}</option>)}
             </select>
             {clientes.length === 0 && <span style={fieldHintStyle}>Cadastre um cliente antes de cadastrar o robô.</span>}
+            <ColorPicker label="Cor do cliente" value={form.clienteCor} onChange={(value) => update("clienteCor", value)} />
           </div>
           <Field label="Sistema" placeholder="Ex.: Legal One" value={form.sistema} onChange={(v) => update("sistema", v)} required />
           <Field label="Robô" placeholder="Nome do robô" value={form.nome} onChange={(v) => update("nome", v)} required />
@@ -128,7 +131,10 @@ export default function RobotForm({
           <Field label="Stack" placeholder="Ex.: .NET 8" value={form.stack} onChange={(v) => update("stack", v)} required />
           <NumberField label="Ideal" value={form.ideal} onChange={(value) => update("ideal", value)} />
           <NumberField label="Max" value={form.max} onChange={(value) => update("max", value)} />
-          <Field label="Pacote" placeholder="Ex.: Documentos" value={form.pacote} onChange={(v) => update("pacote", v)} required />
+          <div>
+            <Field label="Pacote" placeholder="Ex.: Documentos" value={form.pacote} onChange={(v) => update("pacote", v)} required />
+            <ColorPicker label="Cor do pacote" value={form.pacoteCor} onChange={(value) => update("pacoteCor", value)} />
+          </div>
           <Field label="Versão" placeholder="Ex.: 1.0.0" value={form.versao} onChange={(v) => update("versao", v)} required />
         </div>
       </FormSection>
@@ -376,14 +382,49 @@ const rulesTabStyle = { flex: 1, padding: "8px 10px", border: "none", borderRadi
 const activeRulesTabStyle = { background: "#1E293B", color: "#EDE9FE", boxShadow: "0 1px 3px rgba(0,0,0,.25)" } as const;
 const errorStyle = { margin: 0, padding: "10px 12px", border: "1px solid rgba(239,68,68,.35)", borderRadius: 8, color: "#FCA5A5", background: "rgba(127,29,29,.18)", fontSize: 12 } as const;
 
+function ColorPicker({ label, value, onChange }: { label: string; value: CorBadgeRobo; onChange: (value: CorBadgeRobo) => void }) {
+  return (
+    <fieldset style={colorFieldsetStyle}>
+      <legend style={colorLegendStyle}>{label}</legend>
+      <div style={colorOptionsStyle}>
+        {CORES_BADGE_ROBO.map((cor) => {
+          const paleta = PALETAS_BADGE_ROBO[cor];
+          const selected = cor === value;
+          return (
+            <button
+              key={cor}
+              type="button"
+              aria-label={`${label}: ${paleta.nome}`}
+              aria-pressed={selected}
+              title={paleta.nome}
+              onClick={() => onChange(cor)}
+              style={{
+                ...colorOptionStyle,
+                color: paleta.texto,
+                background: paleta.fundo,
+                borderColor: selected ? paleta.texto : paleta.borda,
+                boxShadow: selected ? `0 0 0 2px #111827, 0 0 0 4px ${paleta.borda}` : "none",
+              }}
+            >
+              Aa
+            </button>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+}
+
 const FORMULARIO_ROBO_INICIAL: DadosFormularioRobo = {
-  clienteId: 0,
+  clienteId: "",
+  clienteCor: "azul",
   nome: "",
   sistema: "",
   courtName: "",
   ideal: 0,
   max: 0,
   pacote: "",
+  pacoteCor: "violeta",
   descricao: "",
   ambiente: "Produção",
   ativo: true,
@@ -395,3 +436,8 @@ const FORMULARIO_ROBO_INICIAL: DadosFormularioRobo = {
   regras: [],
   regrasForaDocumentacao: [],
 };
+
+const colorFieldsetStyle: React.CSSProperties = { margin: "10px 0 0", border: 0, padding: 0 };
+const colorLegendStyle: React.CSSProperties = { marginBottom: 7, padding: 0, color: "#8291A8", fontSize: 10.5, fontWeight: 650 };
+const colorOptionsStyle: React.CSSProperties = { display: "flex", flexWrap: "wrap", gap: 7 };
+const colorOptionStyle: React.CSSProperties = { width: 31, height: 27, border: "1px solid", borderRadius: 7, fontSize: 10, fontWeight: 800, cursor: "pointer" };
