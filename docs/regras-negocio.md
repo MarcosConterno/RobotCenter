@@ -4,7 +4,7 @@
 
 1. A entrada pela rota `/` sempre direciona para `/login`.
 2. A página `/login` permanece acessível mesmo quando existe uma sessão ativa.
-3. Após autenticação válida, o usuário segue para a rota interna solicitada ou, por padrão, `/robos`.
+3. Após autenticação válida, o usuário sempre segue para `/dashboard`.
 4. Dashboard, Robôs e Configurações continuam protegidos pelo proxy e exigem sessão Supabase válida.
 
 ## Robôs
@@ -48,7 +48,7 @@
 
 1. Login é obrigatório.
 2. Senha é obrigatória e deve conter pelo menos quatro caracteres.
-3. O tipo deve ser Admin, Operador ou Cliente.
+3. O tipo deve ser Admin, Operador, Cliente ou Suporte.
 4. Senha é transitória e não integra a entidade `Usuario`.
 5. Após o cadastro, os campos voltam aos valores iniciais.
 
@@ -88,6 +88,11 @@
 - Detalhes e tabela consolidada exibem Cliente, Sistema, Robô, CourtName, Fila, Stack, Ideal, Max, Pacote e Versão, nessa ordem.
 - Publicações são imutáveis no fluxo normal.
 - `ultimaPublicacaoEm` é calculado pela maior `publicada_em` do robô.
+- Clientes com o mesmo nome normalizado compartilham a mesma cor visual; editar uma cor a propaga para todos os robôs desses clientes.
+- Pacotes com o mesmo nome normalizado compartilham a mesma cor visual; editar uma cor a propaga para todos os robôs correspondentes.
+- Admin e Operador podem alterar diretamente na Dashboard somente `ideal` e `max`; a persistência ocorre após clicar em “Aplicar alteração”.
+- Operador e Cliente consultam os detalhes dos robôs, mas não criam, editam, excluem, importam ou publicam robôs.
+- Suporte acessa somente as Dashboards.
 - Cadastros com soft delete não aparecem nas consultas funcionais comuns.
 - Profile com papel Cliente deve estar ativo e vinculado a um cliente ativo.
 - Senhas são processadas exclusivamente pelo Supabase Auth.

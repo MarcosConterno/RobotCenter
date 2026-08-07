@@ -48,5 +48,27 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  if (isAuthenticated && (request.nextUrl.pathname.startsWith("/configuracoes") || request.nextUrl.pathname.startsWith("/robos"))) {
+    const userId = data?.claims?.sub;
+    const { data: userRoles } = await supabase
+      .from("user_roles")
+      .select("roles(codigo)")
+      .eq("user_id", userId as string);
+    const roleCodes = new Set((userRoles ?? []).flatMap((item) => {
+      const relation = item.roles;
+      if (Array.isArray(relation)) return relation.map((role) => role.codigo);
+      return relation && typeof relation === "object" && "codigo" in relation ? [relation.codigo] : [];
+    }));
+    const allowed = request.nextUrl.pathname.startsWith("/configuracoes")
+      ? roleCodes.has("admin")
+      : roleCodes.has("admin") || roleCodes.has("operador") || roleCodes.has("cliente");
+    if (!allowed) {
+      const dashboardUrl = request.nextUrl.clone();
+      dashboardUrl.pathname = "/dashboard";
+      dashboardUrl.search = "";
+      return NextResponse.redirect(dashboardUrl);
+    }
+  }
+
   return response;
 }

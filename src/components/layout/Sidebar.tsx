@@ -4,14 +4,22 @@ import { Bot, ChevronRight, LayoutDashboard, Settings2, Sparkles } from "lucide-
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { useAdminAccess } from "@/auth/AdminAccessProvider";
+
 const navigation = [
-  { href: "/dashboard", label: "Dashboard", description: "Visão geral", icon: LayoutDashboard },
-  { href: "/robos", label: "Robôs", description: "Gestão e publicação", icon: Bot },
-  { href: "/configuracoes", label: "Configurações", description: "Usuários e clientes", icon: Settings2 },
+  { href: "/dashboard", label: "Dashboard", description: "Visão geral", icon: LayoutDashboard, access: "dashboard" },
+  { href: "/robos", label: "Robôs", description: "Consulta e detalhes", icon: Bot, access: "robots" },
+  { href: "/configuracoes", label: "Configurações", description: "Usuários e clientes", icon: Settings2, access: "settings" },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { canAccessRobots, canAccessSettings, status } = useAdminAccess();
+  const visibleNavigation = navigation.filter((item) => (
+    item.access === "dashboard"
+    || (item.access === "robots" && canAccessRobots)
+    || (item.access === "settings" && canAccessSettings)
+  ));
 
   return (
     <aside className="app-sidebar">
@@ -29,7 +37,7 @@ export default function Sidebar() {
 
         <div className="sidebar-section-label">NAVEGAÇÃO</div>
         <nav className="sidebar-nav" aria-label="Navegação principal">
-          {navigation.map((item) => {
+          {(status === "loading" ? navigation.slice(0, 1) : visibleNavigation).map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (

@@ -4,6 +4,7 @@ import { Activity, LayoutDashboard, TableProperties } from "lucide-react";
 import { useState } from "react";
 
 import Feed from "@/components/dashboard/Feed";
+import { useAdminAccess } from "@/auth/AdminAccessProvider";
 import RobotsOverviewTable from "@/components/dashboard/RobotsOverviewTable";
 import StatsCards from "@/components/dashboard/StatsCards";
 import AppShell from "@/components/layout/AppShell";
@@ -12,7 +13,8 @@ import { useAppData } from "@/data/AppDataProvider";
 import type { Robo } from "@/domain/entities";
 
 export default function DashboardPage() {
-  const { robos, publicacoes, clientes } = useAppData();
+  const { robos, publicacoes, clientes, atualizarCapacidadeRobo } = useAppData();
+  const { canUpdateCapacity } = useAdminAccess();
   const [selectedRobot, setSelectedRobot] = useState<Robo | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "robots">("overview");
 
@@ -52,14 +54,14 @@ export default function DashboardPage() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ width: 28, height: 28, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 8, color: "#A78BFA", background: "rgba(124,58,237,.12)" }}>
+                <span style={{ width: 28, height: 28, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 8, color: "var(--accent)", background: "var(--accent-soft)" }}>
                   <Activity size={15} />
                 </span>
-                <h2 style={{ color: "#F8FAFC", fontSize: 21, margin: 0 }}>
+                <h2 style={{ color: "var(--text-strong)", fontSize: 21, margin: 0 }}>
                   {activeTab === "overview" ? "Visão geral" : "Tabela de robôs"}
                 </h2>
               </div>
-              <p style={{ color: "#7F91AA", fontSize: 12.5, margin: "6px 0 0 36px" }}>
+              <p style={{ color: "var(--muted)", fontSize: 12.5, margin: "6px 0 0 36px" }}>
                 {activeTab === "overview"
                   ? "Acompanhe o ambiente e as últimas atualizações dos robôs."
                   : "Consulte os dados de todos os robôs em uma visão consolidada."}
@@ -74,7 +76,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div id="dashboard-robots-panel" role="tabpanel" className="dashboard-tab-panel">
-              <RobotsOverviewTable robos={robos} clientes={clientes} onViewRobot={openRobotDetails} />
+              <RobotsOverviewTable robos={robos} clientes={clientes} onViewRobot={openRobotDetails} canEditCapacity={canUpdateCapacity} onUpdateCapacity={atualizarCapacidadeRobo} />
             </div>
           )}
         </div>
@@ -90,7 +92,7 @@ export default function DashboardPage() {
             style={modalStyle}
           >
             <div style={modalHeaderStyle}>
-              <div style={{ color: "#FFF", fontWeight: 700 }}>Detalhes do robô</div>
+              <div style={{ color: "var(--text-strong)", fontWeight: 700 }}>Detalhes do robô</div>
               <button type="button" onClick={() => setSelectedRobot(null)} style={closeButtonStyle}>
                 Fechar
               </button>
@@ -114,17 +116,17 @@ const overlayStyle: React.CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   padding: 24,
-  background: "rgba(2, 6, 23, 0.72)",
+  background: "var(--overlay)",
 };
 
 const modalStyle: React.CSSProperties = {
   width: "min(860px, 100%)",
   maxHeight: "90vh",
   overflow: "auto",
-  border: "1px solid #273449",
+  border: "1px solid var(--border)",
   borderRadius: 16,
-  background: "#0F172A",
-  boxShadow: "0 20px 60px rgba(0,0,0,0.45)",
+  background: "var(--card)",
+  boxShadow: "var(--shadow)",
 };
 
 const modalHeaderStyle: React.CSSProperties = {
@@ -133,14 +135,14 @@ const modalHeaderStyle: React.CSSProperties = {
   justifyContent: "space-between",
   gap: 16,
   padding: "18px 20px",
-  borderBottom: "1px solid #273449",
+  borderBottom: "1px solid var(--separator)",
 };
 
 const closeButtonStyle: React.CSSProperties = {
-  border: "1px solid #334155",
+  border: "1px solid var(--border)",
   borderRadius: 8,
   padding: "6px 10px",
   background: "transparent",
-  color: "#FFF",
+  color: "var(--text)",
   cursor: "pointer",
 };

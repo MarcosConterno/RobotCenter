@@ -2,18 +2,22 @@ import { NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
 
-function isAdminRole(roleRelation: unknown) {
+function extractRoleCodes(roleRelation: unknown) {
   if (Array.isArray(roleRelation)) {
-    return roleRelation.some(
-      (role) => typeof role === "object" && role !== null && "codigo" in role && role.codigo === "admin",
-    );
+    return roleRelation.flatMap((role) => (
+      typeof role === "object" && role !== null && "codigo" in role && typeof role.codigo === "string"
+        ? [role.codigo]
+        : []
+    ));
   }
 
-  return Boolean(
+  return (
     typeof roleRelation === "object"
       && roleRelation !== null
       && "codigo" in roleRelation
-      && roleRelation.codigo === "admin",
+      && typeof roleRelation.codigo === "string"
+      ? [roleRelation.codigo]
+      : []
   );
 }
 
@@ -34,9 +38,9 @@ export async function GET() {
     return NextResponse.json({ allowed: false, error: "Não foi possível validar as permissões." }, { status: 500 });
   }
 
-  const allowed = userRoles?.some((item) => isAdminRole(item.roles)) ?? false;
+  const roles = [...new Set(userRoles?.flatMap((item) => extractRoleCodes(item.roles)) ?? [])];
   return NextResponse.json(
-    { allowed },
-    { status: allowed ? 200 : 403, headers: { "Cache-Control": "no-store" } },
+    { allowed: roles.includes("admin"), roles },
+    { status: 200, headers: { "Cache-Control": "no-store" } },
   );
 }

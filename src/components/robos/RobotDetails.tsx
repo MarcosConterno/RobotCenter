@@ -53,7 +53,7 @@ export default function RobotDetails({ robot, clientes = [], onEdit, onPublish }
               <span
                 style={{
                   ...statusBadgeStyle,
-                  color: robot.ativo ? "#86EFAC" : "#CBD5E1",
+                  color: robot.ativo ? "var(--success)" : "var(--text-2)",
                   background: robot.ativo
                     ? "rgba(34, 197, 94, 0.12)"
                     : "rgba(148, 163, 184, 0.12)",
@@ -64,7 +64,7 @@ export default function RobotDetails({ robot, clientes = [], onEdit, onPublish }
                     width: 6,
                     height: 6,
                     borderRadius: "50%",
-                    background: robot.ativo ? "#22C55E" : "#94A3B8",
+                    background: robot.ativo ? "var(--success)" : "var(--muted)",
                   }}
                 />
                 {robot.ativo ? "Ativo" : "Inativo"}
@@ -172,49 +172,49 @@ function DetailRow({ icon, label, value }: { icon: ReactNode; label: string; val
 }
 
 const containerStyle = {
-  background: "#111B2B",
-  border: "1px solid #273449",
+  background: "var(--card)",
+  border: "1px solid var(--border)",
   borderRadius: 16,
   overflow: "hidden",
-  boxShadow: "0 18px 40px rgba(2, 6, 23, 0.3)",
+  boxShadow: "var(--shadow)",
 } as const;
 
-const detailTabsStyle = { display: "flex", gap: 4, marginBottom: 12, padding: 4, borderRadius: 8, background: "#0B1422" } as const;
+const detailTabsStyle = { display: "flex", gap: 4, marginBottom: 12, padding: 4, borderRadius: 8, background: "var(--surface)" } as const;
 const detailsBlockStyle = { padding: "20px 26px 0" } as const;
 const followingBlockStyle = { padding: "16px 26px 0" } as const;
 const rulesSectionStyle = { padding: "16px 26px 26px" } as const;
 const technicalGridStyle = { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" } as const;
-const detailTabStyle = { flex: 1, padding: "7px 8px", border: "none", borderRadius: 6, background: "transparent", color: "#8291A8", cursor: "pointer", fontSize: 11, fontWeight: 700 } as const;
-const activeDetailTabStyle = { background: "#1E293B", color: "#EDE9FE" } as const;
+const detailTabStyle = { flex: 1, padding: "7px 8px", border: "none", borderRadius: 6, background: "transparent", color: "var(--muted)", cursor: "pointer", fontSize: 11, fontWeight: 700 } as const;
+const activeDetailTabStyle = { background: "var(--card)", color: "var(--accent)" } as const;
 
-const emptyStyle = { ...containerStyle, minHeight: 240, display: "flex", alignItems: "center", justifyContent: "center", color: "#94A3B8" } as const;
-const headerStyle = { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20, padding: "24px 26px", background: "linear-gradient(135deg, rgba(124,58,237,.1), rgba(79,70,229,.025))", borderBottom: "1px solid #273449" } as const;
+const emptyStyle = { ...containerStyle, minHeight: 240, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)" } as const;
+const headerStyle = { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20, padding: "24px 26px", background: "var(--surface)", borderBottom: "1px solid var(--separator)" } as const;
 const identityStyle = { display: "flex", alignItems: "center", gap: 16, minWidth: 0 } as const;
-const avatarStyle = { width: 54, height: 54, flexShrink: 0, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(124,58,237,.14)", border: "1px solid rgba(167,139,250,.22)" } as const;
-const eyebrowStyle = { color: "#8B9CB3", fontSize: 10, fontWeight: 800, letterSpacing: 1.4, marginBottom: 4 } as const;
-const titleStyle = { color: "#F8FAFC", margin: 0, fontSize: 24, lineHeight: 1.2 } as const;
+const avatarStyle = { width: 54, height: 54, flexShrink: 0, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--accent-soft)", border: "1px solid var(--accent)" } as const;
+const eyebrowStyle = { color: "var(--muted)", fontSize: 10, fontWeight: 800, letterSpacing: 1.4, marginBottom: 4 } as const;
+const titleStyle = { color: "var(--text-strong)", margin: 0, fontSize: 24, lineHeight: 1.2 } as const;
 const badgesStyle = { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 9 } as const;
-const systemBadgeStyle = { color: "#CBD5E1", fontSize: 12, padding: "4px 9px", borderRadius: 999, background: "rgba(148,163,184,.1)" } as const;
+const systemBadgeStyle = { color: "var(--text-2)", fontSize: 12, padding: "4px 9px", borderRadius: 999, background: "var(--surface)" } as const;
 const statusBadgeStyle = { display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, padding: "4px 9px", borderRadius: 999, fontWeight: 600 } as const;
-const editButtonStyle = { display: "flex", alignItems: "center", gap: 7, flexShrink: 0, padding: "8px 14px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%)", color: "#FFF", cursor: "pointer", fontWeight: 700, fontSize: 13, boxShadow: "0 8px 22px rgba(124, 58, 237, 0.24)" } as const;
+const editButtonStyle = { display: "flex", alignItems: "center", gap: 7, flexShrink: 0, padding: "8px 14px", borderRadius: 12, border: "none", background: "var(--accent)", color: "var(--on-accent)", cursor: "pointer", fontWeight: 700, fontSize: 13, boxShadow: "0 8px 22px rgba(10,132,255,.2)" } as const;
 const headerActionsStyle = { display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: 8 } as const;
 const publishButtonStyle = { ...editButtonStyle, background: "rgba(124,58,237,.1)", border: "1px solid rgba(167,139,250,.35)", color: "#C4B5FD", boxShadow: "none" } as const;
-const descriptionStyle = { padding: "20px 26px", borderBottom: "1px solid #273449" } as const;
-const sectionLabelStyle = { color: "#8B9CB3", fontSize: 10, fontWeight: 800, letterSpacing: 1.3, marginBottom: 8 } as const;
-const descriptionTextStyle = { color: "#CBD5E1", lineHeight: 1.6, fontSize: 14, margin: 0 } as const;
+const descriptionStyle = { padding: "20px 26px", borderBottom: "1px solid var(--separator)" } as const;
+const sectionLabelStyle = { color: "var(--muted)", fontSize: 10, fontWeight: 800, letterSpacing: 1.3, marginBottom: 8 } as const;
+const descriptionTextStyle = { color: "var(--text)", lineHeight: 1.6, fontSize: 14, margin: 0 } as const;
 const sectionsGridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, padding: "20px 26px 26px" } as const;
-const sectionStyle = { background: "rgba(15,23,42,.55)", border: "1px solid #273449", borderRadius: 12, overflow: "hidden" } as const;
-const sectionTitleStyle = { color: "#F1F5F9", fontSize: 13, fontWeight: 700, padding: "12px 14px", borderBottom: "1px solid #273449" } as const;
-const rowStyle = { display: "grid", gridTemplateColumns: "24px minmax(105px, .8fr) minmax(0, 1.2fr)", alignItems: "center", gap: 8, minHeight: 44, padding: "7px 14px", borderBottom: "1px solid rgba(39,52,73,.7)" } as const;
-const rowIconStyle = { display: "flex", color: "#8B5CF6" } as const;
-const rowLabelStyle = { color: "#8B9CB3", fontSize: 12 } as const;
-const rowValueStyle = { color: "#F1F5F9", fontSize: 13, fontWeight: 600, textAlign: "right", overflowWrap: "anywhere" } as const;
+const sectionStyle = { background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" } as const;
+const sectionTitleStyle = { color: "var(--text-strong)", fontSize: 13, fontWeight: 700, padding: "12px 14px", borderBottom: "1px solid var(--separator)" } as const;
+const rowStyle = { display: "grid", gridTemplateColumns: "24px minmax(105px, .8fr) minmax(0, 1.2fr)", alignItems: "center", gap: 8, minHeight: 44, padding: "7px 14px", borderBottom: "1px solid var(--separator)" } as const;
+const rowIconStyle = { display: "flex", color: "var(--accent)" } as const;
+const rowLabelStyle = { color: "var(--muted)", fontSize: 12 } as const;
+const rowValueStyle = { color: "var(--text-strong)", fontSize: 13, fontWeight: 600, textAlign: "right", overflowWrap: "anywhere" } as const;
 const changesListStyle = { display: "grid", maxHeight: 430, overflowY: "auto" } as const;
-const changeItemStyle = { display: "flex", alignItems: "flex-start", gap: 10, padding: 14, borderBottom: "1px solid rgba(39,52,73,.7)" } as const;
-const changeDateStyle = { display: "block", color: "#8B9CB3", fontSize: 10.5, marginBottom: 4 } as const;
-const changeTextStyle = { display: "block", color: "#CBD5E1", fontSize: 12.5, lineHeight: 1.5 } as const;
+const changeItemStyle = { display: "flex", alignItems: "flex-start", gap: 10, padding: 14, borderBottom: "1px solid var(--separator)" } as const;
+const changeDateStyle = { display: "block", color: "var(--muted)", fontSize: 10.5, marginBottom: 4 } as const;
+const changeTextStyle = { display: "block", color: "var(--text)", fontSize: 12.5, lineHeight: 1.5 } as const;
 const rulesStyle = { display: "grid" } as const;
-const noRulesStyle = { padding: 14, color: "#718198", fontSize: 12 } as const;
-const detailRuleStyle = { display: "grid", gridTemplateColumns: "20px 48px minmax(0, 1fr)", alignItems: "start", gap: 7, padding: "10px 14px", borderBottom: "1px solid rgba(39,52,73,.7)" } as const;
+const noRulesStyle = { padding: 14, color: "var(--muted)", fontSize: 12 } as const;
+const detailRuleStyle = { display: "grid", gridTemplateColumns: "20px 48px minmax(0, 1fr)", alignItems: "start", gap: 7, padding: "10px 14px", borderBottom: "1px solid var(--separator)" } as const;
 const detailRuleCodeStyle = { color: "#A78BFA", fontSize: 11, fontWeight: 800, fontFamily: "monospace", paddingTop: 2 } as const;
-const detailRuleTextStyle = { color: "#CBD5E1", fontSize: 12.5, lineHeight: 1.45 } as const;
+const detailRuleTextStyle = { color: "var(--text)", fontSize: 12.5, lineHeight: 1.45 } as const;

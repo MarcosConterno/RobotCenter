@@ -53,17 +53,17 @@ const pageStyle: React.CSSProperties = {
   minHeight: "100vh",
   placeItems: "center",
   padding: 24,
-  background: "#0F172A",
+  background: "var(--bg)",
 };
 
 const cardStyle: React.CSSProperties = {
   width: "100%",
   maxWidth: 420,
   boxSizing: "border-box",
-  border: "1px solid #273449",
+  border: "1px solid var(--border)",
   borderRadius: 14,
   padding: 32,
-  background: "#111827",
+  background: "var(--card)",
   boxShadow: "0 20px 50px rgba(2, 6, 23, 0.35)",
 };
 
@@ -76,13 +76,13 @@ const brandStyle: React.CSSProperties = {
 
 const titleStyle: React.CSSProperties = {
   margin: "10px 0 0",
-  color: "#F8FAFC",
+  color: "var(--text-strong)",
   fontSize: 28,
 };
 
 const subtitleStyle: React.CSSProperties = {
   margin: "8px 0 0",
-  color: "#94A3B8",
+  color: "var(--muted)",
   fontSize: 14,
   lineHeight: 1.5,
 };
@@ -94,18 +94,18 @@ const formStyle: React.CSSProperties = {
 };
 
 const fieldStyle: React.CSSProperties = { display: "grid", gap: 7 };
-const labelStyle: React.CSSProperties = { color: "#CBD5E1", fontSize: 12, fontWeight: 600 };
+const labelStyle: React.CSSProperties = { color: "var(--text-2)", fontSize: 12, fontWeight: 600 };
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
   height: 44,
   boxSizing: "border-box",
-  border: "1px solid #334155",
+  border: "1px solid var(--border)",
   borderRadius: 8,
   padding: "0 12px",
   outline: "none",
-  background: "#162130",
-  color: "#FFF",
+  background: "var(--surface)",
+  color: "var(--text)",
   fontSize: 14,
 };
 

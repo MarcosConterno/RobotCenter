@@ -29,8 +29,11 @@ As migrations implementam autorização por tabelas RBAC e RLS deny-by-default:
 - **Admin**: gerencia clientes, profiles, papéis, permissões, robôs, regras e publicações conforme os grants disponíveis. Pode editar e arquivar usuários e clientes, sem excluir fisicamente seus históricos.
 - O primeiro administrador é inicializado de forma idempotente para `marcos.vinicius@loylegal.com`; os demais vínculos são gerenciados pela tela administrativa.
 - A importação em lote de robôs e o download do modelo são exclusivos do papel Admin. A interface reutiliza a autorização da sessão autenticada, carregada centralmente, evitando validações repetidas a cada ação; operações persistentes continuam protegidas no servidor e pelas policies RLS.
-- **Operador**: lê clientes, cria/edita/arquiva robôs e regras e registra/lê publicações; não gerencia usuários ou RBAC.
-- **Cliente**: lê somente seu próprio cliente, seus robôs, regras e publicações; não possui escrita nesses cadastros.
+- **Operador**: consulta robôs e detalhes e altera somente `ideal` e `max` pela permissão `robots.capacity.update`; não acessa Configurações nem a manutenção completa de robôs.
+- **Cliente**: lê somente seu próprio cliente, seus robôs, regras e publicações; não acessa Configurações e não possui escrita.
+- **Suporte**: acessa somente as Dashboards, incluindo a identificação do Cliente na tabela consolidada. Recebe as leituras mínimas necessárias para compor os indicadores, sem acesso às páginas de Robôs ou Configurações.
+
+Admin e Operador atualizam capacidade pela RPC `public.update_robot_capacity`. A função valida sessão e permissão específica e não permite alterar outras colunas do robô.
 
 O tipo da regra (`documentacao` ou `fora_documentacao`) não altera o escopo de acesso. As duas categorias herdam as mesmas policies de `regras_robo`: leitura exige `robots.read` e escrita/reordenação exige `robots.update`, sempre respeitando o cliente vinculado ao robô.
 

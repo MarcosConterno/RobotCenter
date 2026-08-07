@@ -1,3 +1,5 @@
 -- O catálogo mínimo de papéis e permissões faz parte da migration
--- 20260806205643_seed_robot_center_v1_rbac.sql para também existir em produção.
+-- 20260806205643_seed_robot_center_v1_rbac.sql e
+-- 20260807221053_add_support_role_and_robot_capacity_permission.sql
+-- para também existirem em produção.
 -- Este arquivo fica reservado para fixtures locais não obrigatórias.

@@ -1,3 +1,5 @@
+import ThemeToggle from "@/components/theme/ThemeToggle";
+
 interface LoginPageProps {
   searchParams: Promise<{
     error?: string;
@@ -7,17 +9,18 @@ interface LoginPageProps {
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const { error, message, redirectTo = "/robos" } = await searchParams;
+  const { error, message } = await searchParams;
 
   return (
     <main style={pageStyle}>
+      <ThemeToggle floating />
       <section style={cardStyle} aria-labelledby="login-title">
         <div style={brandStyle}>ROBOT CENTER</div>
         <h1 id="login-title" style={titleStyle}>Acessar o sistema</h1>
         <p style={subtitleStyle}>Entre com seu email e senha.</p>
 
         <form action="/auth/login" method="post" style={formStyle}>
-          <input type="hidden" name="redirectTo" value={redirectTo} />
+          <input type="hidden" name="redirectTo" value="/dashboard" />
 
           <label style={fieldStyle}>
             <span style={labelStyle}>Email</span>
@@ -64,21 +67,21 @@ const pageStyle: React.CSSProperties = {
   minHeight: "100vh",
   placeItems: "center",
   padding: 24,
-  background: "#0F172A",
+  background: "var(--bg)",
 };
 
 const cardStyle: React.CSSProperties = {
   width: "100%",
   maxWidth: 420,
-  border: "1px solid #273449",
+  border: "1px solid var(--border)",
   borderRadius: 14,
   padding: 32,
-  background: "#111827",
-  boxShadow: "0 20px 50px rgba(2, 6, 23, 0.35)",
+  background: "var(--card)",
+  boxShadow: "var(--shadow)",
 };
 
 const brandStyle: React.CSSProperties = {
-  color: "#A78BFA",
+  color: "var(--accent)",
   fontSize: 12,
   fontWeight: 800,
   letterSpacing: "0.14em",
@@ -86,13 +89,13 @@ const brandStyle: React.CSSProperties = {
 
 const titleStyle: React.CSSProperties = {
   margin: "10px 0 0",
-  color: "#F8FAFC",
+  color: "var(--text-strong)",
   fontSize: 28,
 };
 
 const subtitleStyle: React.CSSProperties = {
   margin: "8px 0 0",
-  color: "#94A3B8",
+  color: "var(--muted)",
   fontSize: 14,
 };
 
@@ -108,7 +111,7 @@ const fieldStyle: React.CSSProperties = {
 };
 
 const labelStyle: React.CSSProperties = {
-  color: "#CBD5E1",
+  color: "var(--text-2)",
   fontSize: 12,
   fontWeight: 600,
 };
@@ -117,12 +120,12 @@ const inputStyle: React.CSSProperties = {
   width: "100%",
   height: 44,
   boxSizing: "border-box",
-  border: "1px solid #334155",
+  border: "1px solid var(--border)",
   borderRadius: 8,
   padding: "0 12px",
   outline: "none",
-  background: "#162130",
-  color: "#FFF",
+  background: "var(--surface)",
+  color: "var(--text)",
   fontSize: 14,
 };
 
@@ -130,8 +133,8 @@ const buttonStyle: React.CSSProperties = {
   minHeight: 44,
   border: 0,
   borderRadius: 8,
-  background: "linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%)",
-  color: "#FFF",
+  background: "var(--accent)",
+  color: "var(--on-accent)",
   fontSize: 14,
   fontWeight: 700,
   cursor: "pointer",
@@ -139,20 +142,20 @@ const buttonStyle: React.CSSProperties = {
 
 const errorStyle: React.CSSProperties = {
   margin: 0,
-  color: "#FCA5A5",
+  color: "var(--danger)",
   fontSize: 13,
 };
 
 const successStyle: React.CSSProperties = {
   margin: 0,
-  color: "#86EFAC",
+  color: "var(--success)",
   fontSize: 13,
 };
 
 const forgotPasswordStyle: React.CSSProperties = {
   justifySelf: "end",
   marginTop: -8,
-  color: "#C4B5FD",
+  color: "var(--accent)",
   fontSize: 13,
   fontWeight: 600,
   textDecoration: "none",

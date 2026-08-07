@@ -20,6 +20,7 @@ interface RobotHeaderProps {
   onStatusChange: (value: string) => void;
   totalRobots: number;
   onNovoRobot: () => void;
+  canCreate: boolean;
   canImport: boolean;
   onImport: () => void;
   onLimparFiltros: () => void;
@@ -78,6 +79,7 @@ export default function RobotHeader({
   onStatusChange,
   totalRobots,
   onNovoRobot,
+  canCreate,
   canImport,
   onImport,
   onLimparFiltros,
@@ -103,10 +105,12 @@ export default function RobotHeader({
               Importar
             </button>
           )}
-          <button type="button" onClick={onNovoRobot} style={buttonStyle}>
-            <Plus size={16} />
-            Novo Robô
-          </button>
+          {canCreate && (
+            <button type="button" onClick={onNovoRobot} style={buttonStyle}>
+              <Plus size={16} />
+              Novo Robô
+            </button>
+          )}
         </div>
       </div>
 
@@ -199,11 +203,11 @@ const panelStyle: CSSProperties = {
   display: "flex",
   flexDirection: "column",
   gap: 14,
-  border: "1px solid rgba(255,255,255,0.08)",
+  border: "1px solid var(--border)",
   borderRadius: 14,
-  background: "#111827",
+  background: "var(--card)",
   padding: 14,
-  boxShadow: "0 8px 20px rgba(15, 23, 42, 0.2)",
+  boxShadow: "var(--shadow)",
 };
 
 const headerContentStyle: CSSProperties = {
@@ -228,11 +232,11 @@ const secondaryButtonStyle: CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   gap: 8,
-  border: "1px solid #6D28D9",
+  border: "1px solid var(--accent)",
   borderRadius: 9,
   padding: "0 15px",
-  background: "rgba(109,40,217,.12)",
-  color: "#DDD6FE",
+  background: "var(--accent-soft)",
+  color: "var(--accent)",
   fontSize: 13,
   fontWeight: 700,
   cursor: "pointer",
@@ -240,7 +244,7 @@ const secondaryButtonStyle: CSSProperties = {
 
 const pageTitleStyle: CSSProperties = {
   margin: 0,
-  color: "#FFF",
+  color: "var(--text-strong)",
   fontSize: 30,
   fontWeight: 700,
 };
@@ -260,9 +264,9 @@ const inputStyle: CSSProperties = {
   width: "100%",
   height: 40,
   borderRadius: 12,
-  border: "1px solid rgba(255,255,255,0.08)",
-  background: "#182233",
-  color: "#F8FAFC",
+  border: "1px solid var(--border)",
+  background: "var(--surface)",
+  color: "var(--text)",
   padding: "0 92px 0 38px",
   outline: "none",
   boxSizing: "border-box",
@@ -277,7 +281,7 @@ const countStyle: CSSProperties = {
   top: "50%",
   transform: "translateY(-50%)",
   fontSize: 12,
-  color: "#94A3B8",
+  color: "var(--muted)",
   pointerEvents: "none",
   whiteSpace: "nowrap",
 };
@@ -297,13 +301,13 @@ const filterToggleStyle: CSSProperties = {
   width: "100%",
   border: "none",
   background: "transparent",
-  color: "#94A3B8",
+  color: "var(--muted)",
   padding: "0 2px",
   cursor: "pointer",
 };
 
 const filterToggleActiveStyle: CSSProperties = {
-  color: "#C4B5FD",
+  color: "var(--accent)",
 };
 
 const filterContentStyle: CSSProperties = {
@@ -317,7 +321,7 @@ const filterTitleStyle: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   gap: 7,
-  color: "#CBD5E1",
+  color: "var(--text-strong)",
   fontSize: 13,
   fontWeight: 700,
 };
@@ -338,7 +342,7 @@ const filterFieldStyle: CSSProperties = {
 };
 
 const filterLabelStyle: CSSProperties = {
-  color: "#94A3B8",
+  color: "var(--muted)",
   fontSize: 12,
   fontWeight: 600,
 };
@@ -351,9 +355,9 @@ const selectStyle: CSSProperties = {
   width: "100%",
   height: 40,
   borderRadius: 12,
-  border: "1px solid rgba(255,255,255,0.08)",
-  background: "#182233",
-  color: "#F8FAFC",
+  border: "1px solid var(--border)",
+  background: "var(--surface)",
+  color: "var(--text)",
   padding: "0 32px 0 12px",
   outline: "none",
   boxSizing: "border-box",
@@ -369,7 +373,7 @@ const iconStyle: CSSProperties = {
   left: 12,
   top: "50%",
   transform: "translateY(-50%)",
-  color: "#94A3B8",
+  color: "var(--muted)",
   pointerEvents: "none",
 };
 
@@ -378,7 +382,7 @@ const chevronStyle: CSSProperties = {
   right: 12,
   top: "50%",
   transform: "translateY(-50%)",
-  color: "#94A3B8",
+  color: "var(--muted)",
   pointerEvents: "none",
 };
 
@@ -388,13 +392,13 @@ const buttonStyle: CSSProperties = {
   gap: 8,
   borderRadius: 12,
   border: "none",
-  background: "linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%)",
-  color: "#FFF",
+  background: "var(--accent)",
+  color: "var(--on-accent)",
   padding: "8px 14px",
   fontWeight: 700,
   fontSize: 13,
   cursor: "pointer",
-  boxShadow: "0 8px 22px rgba(124, 58, 237, 0.24)",
+  boxShadow: "0 8px 22px rgba(10, 132, 255, 0.22)",
   transition: "all .2s ease",
 };
 
@@ -404,7 +408,7 @@ const clearStyle: CSSProperties = {
   gap: 6,
   border: "none",
   background: "transparent",
-  color: "#94A3B8",
+  color: "var(--muted)",
   padding: "2px 0",
   cursor: "pointer",
   fontWeight: 600,

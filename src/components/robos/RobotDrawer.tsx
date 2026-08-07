@@ -60,7 +60,7 @@ const overlayStyle: React.CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   padding: 24,
-  background: "rgba(2, 6, 23, 0.72)",
+  background: "var(--overlay)",
 };
 
 const modalStyle: React.CSSProperties = {
@@ -69,10 +69,10 @@ const modalStyle: React.CSSProperties = {
   width: "min(860px, 100%)",
   maxHeight: "90vh",
   overflow: "hidden",
-  border: "1px solid #273449",
+  border: "1px solid var(--border)",
   borderRadius: 16,
-  background: "#111B2B",
-  boxShadow: "0 20px 60px rgba(0,0,0,0.45)",
+  background: "var(--card)",
+  boxShadow: "var(--shadow)",
 };
 
 const headerStyle: React.CSSProperties = {
@@ -81,19 +81,19 @@ const headerStyle: React.CSSProperties = {
   justifyContent: "space-between",
   gap: 16,
   padding: "16px 20px",
-  borderBottom: "1px solid #273449",
-  background: "linear-gradient(135deg, rgba(124,58,237,.1), rgba(79,70,229,.025))",
+  borderBottom: "1px solid var(--separator)",
+  background: "var(--surface)",
 };
 
 const titleStyle: React.CSSProperties = {
   margin: 0,
-  color: "#FFF",
+  color: "var(--text-strong)",
   fontSize: 19,
   lineHeight: 1.2,
 };
 
 const eyebrowStyle: React.CSSProperties = {
-  color: "#8B9CB3",
+  color: "var(--muted)",
   fontSize: 9,
   fontWeight: 800,
   letterSpacing: 1.2,
@@ -107,9 +107,9 @@ const headerIconStyle: React.CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   borderRadius: 10,
-  color: "#A78BFA",
-  background: "rgba(124,58,237,.14)",
-  border: "1px solid rgba(167,139,250,.2)",
+  color: "var(--accent)",
+  background: "var(--accent-soft)",
+  border: "1px solid var(--accent)",
 };
 
 const closeButtonStyle: React.CSSProperties = {
@@ -120,9 +120,9 @@ const closeButtonStyle: React.CSSProperties = {
   justifyContent: "center",
   flex: "0 0 auto",
   borderRadius: 8,
-  border: "1px solid #334155",
-  background: "rgba(15,23,42,.65)",
-  color: "#FFF",
+  border: "1px solid var(--border)",
+  background: "var(--card)",
+  color: "var(--text)",
   cursor: "pointer",
 };
 

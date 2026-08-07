@@ -237,16 +237,16 @@ export default function RobotImportDialog({ open, onClose, onImport }: RobotImpo
 }
 
 const overlayStyle: React.CSSProperties = { position: "fixed", inset: 0, zIndex: 70, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "rgba(2,6,23,.76)" };
-const dialogStyle: React.CSSProperties = { width: "min(620px, 100%)", border: "1px solid #273449", borderRadius: 16, background: "#0F172A", boxShadow: "0 24px 70px rgba(0,0,0,.5)" };
-const headerStyle: React.CSSProperties = { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, padding: 22, borderBottom: "1px solid #273449" };
-const titleStyle: React.CSSProperties = { margin: 0, color: "#F8FAFC", fontSize: 20 };
-const subtitleStyle: React.CSSProperties = { margin: "6px 0 0", color: "#94A3B8", fontSize: 13 };
-const closeStyle: React.CSSProperties = { display: "inline-flex", width: 34, height: 34, alignItems: "center", justifyContent: "center", border: "1px solid #334155", borderRadius: 8, background: "transparent", color: "#CBD5E1", cursor: "pointer" };
+const dialogStyle: React.CSSProperties = { width: "min(620px, 100%)", border: "1px solid var(--border)", borderRadius: 16, background: "var(--card)", boxShadow: "var(--shadow)" };
+const headerStyle: React.CSSProperties = { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, padding: 22, borderBottom: "1px solid var(--separator)" };
+const titleStyle: React.CSSProperties = { margin: 0, color: "var(--text-strong)", fontSize: 20 };
+const subtitleStyle: React.CSSProperties = { margin: "6px 0 0", color: "var(--muted)", fontSize: 13 };
+const closeStyle: React.CSSProperties = { display: "inline-flex", width: 34, height: 34, alignItems: "center", justifyContent: "center", border: "1px solid var(--border)", borderRadius: 8, background: "var(--card)", color: "var(--text)", cursor: "pointer" };
 const contentStyle: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 14, padding: 22 };
-const optionStyle: React.CSSProperties = { display: "flex", minHeight: 112, alignItems: "center", gap: 14, border: "1px solid #334155", borderRadius: 12, padding: 16, background: "#162130", color: "#F8FAFC", textAlign: "left", cursor: "pointer" };
+const optionStyle: React.CSSProperties = { display: "flex", minHeight: 112, alignItems: "center", gap: 14, border: "1px solid var(--border)", borderRadius: 12, padding: 16, background: "var(--surface)", color: "var(--text-strong)", textAlign: "left", cursor: "pointer" };
 const iconStyle: React.CSSProperties = { display: "inline-flex", flex: "0 0 auto", width: 44, height: 44, alignItems: "center", justifyContent: "center", borderRadius: 10, background: "rgba(124,58,237,.2)", color: "#C4B5FD" };
 const optionTitleStyle: React.CSSProperties = { display: "block", fontSize: 14 };
-const optionDescriptionStyle: React.CSSProperties = { display: "block", marginTop: 5, color: "#94A3B8", fontSize: 12, lineHeight: 1.4 };
+const optionDescriptionStyle: React.CSSProperties = { display: "block", marginTop: 5, color: "var(--muted)", fontSize: 12, lineHeight: 1.4 };
 const statusStyle: React.CSSProperties = { gridColumn: "1 / -1", display: "flex", alignItems: "center", gap: 8, margin: 0, color: "#C4B5FD", fontSize: 13 };
 const errorStyle: React.CSSProperties = { gridColumn: "1 / -1", margin: 0, color: "#FCA5A5", fontSize: 13 };
 const successStyle: React.CSSProperties = { gridColumn: "1 / -1", margin: 0, color: "#86EFAC", fontSize: 13 };

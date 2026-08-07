@@ -16,7 +16,7 @@ export default function AppShell({
       style={{
         display: "flex",
         minHeight: "100vh",
-        background: "#0F172A",
+        background: "var(--bg)",
       }}
     >
       <Sidebar />

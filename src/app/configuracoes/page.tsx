@@ -530,14 +530,14 @@ const pageStyle: React.CSSProperties = {
 
 const titleStyle: React.CSSProperties = {
   margin: 0,
-  color: "#F8FAFC",
+  color: "var(--text-strong)",
   fontSize: 30,
   fontWeight: 700,
 };
 
 const subtitleStyle: React.CSSProperties = {
   margin: "6px 0 0",
-  color: "#94A3B8",
+  color: "var(--muted)",
   fontSize: 14,
 };
 
@@ -546,9 +546,9 @@ const tabsStyle: React.CSSProperties = {
   alignSelf: "flex-start",
   gap: 4,
   padding: 4,
-  border: "1px solid #273449",
+  border: "1px solid var(--border)",
   borderRadius: 12,
-  background: "#111827",
+  background: "var(--card)",
 };
 
 const tabStyle: React.CSSProperties = {
@@ -560,40 +560,40 @@ const tabStyle: React.CSSProperties = {
   borderRadius: 8,
   padding: "0 14px",
   background: "transparent",
-  color: "#94A3B8",
+  color: "var(--muted)",
   fontSize: 13,
   fontWeight: 700,
   cursor: "pointer",
 };
 
 const activeTabStyle: React.CSSProperties = {
-  border: "1px solid rgba(124, 58, 237, 0.55)",
-  background: "rgba(124, 58, 237, 0.16)",
-  color: "#E9D5FF",
+  border: "1px solid var(--accent)",
+  background: "var(--accent-soft)",
+  color: "var(--accent)",
 };
 
 const sectionStyle: React.CSSProperties = {
-  border: "1px solid #273449",
+  border: "1px solid var(--border)",
   borderRadius: 14,
-  background: "#111827",
-  boxShadow: "0 8px 20px rgba(15, 23, 42, 0.2)",
+  background: "var(--card)",
+  boxShadow: "var(--shadow)",
 };
 
 const sectionHeadingStyle: React.CSSProperties = {
   padding: "20px 22px",
-  borderBottom: "1px solid #273449",
+  borderBottom: "1px solid var(--separator)",
 };
 
 const sectionTitleStyle: React.CSSProperties = {
   margin: 0,
-  color: "#F8FAFC",
+  color: "var(--text-strong)",
   fontSize: 18,
   fontWeight: 700,
 };
 
 const sectionSubtitleStyle: React.CSSProperties = {
   margin: "5px 0 0",
-  color: "#94A3B8",
+  color: "var(--muted)",
   fontSize: 13,
 };
 
@@ -603,7 +603,7 @@ const formStyle: React.CSSProperties = {
   gap: 14,
   alignItems: "end",
   padding: 22,
-  borderBottom: "1px solid #273449",
+  borderBottom: "1px solid var(--separator)",
 };
 
 const fieldStyle: React.CSSProperties = {
@@ -613,7 +613,7 @@ const fieldStyle: React.CSSProperties = {
 };
 
 const labelStyle: React.CSSProperties = {
-  color: "#CBD5E1",
+  color: "var(--text-2)",
   fontSize: 12,
   fontWeight: 600,
 };
@@ -621,11 +621,11 @@ const labelStyle: React.CSSProperties = {
 const inputStyle: React.CSSProperties = {
   width: "100%",
   height: 42,
-  border: "1px solid #334155",
+  border: "1px solid var(--border)",
   borderRadius: 8,
   padding: "0 12px",
-  background: "#162130",
-  color: "#FFF",
+  background: "var(--surface)",
+  color: "var(--text)",
   outline: "none",
   boxSizing: "border-box",
   fontSize: 14,
@@ -640,8 +640,8 @@ const primaryButtonStyle: React.CSSProperties = {
   border: "none",
   borderRadius: 8,
   padding: "0 16px",
-  background: "linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%)",
-  color: "#FFF",
+  background: "var(--accent)",
+  color: "var(--on-accent)",
   fontSize: 13,
   fontWeight: 700,
   cursor: "pointer",
@@ -661,7 +661,7 @@ const listHeaderStyle: React.CSSProperties = {
 
 const listTitleStyle: React.CSSProperties = {
   margin: 0,
-  color: "#F8FAFC",
+  color: "var(--text-strong)",
   fontSize: 15,
   fontWeight: 700,
 };
@@ -673,8 +673,8 @@ const countStyle: React.CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   borderRadius: 999,
-  background: "#223149",
-  color: "#BFDBFE",
+  background: "var(--accent-soft)",
+  color: "var(--accent)",
   fontSize: 12,
   fontWeight: 700,
 };
@@ -691,16 +691,16 @@ const listItemStyle: React.CSSProperties = {
   justifyContent: "space-between",
   gap: 16,
   minHeight: 48,
-  border: "1px solid #273449",
+  border: "1px solid var(--border)",
   borderRadius: 8,
   padding: "0 14px",
-  background: "#182233",
+  background: "var(--surface)",
 };
 
 const itemNameStyle: React.CSSProperties = {
   minWidth: 0,
   overflow: "hidden",
-  color: "#F8FAFC",
+  color: "var(--text-strong)",
   fontSize: 14,
   fontWeight: 600,
   textOverflow: "ellipsis",
@@ -718,7 +718,7 @@ const itemContentStyle: React.CSSProperties = {
 const itemSecondaryStyle: React.CSSProperties = {
   minWidth: 0,
   overflow: "hidden",
-  color: "#94A3B8",
+  color: "var(--muted)",
   fontSize: 12,
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
@@ -752,17 +752,17 @@ const iconButtonStyle: React.CSSProperties = {
   height: 34,
   alignItems: "center",
   justifyContent: "center",
-  border: "1px solid #334155",
+  border: "1px solid var(--border)",
   borderRadius: 7,
-  background: "#162130",
-  color: "#CBD5E1",
+  background: "var(--card)",
+  color: "var(--text)",
   cursor: "pointer",
 };
 
 const dangerButtonStyle: React.CSSProperties = {
-  borderColor: "rgba(239, 68, 68, 0.45)",
-  background: "rgba(127, 29, 29, 0.24)",
-  color: "#FCA5A5",
+  borderColor: "var(--danger)",
+  background: "var(--danger-soft)",
+  color: "var(--danger)",
 };
 
 const disabledButtonStyle: React.CSSProperties = {
@@ -774,42 +774,43 @@ const userTypeStyle: React.CSSProperties = {
   flex: "0 0 auto",
   borderRadius: 999,
   padding: "4px 9px",
-  background: "rgba(124, 58, 237, 0.18)",
-  color: "#DDD6FE",
+  border: "1px solid var(--border)",
+  background: "var(--accent-soft)",
+  color: "var(--accent)",
   fontSize: 12,
   fontWeight: 700,
 };
 
 const tenantStyle: React.CSSProperties = {
   flex: "0 0 auto",
-  color: "#94A3B8",
+  color: "var(--muted)",
   fontSize: 13,
 };
 
 const emptyStyle: React.CSSProperties = {
   margin: "16px 0 0",
-  color: "#64748B",
+  color: "var(--faint)",
   fontSize: 13,
 };
 
 const formErrorStyle: React.CSSProperties = {
   gridColumn: "1 / -1",
   margin: 0,
-  color: "#FCA5A5",
+  color: "var(--danger)",
   fontSize: 12,
 };
 
 const formSuccessStyle: React.CSSProperties = {
   gridColumn: "1 / -1",
   margin: 0,
-  color: "#86EFAC",
+  color: "var(--success)",
   fontSize: 12,
 };
 
 const accessNoticeStyle: React.CSSProperties = {
   margin: 0,
   padding: 22,
-  borderBottom: "1px solid #273449",
-  color: "#94A3B8",
+  borderBottom: "1px solid var(--separator)",
+  color: "var(--muted)",
   fontSize: 13,
 };

@@ -33,6 +33,22 @@ function gerarTenant(nome: string) {
     .replace(/^-|-$/g, "") || "cliente-importado";
 }
 
+function harmonizarCoresCompartilhadas(robos: Robo[], clientes: Cliente[]) {
+  const nomeClientePorId = new Map(clientes.map((cliente) => [cliente.id, normalizarIdentificador(cliente.nome)]));
+  const corClientePorNome = new Map<string, Robo["clienteCor"]>();
+  const corPacotePorNome = new Map<string, Robo["pacoteCor"]>();
+
+  return robos.map((robo) => {
+    const chaveCliente = nomeClientePorId.get(robo.clienteId) ?? robo.clienteId;
+    const chavePacote = normalizarIdentificador(robo.pacote);
+    const clienteCor = corClientePorNome.get(chaveCliente) ?? robo.clienteCor;
+    const pacoteCor = corPacotePorNome.get(chavePacote) ?? robo.pacoteCor;
+    corClientePorNome.set(chaveCliente, clienteCor);
+    corPacotePorNome.set(chavePacote, pacoteCor);
+    return { ...robo, clienteCor, pacoteCor };
+  });
+}
+
 interface AppDataContextValue {
   robos: Robo[];
   publicacoes: Publicacao[];
@@ -41,6 +57,7 @@ interface AppDataContextValue {
   cadastrarRobo: (dados: DadosFormularioRobo) => Robo;
   importarRobos: (dados: DadosImportacaoRobo[]) => Promise<Robo[]>;
   atualizarRobo: (id: string, dados: DadosFormularioRobo) => Promise<Robo | null>;
+  atualizarCapacidadeRobo: (id: string, ideal: number, max: number) => Promise<Robo | null>;
   excluirRobo: (id: string) => void;
   publicarAlteracoes: (id: string) => Robo | null;
   cadastrarUsuario: (dados: DadosCadastroUsuario) => void;
@@ -124,7 +141,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       const regras = regrasResult.data ?? [];
       const alteracoes = alteracoesResult.data ?? [];
       const publicacoes = publicacoesResult.data ?? [];
-      setRobos(robosResult.data.map((item) => ({
+      const clientesCarregados = clientesResult.data ?? [];
+      const robosCarregados: Robo[] = robosResult.data.map((item) => ({
         id: item.id,
         clienteId: item.cliente_id,
         clienteCor: item.cliente_cor as Robo["clienteCor"],
@@ -146,7 +164,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         alteracoes: alteracoes.filter((alteracao) => alteracao.robo_id === item.id).map((alteracao) => ({ id: alteracao.id, descricao: alteracao.descricao, realizadaEm: alteracao.realizada_em })),
         regras: regras.filter((regra) => regra.robo_id === item.id && regra.tipo === "documentacao").map(({ descricao }) => ({ descricao })),
         regrasForaDocumentacao: regras.filter((regra) => regra.robo_id === item.id && regra.tipo === "fora_documentacao").map(({ descricao }) => ({ descricao })),
-      })));
+      }));
+      setRobos(harmonizarCoresCompartilhadas(robosCarregados, clientesCarregados));
     });
   }, []);
 
@@ -181,6 +200,21 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       versao: cadastro.versao, responsavel: cadastro.responsavel,
     }).eq("id", id);
     if (error) throw error;
+    const clienteSelecionado = clientes.find((cliente) => cliente.id === cadastro.clienteId);
+    const idsClientesMesmoNome = clienteSelecionado
+      ? clientes.filter((cliente) => normalizarIdentificador(cliente.nome) === normalizarIdentificador(clienteSelecionado.nome)).map((cliente) => cliente.id)
+      : [cadastro.clienteId];
+    const idsPacoteMesmoNome = robos
+      .filter((robo) => normalizarIdentificador(robo.pacote) === normalizarIdentificador(cadastro.pacote))
+      .map((robo) => robo.id);
+    await Promise.all([
+      idsClientesMesmoNome.length
+        ? supabase.from("robos").update({ cliente_cor: cadastro.clienteCor }).in("cliente_id", idsClientesMesmoNome)
+        : Promise.resolve(),
+      idsPacoteMesmoNome.length
+        ? supabase.from("robos").update({ pacote_cor: cadastro.pacoteCor }).in("id", idsPacoteMesmoNome)
+        : Promise.resolve(),
+    ]);
     const agora = new Date().toISOString();
     const novasAlteracoes = alteracoesRealizadas.map((alteracao, index) => ({
       id: crypto.randomUUID(),
@@ -189,7 +223,31 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }));
     const novaAlteracao = [...novasAlteracoes, ...atual.alteracoes];
     const atualizado = { ...atual, ...cadastro, alteracoes: novaAlteracao };
-    setRobos((atuais) => atuais.map((robo) => (robo.id === id ? atualizado : robo)));
+    setRobos((atuais) => atuais.map((robo) => {
+      const mesmoCliente = idsClientesMesmoNome.includes(robo.clienteId);
+      const mesmoPacote = normalizarIdentificador(robo.pacote) === normalizarIdentificador(cadastro.pacote);
+      const comCores = {
+        ...robo,
+        clienteCor: mesmoCliente ? cadastro.clienteCor : robo.clienteCor,
+        pacoteCor: mesmoPacote ? cadastro.pacoteCor : robo.pacoteCor,
+      };
+      return robo.id === id ? { ...atualizado, clienteCor: comCores.clienteCor, pacoteCor: comCores.pacoteCor } : comCores;
+    }));
+    return atualizado;
+  }
+
+  async function atualizarCapacidadeRobo(id: string, ideal: number, max: number) {
+    const atual = robos.find((robo) => robo.id === id);
+    if (!atual) return null;
+    const supabase = createClient();
+    const { error } = await supabase.rpc("update_robot_capacity", {
+      target_robot_id: id,
+      target_ideal: ideal,
+      target_max: max,
+    });
+    if (error) throw error;
+    const atualizado = { ...atual, ideal, max };
+    setRobos((atuais) => atuais.map((robo) => robo.id === id ? atualizado : robo));
     return atualizado;
   }
 
@@ -233,11 +291,21 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const clientesAtualizados = [...clientes];
     const clientesPorNome = new Map(clientesAtualizados.map((cliente) => [normalizarIdentificador(cliente.nome), cliente]));
     const tenantsEmUso = new Set(clientesAtualizados.map((cliente) => cliente.tenant));
+    const nomeClientePorId = new Map(clientesAtualizados.map((cliente) => [cliente.id, normalizarIdentificador(cliente.nome)]));
+    const corClientePorNome = new Map<string, Robo["clienteCor"]>();
+    const corPacotePorNome = new Map<string, Robo["pacoteCor"]>();
+    robos.forEach((robo) => {
+      const chaveNomeCliente = nomeClientePorId.get(robo.clienteId);
+      if (chaveNomeCliente && !corClientePorNome.has(chaveNomeCliente)) corClientePorNome.set(chaveNomeCliente, robo.clienteCor);
+      const chaveNomePacote = normalizarIdentificador(robo.pacote);
+      if (!corPacotePorNome.has(chaveNomePacote)) corPacotePorNome.set(chaveNomePacote, robo.pacoteCor);
+    });
 
     const novosRobos: Robo[] = [];
     for (const dados of itens) {
       const { alteracoesRealizadas, clienteNome, ...cadastro } = dados;
       const chaveCliente = normalizarIdentificador(clienteNome);
+      const chavePacote = normalizarIdentificador(cadastro.pacote);
       let cliente = clientesPorNome.get(chaveCliente);
       if (!cliente) {
         const nome = clienteNome.trim() || "Cliente não informado";
@@ -255,9 +323,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         clientesPorNome.set(chaveCliente, cliente);
         tenantsEmUso.add(tenant);
       }
+      const clienteCor = corClientePorNome.get(chaveCliente) ?? cadastro.clienteCor;
+      const pacoteCor = corPacotePorNome.get(chavePacote) ?? cadastro.pacoteCor;
+      corClientePorNome.set(chaveCliente, clienteCor);
+      corPacotePorNome.set(chavePacote, pacoteCor);
       const { data: roboCriado, error: erroRobo } = await supabase.from("robos").insert({
-        cliente_id: cliente.id, cliente_cor: cadastro.clienteCor, nome: cadastro.nome, sistema: cadastro.sistema, court_name: cadastro.courtName,
-        ideal: cadastro.ideal, max: cadastro.max, pacote: cadastro.pacote, pacote_cor: cadastro.pacoteCor, descricao: cadastro.descricao,
+        cliente_id: cliente.id, cliente_cor: clienteCor, nome: cadastro.nome, sistema: cadastro.sistema, court_name: cadastro.courtName,
+        ideal: cadastro.ideal, max: cadastro.max, pacote: cadastro.pacote, pacote_cor: pacoteCor, descricao: cadastro.descricao,
         ambiente: cadastro.ambiente, ativo: cadastro.ativo, stack: cadastro.stack, fila: cadastro.fila,
         versao: cadastro.versao, responsavel: cadastro.responsavel,
       }).select("id,updated_at").single();
@@ -279,6 +351,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       }
       novosRobos.push({
         ...cadastro,
+        clienteCor,
+        pacoteCor,
         clienteId: cliente.id,
         id: roboCriado.id,
         ultimaPublicacaoEm: roboCriado.updated_at,
@@ -314,6 +388,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     cadastrarRobo,
     importarRobos,
     atualizarRobo,
+    atualizarCapacidadeRobo,
     excluirRobo,
     publicarAlteracoes,
     cadastrarUsuario,

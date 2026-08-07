@@ -13,7 +13,7 @@ export default function StatsCards({ robos }: { robos: Robo[] }) {
       {cards.map((card, index) => {
         const Icon = card.icon;
         return (
-          <div key={card.title} style={{ ...itemStyle, borderRight: index < cards.length - 1 ? "1px solid #273449" : "none" }}>
+          <div key={card.title} style={{ ...itemStyle, borderRight: index < cards.length - 1 ? "1px solid var(--separator)" : "none" }}>
             <span style={{ ...iconStyle, color: card.color, background: card.background }}>
               <Icon size={17} />
             </span>
@@ -28,8 +28,8 @@ export default function StatsCards({ robos }: { robos: Robo[] }) {
   );
 }
 
-const containerStyle = { display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", background: "#172234", border: "1px solid #273449", borderRadius: 12, overflow: "hidden" } as const;
+const containerStyle = { display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden", boxShadow: "var(--shadow)" } as const;
 const itemStyle = { display: "flex", alignItems: "center", gap: 11, minWidth: 0, padding: "13px 15px" } as const;
 const iconStyle = { width: 34, height: 34, borderRadius: 9, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 } as const;
-const labelStyle = { display: "block", color: "#8B9CB3", fontSize: 11.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } as const;
-const valueStyle = { display: "block", color: "#F8FAFC", fontSize: 19, lineHeight: 1.15, fontWeight: 750, marginTop: 2 } as const;
+const labelStyle = { display: "block", color: "var(--muted)", fontSize: 11.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } as const;
+const valueStyle = { display: "block", color: "var(--text-strong)", fontSize: 19, lineHeight: 1.15, fontWeight: 750, marginTop: 2 } as const;

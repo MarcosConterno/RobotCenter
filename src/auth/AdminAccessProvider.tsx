@@ -6,6 +6,14 @@ type AccessStatus = "loading" | "ready";
 
 interface AdminAccessContextValue {
   isAdmin: boolean;
+  isOperator: boolean;
+  isClient: boolean;
+  isSupport: boolean;
+  canManageRobots: boolean;
+  canUpdateCapacity: boolean;
+  canAccessSettings: boolean;
+  canAccessRobots: boolean;
+  roles: string[];
   status: AccessStatus;
   error: string;
 }
@@ -13,7 +21,7 @@ interface AdminAccessContextValue {
 const AdminAccessContext = createContext<AdminAccessContextValue | null>(null);
 
 export function AdminAccessProvider({ children }: { children: ReactNode }) {
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [roles, setRoles] = useState<string[]>([]);
   const [status, setStatus] = useState<AccessStatus>("loading");
   const [error, setError] = useState("");
 
@@ -21,10 +29,10 @@ export function AdminAccessProvider({ children }: { children: ReactNode }) {
     let active = true;
     void fetch("/api/admin/access", { cache: "no-store" })
       .then(async (response) => {
-        const payload = await response.json() as { allowed?: boolean; error?: string };
+        const payload = await response.json() as { roles?: string[]; error?: string };
         if (!active) return;
-        setIsAdmin(response.ok && payload.allowed === true);
-        setError(response.status === 401 || response.status === 403 ? "" : payload.error ?? "");
+        setRoles(response.ok && Array.isArray(payload.roles) ? payload.roles : []);
+        setError(response.status === 401 ? "" : payload.error ?? "");
       })
       .catch(() => {
         if (active) setError("Não foi possível validar as permissões da sessão.");
@@ -35,7 +43,25 @@ export function AdminAccessProvider({ children }: { children: ReactNode }) {
     return () => { active = false; };
   }, []);
 
-  const value = useMemo(() => ({ isAdmin, status, error }), [error, isAdmin, status]);
+  const value = useMemo(() => {
+    const isAdmin = roles.includes("admin");
+    const isOperator = roles.includes("operador");
+    const isClient = roles.includes("cliente");
+    const isSupport = roles.includes("suporte");
+    return {
+      isAdmin,
+      isOperator,
+      isClient,
+      isSupport,
+      canManageRobots: isAdmin,
+      canUpdateCapacity: isAdmin || isOperator,
+      canAccessSettings: isAdmin,
+      canAccessRobots: isAdmin || isOperator || isClient,
+      roles,
+      status,
+      error,
+    };
+  }, [error, roles, status]);
   return <AdminAccessContext.Provider value={value}>{children}</AdminAccessContext.Provider>;
 }
 

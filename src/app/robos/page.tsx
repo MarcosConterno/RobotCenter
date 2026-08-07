@@ -26,7 +26,7 @@ function obterDadosFormulario(robo: Robo): DadosFormularioRobo {
 
 export default function RobosPage() {
   const router = useRouter();
-  const { isAdmin: canImport } = useAdminAccess();
+  const { canManageRobots } = useAdminAccess();
   const { robos, clientes, cadastrarRobo, importarRobos, atualizarRobo, excluirRobo, publicarAlteracoes } = useAppData();
   const [robotSelecionadoDoDashboard, setRobotSelecionadoDoDashboard] = useState<string | null>(null);
   const [pesquisa, setPesquisa] = useState("");
@@ -152,7 +152,8 @@ export default function RobosPage() {
             setDrawerMode("create");
             setDrawerOpen(true);
           }}
-          canImport={canImport}
+          canCreate={canManageRobots}
+          canImport={canManageRobots}
           onImport={() => setImportOpen(true)}
         />
 
@@ -171,20 +172,20 @@ export default function RobosPage() {
           <div onClick={() => setDetailsOpen(false)} style={overlayStyle}>
             <div onClick={(event) => event.stopPropagation()} style={modalStyle}>
               <div style={modalHeaderStyle}>
-                <div style={{ color: "#FFF", fontWeight: 700 }}>Detalhes do robô</div>
+                <div style={{ color: "var(--text-strong)", fontWeight: 700 }}>Detalhes do robô</div>
                 <button type="button" onClick={() => setDetailsOpen(false)} style={closeButtonStyle}>Fechar</button>
               </div>
               <div style={{ padding: 20 }}>
                 <RobotDetails
                   robot={selectedRobot}
                   clientes={clientes}
-                  onPublish={publicarRobotSelecionado}
-                  onEdit={(robo) => {
+                  onPublish={canManageRobots ? publicarRobotSelecionado : undefined}
+                  onEdit={canManageRobots ? (robo) => {
                     setSelectedRobot(robo);
                     setDrawerMode("edit");
                     setDrawerOpen(true);
                     setDetailsOpen(false);
-                  }}
+                  } : undefined}
                 />
               </div>
             </div>
@@ -192,7 +193,7 @@ export default function RobosPage() {
         )}
       </AppShell>
 
-      <RobotDrawer
+      {canManageRobots && <RobotDrawer
         open={drawerOpen}
         title={drawerMode === "create" ? "Novo Robô" : "Editar Robô"}
         onClose={() => setDrawerOpen(false)}
@@ -207,15 +208,15 @@ export default function RobosPage() {
           onDelete={drawerMode === "edit" ? excluirRobotSelecionado : undefined}
           onSubmit={salvarRobot}
         />
-      </RobotDrawer>
-      <RobotImportDialog
+      </RobotDrawer>}
+      {canManageRobots && <RobotImportDialog
         open={importOpen}
         onClose={() => setImportOpen(false)}
         onImport={async (items) => {
           await importarRobos(items);
           setDetailsOpen(false);
         }}
-      />
+      />}
     </>
   );
 }
@@ -226,12 +227,12 @@ const overlayStyle: React.CSSProperties = {
 };
 const modalStyle: React.CSSProperties = {
   width: "min(860px, 100%)", maxHeight: "90vh", overflow: "auto", borderRadius: 16,
-  border: "1px solid #273449", background: "#0F172A", boxShadow: "0 20px 60px rgba(0,0,0,0.45)",
+  border: "1px solid var(--border)", background: "var(--card)", boxShadow: "var(--shadow)",
 };
 const modalHeaderStyle: React.CSSProperties = {
   display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 20px",
-  borderBottom: "1px solid #273449",
+  borderBottom: "1px solid var(--separator)",
 };
 const closeButtonStyle: React.CSSProperties = {
-  border: "1px solid #334155", background: "transparent", color: "#FFF", padding: "6px 10px", borderRadius: 8,
+  border: "1px solid var(--border)", background: "transparent", color: "var(--text)", padding: "6px 10px", borderRadius: 8,
 };

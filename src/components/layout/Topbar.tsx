@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { createClient } from "@/lib/supabase/client";
+import ThemeToggle from "@/components/theme/ThemeToggle";
 
 interface TopbarProps { title: string; }
 
@@ -98,6 +99,8 @@ export default function Topbar({ title }: TopbarProps) {
           <input type="text" placeholder="Pesquisar no sistema" aria-label="Pesquisar no sistema" />
           <span>⌘ K</span>
         </label>
+
+        <ThemeToggle />
 
         <div className="topbar-divider" />
         <button

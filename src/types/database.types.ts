@@ -610,7 +610,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      update_robot_capacity: {
+        Args: {
+          target_ideal: number
+          target_max: number
+          target_robot_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

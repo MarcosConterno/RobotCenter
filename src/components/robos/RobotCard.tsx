@@ -41,15 +41,15 @@ export default function RobotCard({
         cursor: "pointer",
         userSelect: "none",
         transition: "all .2s ease",
-        background: selected ? "#223149" : "#182233",
+        background: selected ? "var(--accent-soft)" : "var(--card)",
         border: selected
-          ? "1px solid rgba(124, 58, 237, 0.65)"
-          : "1px solid rgba(255,255,255,0.08)",
+          ? "1px solid var(--accent)"
+          : "1px solid var(--border)",
         borderRadius: 14,
         padding: 14,
         boxShadow: selected
-          ? "0 0 0 1px rgba(124, 58, 237, 0.18), 0 14px 32px rgba(15, 23, 42, 0.22)"
-          : "0 10px 24px rgba(15, 23, 42, 0.16)",
+          ? "0 0 0 1px var(--accent-soft), var(--shadow)"
+          : "var(--shadow)",
       }}
     >
       <div
@@ -63,7 +63,7 @@ export default function RobotCard({
         <div>
           <div
             style={{
-              color: "#F8FAFC",
+              color: "var(--text-strong)",
               fontSize: 16,
               fontWeight: 700,
               marginBottom: 4,
@@ -74,7 +74,7 @@ export default function RobotCard({
 
           <div
             style={{
-              color: "#94A3B8",
+              color: "var(--muted)",
               fontSize: 13,
               display: "flex",
               alignItems: "center",
@@ -99,17 +99,17 @@ export default function RobotCard({
           <span
             style={{
               ...statusBadgeStyle,
-              color: robot.ativo ? "#4ADE80" : "#94A3B8",
+              color: robot.ativo ? "var(--success)" : "var(--muted)",
               background: robot.ativo
-                ? "rgba(34,197,94,.08)"
-                : "rgba(100,116,139,.1)",
+                ? "var(--success-soft)"
+                : "var(--surface)",
             }}
           >
             <span
               aria-hidden="true"
               style={{
                 ...statusDotStyle,
-                background: robot.ativo ? "#22C55E" : "#64748B",
+                background: robot.ativo ? "var(--success)" : "var(--faint)",
                 boxShadow: robot.ativo ? "0 0 0 3px rgba(34,197,94,.1)" : "none",
               }}
             />
@@ -124,7 +124,7 @@ export default function RobotCard({
           gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
           columnGap: 12,
           rowGap: 7,
-          color: "#94A3B8",
+          color: "var(--muted)",
           fontSize: 12.5,
           marginTop: 5,
         }}
