@@ -10,7 +10,7 @@ Na importação, Cliente é identificado pelo nome. Um nome ainda não cadastrad
 
 Os identificadores de Cliente, Robô, Alteração e Publicação usados pela aplicação são UUIDs compatíveis com as chaves do PostgreSQL. A listagem de Robôs e Clientes é montada a partir do Supabase, sem registros mock iniciais.
 
-Cada Robô possui as configurações visuais `clienteCor` e `pacoteCor`. Elas selecionam uma entre seis paletas controladas. A cor é compartilhada pelo nome normalizado: alterar a cor de um Cliente ou Pacote atualiza todos os robôs com o mesmo nome correspondente.
+Cada Cliente possui a configuração visual `cor`, selecionada entre seis paletas controladas no próprio cadastro do Cliente. Todos os robôs vinculados ao mesmo Cliente exibem essa cor. O Robô mantém apenas `pacoteCor`, compartilhada entre pacotes com o mesmo nome normalizado.
 
 Automação cadastrada e gerenciada pelo sistema. Possui identificação, sistema, pacote, ambiente, estado operacional, configuração técnica, responsável textual, versão, documentação da última alteração e regras funcionais.
 
@@ -50,7 +50,7 @@ O tipo **Suporte** representa consulta operacional restrita às Dashboards e nã
 
 ### Cliente
 
-Organização cadastrada com nome e tenant. É independente de Sistema e Pacote. Seu arquivamento é lógico e só é permitido quando não existem usuários ou robôs ativos vinculados.
+Organização cadastrada com nome, tenant e cor visual. É independente de Sistema e Pacote. Seu arquivamento é lógico e só é permitido quando não existem usuários ou robôs ativos vinculados.
 
 ## Entidades e contratos
 
@@ -88,3 +88,9 @@ Para persistência, os IDs passam a UUID. Um robô pertence obrigatoriamente a u
 Os dados técnicos operacionais do Robô incluem `courtName`, `fila`, `stack`, `ideal`, `max`, `pacote` e `versao`. `ideal` e `max` são inteiros não negativos, sendo `max` sempre maior ou igual a `ideal`.
 
 Usuário autenticado é representado por `auth.users`; seus dados funcionais ficam em `profiles`, e seu tipo é obtido pelo RBAC. Senha é entrada exclusiva do Supabase Auth e nunca integra uma entidade persistida da aplicação.
+## Identidade visual compartilhada
+
+A cor do Cliente pertence ao seu cadastro. A cor do Pacote é armazenada nos robôs por compatibilidade, mas é compartilhada pelo nome normalizado do pacote. A atribuição inicial usa ciclicamente a paleta `azul`, `violeta`, `verde`, `ambar`, `rosa` e `ciano`.
+## Nome do usuário e credencial
+
+O campo apresentado como `Nome` no cadastro de usuários continua persistido em `profiles.login` por compatibilidade com o modelo existente. A senha pertence ao Supabase Auth e pode ser alterada pelo próprio usuário autenticado, sem ser armazenada nas tabelas públicas da aplicação.

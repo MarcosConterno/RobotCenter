@@ -15,7 +15,7 @@ export default function StatsCards({ robos }: { robos: Robo[] }) {
         return (
           <div key={card.title} style={{ ...itemStyle, borderRight: index < cards.length - 1 ? "1px solid var(--separator)" : "none" }}>
             <span style={{ ...iconStyle, color: card.color, background: card.background }}>
-              <Icon size={17} />
+              <Icon size={15} />
             </span>
             <span style={{ minWidth: 0 }}>
               <span style={labelStyle}>{card.title}</span>
@@ -28,8 +28,8 @@ export default function StatsCards({ robos }: { robos: Robo[] }) {
   );
 }
 
-const containerStyle = { display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden", boxShadow: "var(--shadow)" } as const;
-const itemStyle = { display: "flex", alignItems: "center", gap: 11, minWidth: 0, padding: "13px 15px" } as const;
-const iconStyle = { width: 34, height: 34, borderRadius: 9, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 } as const;
-const labelStyle = { display: "block", color: "var(--muted)", fontSize: 11.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } as const;
-const valueStyle = { display: "block", color: "var(--text-strong)", fontSize: 19, lineHeight: 1.15, fontWeight: 750, marginTop: 2 } as const;
+const containerStyle = { display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", boxShadow: "var(--shadow)" } as const;
+const itemStyle = { display: "flex", alignItems: "center", gap: 9, minWidth: 0, padding: "9px 12px" } as const;
+const iconStyle = { width: 28, height: 28, borderRadius: 8, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 } as const;
+const labelStyle = { display: "block", color: "var(--muted)", fontSize: 10.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } as const;
+const valueStyle = { display: "block", color: "var(--text-strong)", fontSize: 16, lineHeight: 1.05, fontWeight: 700, marginTop: 1 } as const;

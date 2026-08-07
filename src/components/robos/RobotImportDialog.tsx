@@ -174,7 +174,6 @@ export default function RobotImportDialog({ open, onClose, onImport }: RobotImpo
         const max = Math.max(numero(record.get(normalizarChave("Max"))), ideal);
         imported.push({
           clienteNome: texto(record.get(normalizarChave("Cliente")), "Cliente não informado"),
-          clienteCor: "azul",
           sistema: texto(record.get(normalizarChave("Sistema"))),
           nome: texto(record.get(requiredHeader), `Robô importado ${rowNumber - 1}`),
           courtName: texto(record.get(normalizarChave("CourtName"))),

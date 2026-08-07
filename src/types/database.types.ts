@@ -58,6 +58,7 @@ export type Database = {
       }
       clientes: {
         Row: {
+          cor: string
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -69,6 +70,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          cor?: string
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -80,6 +82,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          cor?: string
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null

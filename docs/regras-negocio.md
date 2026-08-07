@@ -88,7 +88,7 @@
 - Detalhes e tabela consolidada exibem Cliente, Sistema, Robô, CourtName, Fila, Stack, Ideal, Max, Pacote e Versão, nessa ordem.
 - Publicações são imutáveis no fluxo normal.
 - `ultimaPublicacaoEm` é calculado pela maior `publicada_em` do robô.
-- Clientes com o mesmo nome normalizado compartilham a mesma cor visual; editar uma cor a propaga para todos os robôs desses clientes.
+- A cor do Cliente é definida exclusivamente no cadastro de `clientes`; todos os robôs vinculados ao mesmo `cliente_id` usam essa cor.
 - Pacotes com o mesmo nome normalizado compartilham a mesma cor visual; editar uma cor a propaga para todos os robôs correspondentes.
 - Admin e Operador podem alterar diretamente na Dashboard somente `ideal` e `max`; a persistência ocorre após clicar em “Aplicar alteração”.
 - Operador e Cliente consultam os detalhes dos robôs, mas não criam, editam, excluem, importam ou publicam robôs.
@@ -97,3 +97,21 @@
 - Profile com papel Cliente deve estar ativo e vinculado a um cliente ativo.
 - Senhas são processadas exclusivamente pelo Supabase Auth.
 - Campos `created_by`, `updated_by` e `deleted_by` são preenchidos com a identidade autenticada quando aplicável.
+## Cores de clientes e pacotes
+
+- Clientes existentes recebem automaticamente uma cor da paleta visual de seis cores; a cor permanece editável no cadastro do cliente.
+- Pacotes com o mesmo nome normalizado compartilham a mesma cor em todos os robôs.
+- Um pacote inédito recebe automaticamente a próxima cor da paleta; após seis nomes distintos, a sequência é reutilizada.
+- A apresentação e a indicação da cor selecionada devem permanecer legíveis nos temas claro e escuro.
+## Salvamento e publicação do robô
+
+- A publicação é iniciada dentro da edição do robô.
+- `Salvar` persiste as alterações sem criar uma publicação.
+- `Salvar e publicar` primeiro persiste o formulário e, somente após sucesso, registra a publicação e direciona o usuário à dashboard.
+- A tela de detalhes não oferece uma ação de publicação independente.
+## Destaques de novidades na dashboard
+
+- O cadastro de um robô gera um item identificado como `Novo robô`, contendo sempre o nome, CourtName e a descrição do cadastro.
+- A publicação de uma edição gera um item identificado como `Nova atualização`.
+- Quando várias alterações forem informadas no mesmo salvamento, suas descrições são reunidas na publicação para representar exatamente o conteúdo alterado.
+- Nome e CourtName são informações principais; pacote, versão e stack aparecem como contexto técnico.

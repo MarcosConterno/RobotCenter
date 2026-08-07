@@ -20,7 +20,7 @@ const statusOptions = [TODAS_OPCOES, "Ativo", "Inativo"] as const;
 type DrawerMode = "create" | "edit";
 
 function obterDadosFormulario(robo: Robo): DadosFormularioRobo {
-  const { id: _id, ultimaPublicacaoEm: _ultimaPublicacaoEm, alteracoes: _alteracoes, ...dados } = robo;
+  const { id: _id, ultimaPublicacaoEm: _ultimaPublicacaoEm, alteracoes: _alteracoes, clienteCor: _clienteCor, ...dados } = robo;
   return { ...dados, alteracoesRealizadas: [] };
 }
 
@@ -95,14 +95,26 @@ export default function RobosPage() {
     setDetailsOpen(false);
   }
 
-  async function salvarRobot(dados: DadosFormularioRobo) {
+  async function salvarRobot(dados: DadosFormularioRobo, publicar: boolean) {
     const roboSalvo = drawerMode === "create"
       ? cadastrarRobo(dados)
       : selectedRobot
         ? await atualizarRobo(selectedRobot.id, dados)
         : null;
 
-    if (roboSalvo) setSelectedRobot(roboSalvo);
+    if (roboSalvo) {
+      if (publicar) {
+        const descricaoPublicacao = dados.alteracoesRealizadas
+          .map((alteracao) => alteracao.descricao.trim())
+          .filter(Boolean)
+          .join(" • ");
+        const roboPublicado = publicarAlteracoes(roboSalvo.id, roboSalvo, descricaoPublicacao);
+        setSelectedRobot(roboPublicado ?? roboSalvo);
+        router.push("/dashboard");
+      } else {
+        setSelectedRobot(roboSalvo);
+      }
+    }
     setDrawerOpen(false);
   }
 
@@ -111,12 +123,6 @@ export default function RobosPage() {
     excluirRobo(selectedRobot.id);
     setSelectedRobot(null);
     setDrawerOpen(false);
-  }
-
-  function publicarRobotSelecionado(robo: Robo) {
-    const roboPublicado = publicarAlteracoes(robo.id);
-    if (roboPublicado) setSelectedRobot(roboPublicado);
-    router.push("/dashboard");
   }
 
   function limparFiltros() {
@@ -179,7 +185,6 @@ export default function RobosPage() {
                 <RobotDetails
                   robot={selectedRobot}
                   clientes={clientes}
-                  onPublish={canManageRobots ? publicarRobotSelecionado : undefined}
                   onEdit={canManageRobots ? (robo) => {
                     setSelectedRobot(robo);
                     setDrawerMode("edit");

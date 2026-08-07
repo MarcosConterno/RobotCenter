@@ -29,7 +29,7 @@ As únicas ampliações estruturais são as indispensáveis para persistência s
 
 ### 2.1 Cliente e isolamento
 
-`Cliente` continua sendo a entidade já existente no domínio. Na V1, seu identificador passa a representar também a fronteira de dados usada pelo RLS.
+`Cliente` continua sendo a entidade já existente no domínio. Na V1, seu identificador passa a representar também a fronteira de dados usada pelo RLS. A paleta visual do Cliente é centralizada em `clientes.cor` e reutilizada por todos os seus robôs.
 
 Cada robô pertence obrigatoriamente a um cliente por `cliente_id`. Essa relação não aparece hoje no type `Robo`, mas é indispensável para que usuários do tipo Cliente não visualizem robôs de outras empresas. Não será criada uma entidade paralela chamada Tenant.
 

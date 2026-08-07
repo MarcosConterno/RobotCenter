@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, FileText, GripVertical, Layers3, Plus, Save, Trash2, X } from "lucide-react";
+import { Bot, FileText, GripVertical, Layers3, Plus, Save, Send, Trash2, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { formatarData } from "@/domain/formatters";
 import { AMBIENTES_ROBO, type AlteracaoRobo, type Cliente, type DadosFormularioRobo } from "@/domain/entities";
@@ -15,7 +15,7 @@ interface RobotFormProps {
   mode: "create" | "edit";
   onCancel: () => void;
   onDelete?: () => void;
-  onSubmit: (data: DadosFormularioRobo) => void | Promise<void>;
+  onSubmit: (data: DadosFormularioRobo, publish: boolean) => void | Promise<void>;
 }
 
 export default function RobotForm({
@@ -69,7 +69,8 @@ export default function RobotForm({
           return;
         }
 
-        await onSubmit(result.data);
+        const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+        await onSubmit(result.data, submitter?.value === "save-publish");
       }}
       style={formStyle}
     >
@@ -122,7 +123,6 @@ export default function RobotForm({
               {clientes.map((cliente) => <option key={cliente.id} value={cliente.id}>{cliente.nome}</option>)}
             </select>
             {clientes.length === 0 && <span style={fieldHintStyle}>Cadastre um cliente antes de cadastrar o robô.</span>}
-            <ColorPicker label="Cor do cliente" value={form.clienteCor} onChange={(value) => update("clienteCor", value)} />
           </div>
           <Field label="Sistema" placeholder="Ex.: Legal One" value={form.sistema} onChange={(v) => update("sistema", v)} required />
           <Field label="Robô" placeholder="Nome do robô" value={form.nome} onChange={(v) => update("nome", v)} required />
@@ -291,10 +291,16 @@ export default function RobotForm({
         </div>
         <div style={rightActionsStyle}>
           <button type="button" onClick={onCancel} style={cancelButtonStyle}>Cancelar</button>
-          <button type="submit" style={submitButtonStyle}>
+          <button type="submit" value="save" style={submitButtonStyle}>
             <Save size={15} />
-            {mode === "create" ? "Cadastrar Robô" : "Salvar Alterações"}
+            {mode === "create" ? "Cadastrar Robô" : "Salvar"}
           </button>
+          {mode === "edit" && (
+            <button type="submit" value="save-publish" style={publishButtonStyle}>
+              <Send size={15} />
+              Salvar e publicar
+            </button>
+          )}
         </div>
       </footer>
     </form>
@@ -364,6 +370,7 @@ const rightActionsStyle = { display: "flex", gap: 10 } as const;
 const baseButtonStyle = { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "9px 14px", borderRadius: 10, cursor: "pointer", fontSize: 12.5, fontWeight: 700 } as const;
 const cancelButtonStyle = { ...baseButtonStyle, border: "1px solid var(--border-strong)", background: "transparent", color: "var(--text)" } as const;
 const submitButtonStyle = { ...baseButtonStyle, border: "none", background: "var(--accent)", color: "var(--on-accent)", boxShadow: "0 8px 22px rgba(10,132,255,.2)" } as const;
+const publishButtonStyle = { ...baseButtonStyle, border: "1px solid var(--accent)", background: "var(--accent-soft)", color: "var(--accent)" } as const;
 const deleteButtonStyle = { ...baseButtonStyle, border: "1px solid var(--danger)", background: "var(--danger-soft)", color: "var(--danger)" } as const;
 const rulesHeaderStyle = { display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, marginBottom: 9 } as const;
 const rulesHintStyle = { display: "block", color: "var(--muted)", fontSize: 10.5, marginTop: -2 } as const;
@@ -417,7 +424,6 @@ function ColorPicker({ label, value, onChange }: { label: string; value: CorBadg
 
 const FORMULARIO_ROBO_INICIAL: DadosFormularioRobo = {
   clienteId: "",
-  clienteCor: "azul",
   nome: "",
   sistema: "",
   courtName: "",

@@ -8,7 +8,6 @@ import {
   ListChecks,
   Package,
   Pencil,
-  Send,
   Server,
   User,
 } from "lucide-react";
@@ -20,10 +19,9 @@ interface RobotDetailsProps {
   robot: Robo | null;
   clientes?: Cliente[];
   onEdit?: (robot: Robo) => void;
-  onPublish?: (robot: Robo) => void;
 }
 
-export default function RobotDetails({ robot, clientes = [], onEdit, onPublish }: RobotDetailsProps) {
+export default function RobotDetails({ robot, clientes = [], onEdit }: RobotDetailsProps) {
   const [rulesTab, setRulesTab] = useState<"documentacao" | "fora-documentacao">("documentacao");
   if (!robot) {
     return (
@@ -77,11 +75,6 @@ export default function RobotDetails({ robot, clientes = [], onEdit, onPublish }
           {onEdit && (
             <button type="button" onClick={() => onEdit(robot)} style={editButtonStyle}>
               <Pencil size={15} /> Editar
-            </button>
-          )}
-          {onPublish && (
-            <button type="button" onClick={() => onPublish(robot)} style={publishButtonStyle}>
-              <Send size={15} /> Publicar alterações
             </button>
           )}
         </div>
@@ -198,7 +191,6 @@ const systemBadgeStyle = { color: "var(--text-2)", fontSize: 12, padding: "4px 9
 const statusBadgeStyle = { display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, padding: "4px 9px", borderRadius: 999, fontWeight: 600 } as const;
 const editButtonStyle = { display: "flex", alignItems: "center", gap: 7, flexShrink: 0, padding: "8px 14px", borderRadius: 12, border: "none", background: "var(--accent)", color: "var(--on-accent)", cursor: "pointer", fontWeight: 700, fontSize: 13, boxShadow: "0 8px 22px rgba(10,132,255,.2)" } as const;
 const headerActionsStyle = { display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: 8 } as const;
-const publishButtonStyle = { ...editButtonStyle, background: "rgba(124,58,237,.1)", border: "1px solid rgba(167,139,250,.35)", color: "#C4B5FD", boxShadow: "none" } as const;
 const descriptionStyle = { padding: "20px 26px", borderBottom: "1px solid var(--separator)" } as const;
 const sectionLabelStyle = { color: "var(--muted)", fontSize: 10, fontWeight: 800, letterSpacing: 1.3, marginBottom: 8 } as const;
 const descriptionTextStyle = { color: "var(--text)", lineHeight: 1.6, fontSize: 14, margin: 0 } as const;

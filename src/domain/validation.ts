@@ -12,7 +12,6 @@ export const regraRoboSchema = z.object({
 export const dadosFormularioRoboSchema = z.object({
   nome: textoObrigatorio("Nome"),
   clienteId: z.string().uuid("Selecione um cliente."),
-  clienteCor: z.enum(CORES_BADGE_ROBO),
   sistema: textoObrigatorio("Sistema"),
   courtName: textoObrigatorio("CourtName"),
   ideal: z.number().int().nonnegative("Ideal não pode ser negativo."),
@@ -35,7 +34,7 @@ export const dadosFormularioRoboSchema = z.object({
 });
 
 export const dadosCadastroUsuarioSchema = z.object({
-  login: textoObrigatorio("Login"),
+  login: textoObrigatorio("Nome"),
   email: z.string().trim().email("Informe um email válido."),
   senha: z.string().min(6, "A senha deve ter pelo menos 6 caracteres."),
   tipo: z.enum(TIPOS_USUARIO),
@@ -44,6 +43,7 @@ export const dadosCadastroUsuarioSchema = z.object({
 export const dadosCadastroClienteSchema = z.object({
   nome: textoObrigatorio("Nome"),
   tenant: textoObrigatorio("Tenant"),
+  cor: z.enum(CORES_BADGE_ROBO),
 });
 
 export function primeiraMensagemErro(error: z.ZodError) {

@@ -6,7 +6,8 @@ import { useCallback, useEffect, useState } from "react";
 import AppShell from "@/components/layout/AppShell";
 import { useAdminAccess } from "@/auth/AdminAccessProvider";
 import { useAppData } from "@/data/AppDataProvider";
-import { TIPOS_USUARIO, type TipoUsuario, type Usuario } from "@/domain/entities";
+import { CORES_BADGE_ROBO, TIPOS_USUARIO, type CorBadgeRobo, type TipoUsuario, type Usuario } from "@/domain/entities";
+import { PALETAS_BADGE_ROBO } from "@/domain/badge-colors";
 import { dadosCadastroClienteSchema, dadosCadastroUsuarioSchema, primeiraMensagemErro } from "@/domain/validation";
 
 type CadastroAtivo = "usuarios" | "clientes";
@@ -27,6 +28,9 @@ export default function ConfiguracoesPage() {
   const [tipoUsuario, setTipoUsuario] = useState<TipoUsuario>("Operador");
   const [nomeCliente, setNomeCliente] = useState("");
   const [tenant, setTenant] = useState("");
+  const [corCliente, setCorCliente] = useState<CorBadgeRobo>(() =>
+    CORES_BADGE_ROBO[clientes.length % CORES_BADGE_ROBO.length],
+  );
   const [erroUsuario, setErroUsuario] = useState("");
   const [sucessoUsuario, setSucessoUsuario] = useState("");
   const [salvandoUsuario, setSalvandoUsuario] = useState(false);
@@ -42,6 +46,7 @@ export default function ConfiguracoesPage() {
   const [clienteEditandoId, setClienteEditandoId] = useState<string | null>(null);
   const [clienteEditandoNome, setClienteEditandoNome] = useState("");
   const [clienteEditandoTenant, setClienteEditandoTenant] = useState("");
+  const [clienteEditandoCor, setClienteEditandoCor] = useState<CorBadgeRobo>("azul");
   const [acaoEmAndamento, setAcaoEmAndamento] = useState<string | number | null>(null);
 
   const carregarUsuarios = useCallback(async () => {
@@ -131,7 +136,7 @@ export default function ConfiguracoesPage() {
     const loginNormalizado = usuarioEditandoLogin.trim();
     const emailNormalizado = usuarioEditandoEmail.trim();
     if (!loginNormalizado || !emailNormalizado) {
-      setErroUsuario("Informe o login e o email do usuário.");
+      setErroUsuario("Informe o nome e o email do usuário.");
       return;
     }
 
@@ -201,22 +206,28 @@ export default function ConfiguracoesPage() {
     setClienteEditandoId(cliente.id);
     setClienteEditandoNome(cliente.nome);
     setClienteEditandoTenant(cliente.tenant);
+    setClienteEditandoCor(cliente.cor);
     setErroCliente("");
   }
 
-  function salvarCliente(clienteId: string) {
+  async function salvarCliente(clienteId: string) {
     const result = dadosCadastroClienteSchema.safeParse({
       nome: clienteEditandoNome,
       tenant: clienteEditandoTenant,
+      cor: clienteEditandoCor,
     });
     if (!result.success) {
       setErroCliente(primeiraMensagemErro(result.error));
       return;
     }
 
-    atualizarCliente(clienteId, result.data);
-    setClienteEditandoId(null);
-    setErroCliente("");
+    try {
+      await atualizarCliente(clienteId, result.data);
+      setClienteEditandoId(null);
+      setErroCliente("");
+    } catch {
+      setErroCliente("Não foi possível atualizar o cliente.");
+    }
   }
 
   function removerCliente(cliente: (typeof clientes)[number]) {
@@ -228,19 +239,24 @@ export default function ConfiguracoesPage() {
     setErroCliente("");
   }
 
-  function cadastrarCliente(event: React.FormEvent<HTMLFormElement>) {
+  async function cadastrarCliente(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const result = dadosCadastroClienteSchema.safeParse({ nome: nomeCliente, tenant });
+    const result = dadosCadastroClienteSchema.safeParse({ nome: nomeCliente, tenant, cor: corCliente });
     if (!result.success) {
       setErroCliente(primeiraMensagemErro(result.error));
       return;
     }
 
-    adicionarCliente(result.data);
-    setNomeCliente("");
-    setTenant("");
-    setErroCliente("");
+    try {
+      await adicionarCliente(result.data);
+      setNomeCliente("");
+      setTenant("");
+    setCorCliente(CORES_BADGE_ROBO[(clientes.length + 1) % CORES_BADGE_ROBO.length]);
+      setErroCliente("");
+    } catch {
+      setErroCliente("Não foi possível cadastrar o cliente.");
+    }
   }
 
   return (
@@ -285,11 +301,11 @@ export default function ConfiguracoesPage() {
 
             {adminAutorizado ? <form onSubmit={cadastrarUsuario} style={formStyle}>
               <label style={fieldStyle}>
-                <span style={labelStyle}>Login</span>
+                <span style={labelStyle}>Nome</span>
                 <input
                   value={login}
                   onChange={(event) => { setLogin(event.target.value); setErroUsuario(""); setSucessoUsuario(""); }}
-                  placeholder="nome.sobrenome"
+                  placeholder="Nome do usuário"
                   required
                   style={inputStyle}
                 />
@@ -354,7 +370,7 @@ export default function ConfiguracoesPage() {
                 <div key={usuario.id} style={listItemStyle}>
                   {usuarioEditandoId === usuario.id ? (
                     <div style={editGridStyle}>
-                      <input aria-label="Login" value={usuarioEditandoLogin} onChange={(event) => setUsuarioEditandoLogin(event.target.value)} style={compactInputStyle} />
+                      <input aria-label="Nome" value={usuarioEditandoLogin} onChange={(event) => setUsuarioEditandoLogin(event.target.value)} style={compactInputStyle} />
                       <input aria-label="Email" type="email" value={usuarioEditandoEmail} onChange={(event) => setUsuarioEditandoEmail(event.target.value)} style={compactInputStyle} />
                       <select aria-label="Tipo de usuário" value={usuarioEditandoTipo} onChange={(event) => setUsuarioEditandoTipo(event.target.value as TipoUsuario)} style={compactInputStyle}>
                         {TIPOS_USUARIO.map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
@@ -418,6 +434,8 @@ export default function ConfiguracoesPage() {
                 />
               </label>
 
+              <ColorField label="Cor do cliente" value={corCliente} onChange={setCorCliente} />
+
               <button type="submit" style={primaryButtonStyle}>
                 <Plus size={17} />
                 Cadastrar cliente
@@ -438,10 +456,12 @@ export default function ConfiguracoesPage() {
                     <div style={editGridStyle}>
                       <input aria-label="Nome do cliente" value={clienteEditandoNome} onChange={(event) => setClienteEditandoNome(event.target.value)} style={compactInputStyle} />
                       <input aria-label="Tenant do cliente" value={clienteEditandoTenant} onChange={(event) => setClienteEditandoTenant(event.target.value)} style={compactInputStyle} />
+                      <ColorField label="Cor" value={clienteEditandoCor} onChange={setClienteEditandoCor} compact />
                     </div>
                   ) : (
                     <div style={itemContentStyle}>
                       <span style={itemNameStyle}>{cliente.nome}</span>
+                      <span style={{ ...clientColorBadgeStyle, color: PALETAS_BADGE_ROBO[cliente.cor].texto, background: PALETAS_BADGE_ROBO[cliente.cor].fundo, borderColor: PALETAS_BADGE_ROBO[cliente.cor].borda }}>Cor do cliente</span>
                       <span style={tenantStyle}>{cliente.tenant}</span>
                     </div>
                   )}
@@ -449,7 +469,7 @@ export default function ConfiguracoesPage() {
                     <div style={itemActionsStyle}>
                       {clienteEditandoId === cliente.id ? (
                         <>
-                          <IconButton label="Salvar cliente" onClick={() => salvarCliente(cliente.id)}><Save size={16} /></IconButton>
+                          <IconButton label="Salvar cliente" onClick={() => void salvarCliente(cliente.id)}><Save size={16} /></IconButton>
                           <IconButton label="Cancelar edição" onClick={() => setClienteEditandoId(null)}><X size={16} /></IconButton>
                         </>
                       ) : (
@@ -468,6 +488,40 @@ export default function ConfiguracoesPage() {
         )}
       </div>
     </AppShell>
+  );
+}
+
+function ColorField({ label, value, onChange, compact = false }: { label: string; value: CorBadgeRobo; onChange: (value: CorBadgeRobo) => void; compact?: boolean }) {
+  return (
+    <div style={{ ...fieldStyle, ...(compact ? { alignSelf: "center" } : {}) }}>
+      <span style={labelStyle}>{label}</span>
+      <div role="radiogroup" aria-label={label} style={colorOptionsStyle}>
+        {CORES_BADGE_ROBO.map((cor) => {
+          const palette = PALETAS_BADGE_ROBO[cor];
+          return (
+      <button
+        key={cor}
+        type="button"
+        className={`shared-color-option${value === cor ? " is-selected" : ""}`}
+        role="radio"
+              aria-checked={value === cor}
+              aria-label={cor}
+              title={cor}
+              onClick={() => onChange(cor)}
+              style={{
+                ...colorButtonStyle,
+                color: palette.texto,
+                background: palette.fundo,
+                borderColor: value === cor ? palette.texto : palette.borda,
+                boxShadow: value === cor ? `0 0 0 2px ${palette.borda}` : "none",
+              }}
+            >
+              <span style={{ ...colorDotStyle, background: palette.texto }} />
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -785,6 +839,40 @@ const tenantStyle: React.CSSProperties = {
   flex: "0 0 auto",
   color: "var(--muted)",
   fontSize: 13,
+};
+
+const clientColorBadgeStyle: React.CSSProperties = {
+  flex: "0 0 auto",
+  border: "1px solid",
+  borderRadius: 999,
+  padding: "3px 8px",
+  fontSize: 10,
+  fontWeight: 750,
+};
+
+const colorOptionsStyle: React.CSSProperties = {
+  display: "flex",
+  minHeight: 36,
+  alignItems: "center",
+  gap: 7,
+  flexWrap: "wrap",
+};
+
+const colorButtonStyle: React.CSSProperties = {
+  display: "inline-flex",
+  width: 30,
+  height: 30,
+  alignItems: "center",
+  justifyContent: "center",
+  border: "1px solid",
+  borderRadius: 9,
+  cursor: "pointer",
+};
+
+const colorDotStyle: React.CSSProperties = {
+  width: 8,
+  height: 8,
+  borderRadius: 999,
 };
 
 const emptyStyle: React.CSSProperties = {

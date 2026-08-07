@@ -1,7 +1,7 @@
 "use client";
 
-import { Bot, Check, Filter, RotateCcw, TableProperties, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Bot, Check, Filter, GripVertical, RotateCcw, TableProperties, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { Cliente, Robo } from "@/domain/entities";
 import { PALETAS_BADGE_ROBO } from "@/domain/badge-colors";
@@ -14,6 +14,16 @@ interface RobotsOverviewTableProps {
   onUpdateCapacity?: (id: string, ideal: number, max: number) => Promise<unknown>;
 }
 
+const ROBOT_ORDER_STORAGE_KEY = "robot-center-dashboard-robot-order";
+
+function persistRobotOrder(order: string[]) {
+  try {
+    window.localStorage.setItem(ROBOT_ORDER_STORAGE_KEY, JSON.stringify(order));
+  } catch {
+    // A tabela continua ordenável durante a sessão quando o storage estiver indisponível.
+  }
+}
+
 export default function RobotsOverviewTable({ robos, clientes, onViewRobot, canEditCapacity = false, onUpdateCapacity }: RobotsOverviewTableProps) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [clienteId, setClienteId] = useState("");
@@ -22,17 +32,64 @@ export default function RobotsOverviewTable({ robos, clientes, onViewRobot, canE
   const [pacote, setPacote] = useState("");
   const [capacityError, setCapacityError] = useState("");
   const [capacityDrafts, setCapacityDrafts] = useState<Record<string, { ideal: string; max: string }>>({});
+  const [robotOrder, setRobotOrder] = useState<string[]>([]);
+  const [draggedRobotId, setDraggedRobotId] = useState<string | null>(null);
+  const [dragOverRobotId, setDragOverRobotId] = useState<string | null>(null);
+  const [clientSortDirection, setClientSortDirection] = useState<"asc" | "desc" | null>(null);
+
+  useEffect(() => {
+    try {
+      const savedOrder = window.localStorage.getItem(ROBOT_ORDER_STORAGE_KEY);
+      if (savedOrder) {
+        const parsedOrder: unknown = JSON.parse(savedOrder);
+        if (Array.isArray(parsedOrder) && parsedOrder.every((id) => typeof id === "string")) {
+          setRobotOrder(parsedOrder);
+        }
+      }
+    } catch {
+      // Ignora preferências inválidas ou storage indisponível.
+    }
+  }, []);
+
+  useEffect(() => {
+    setRobotOrder((current) => {
+      const availableIds = new Set(robos.map((robot) => robot.id));
+      const normalizedOrder = [
+        ...current.filter((id) => availableIds.has(id)),
+        ...robos.map((robot) => robot.id).filter((id) => !current.includes(id)),
+      ];
+      if (normalizedOrder.length === current.length && normalizedOrder.every((id, index) => id === current[index])) {
+        return current;
+      }
+      persistRobotOrder(normalizedOrder);
+      return normalizedOrder;
+    });
+  }, [robos]);
 
   const clientePorId = useMemo(() => new Map(clientes.map((cliente) => [cliente.id, cliente])), [clientes]);
   const sistemas = useMemo(() => [...new Set(robos.map((robo) => robo.sistema))].sort(), [robos]);
   const courtNames = useMemo(() => [...new Set(robos.map((robo) => robo.courtName))].sort(), [robos]);
   const pacotes = useMemo(() => [...new Set(robos.map((robo) => robo.pacote))].sort(), [robos]);
-  const robosFiltrados = useMemo(() => robos.filter((robo) =>
+  const robosOrdenados = useMemo(() => {
+    const positionById = new Map(robotOrder.map((id, index) => [id, index]));
+    return [...robos].sort((a, b) => {
+      if (clientSortDirection) {
+        const clientA = clientePorId.get(a.clienteId)?.nome ?? "";
+        const clientB = clientePorId.get(b.clienteId)?.nome ?? "";
+        const comparison = clientA.localeCompare(clientB, "pt-BR", { sensitivity: "base" });
+        if (comparison !== 0) return clientSortDirection === "asc" ? comparison : -comparison;
+      }
+
+      return (positionById.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+        (positionById.get(b.id) ?? Number.MAX_SAFE_INTEGER);
+    });
+  }, [clientSortDirection, clientePorId, robotOrder, robos]);
+  const robosFiltrados = useMemo(() => robosOrdenados.filter((robo) =>
     (!clienteId || robo.clienteId === clienteId) &&
     (!sistema || robo.sistema === sistema) &&
     (!courtName || robo.courtName === courtName) &&
     (!pacote || robo.pacote === pacote),
-  ), [clienteId, courtName, pacote, robos, sistema]);
+  ), [clienteId, courtName, pacote, robosOrdenados, sistema]);
   const totalFiltros = [clienteId, sistema, courtName, pacote].filter(Boolean).length;
 
   function limparFiltros() {
@@ -52,6 +109,23 @@ export default function RobotsOverviewTable({ robos, clientes, onViewRobot, canE
       },
     }));
     setCapacityError("");
+  }
+
+  function moverRobo(targetRobotId: string) {
+    if (!draggedRobotId || draggedRobotId === targetRobotId) return;
+
+    const currentOrder = robosOrdenados.map((robot) => robot.id);
+    const sourceIndex = currentOrder.indexOf(draggedRobotId);
+    const targetIndex = currentOrder.indexOf(targetRobotId);
+    if (sourceIndex < 0 || targetIndex < 0) return;
+
+    const nextOrder = [...currentOrder];
+    const [movedId] = nextOrder.splice(sourceIndex, 1);
+    nextOrder.splice(targetIndex, 0, movedId);
+    setRobotOrder(nextOrder);
+    persistRobotOrder(nextOrder);
+    setDraggedRobotId(null);
+    setDragOverRobotId(null);
   }
 
   async function aplicarCapacidade(robot: Robo) {
@@ -127,7 +201,18 @@ export default function RobotsOverviewTable({ robos, clientes, onViewRobot, canE
         <table>
           <thead>
             <tr>
-              <th>Cliente</th>
+              <th className="dashboard-robots-table__drag-column"><span className="sr-only">Ordenar</span></th>
+              <th aria-sort={clientSortDirection === "asc" ? "ascending" : clientSortDirection === "desc" ? "descending" : "none"}>
+                <button
+                  type="button"
+                  className={`dashboard-robots-table__sort${clientSortDirection ? " is-active" : ""}`}
+                  onClick={() => setClientSortDirection((current) => current === "asc" ? "desc" : "asc")}
+                  title={clientSortDirection === "asc" ? "Ordenar clientes do Z ao A" : "Ordenar clientes do A ao Z"}
+                >
+                  Cliente
+                  {clientSortDirection === "asc" ? <ArrowUp size={13} /> : clientSortDirection === "desc" ? <ArrowDown size={13} /> : <ArrowUpDown size={13} />}
+                </button>
+              </th>
               <th>Sistema</th>
               <th>Robô</th>
               <th>CourtName</th>
@@ -147,7 +232,19 @@ export default function RobotsOverviewTable({ robos, clientes, onViewRobot, canE
               return (
                 <tr
                   key={robot.id}
+                  className={dragOverRobotId === robot.id ? "is-drag-over" : undefined}
                   tabIndex={0}
+                  onDragOver={(event) => {
+                    if (!draggedRobotId) return;
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = "move";
+                    setDragOverRobotId(robot.id);
+                  }}
+                  onDragLeave={() => setDragOverRobotId((current) => current === robot.id ? null : current)}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    moverRobo(robot.id);
+                  }}
                   onClick={() => onViewRobot(robot)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" || event.key === " ") {
@@ -156,6 +253,28 @@ export default function RobotsOverviewTable({ robos, clientes, onViewRobot, canE
                     }
                   }}
                 >
+                  <td className="dashboard-robots-table__drag-cell">
+                    <button
+                      type="button"
+                      className="dashboard-robots-table__drag-handle"
+                      draggable
+                      aria-label={`Arrastar ${robot.nome} para alterar a posição`}
+                      title="Arraste para reorganizar"
+                      onClick={(event) => event.stopPropagation()}
+                      onDragStart={(event) => {
+                        event.stopPropagation();
+                        event.dataTransfer.effectAllowed = "move";
+                        event.dataTransfer.setData("text/plain", robot.id);
+                        setDraggedRobotId(robot.id);
+                      }}
+                      onDragEnd={() => {
+                        setDraggedRobotId(null);
+                        setDragOverRobotId(null);
+                      }}
+                    >
+                      <GripVertical size={16} />
+                    </button>
+                  </td>
                   <td>
                     <span className="dashboard-robots-table__client" style={{ color: PALETAS_BADGE_ROBO[robot.clienteCor].texto, background: PALETAS_BADGE_ROBO[robot.clienteCor].fundo, borderColor: PALETAS_BADGE_ROBO[robot.clienteCor].borda }}>{cliente?.nome ?? "—"}</span>
                   </td>

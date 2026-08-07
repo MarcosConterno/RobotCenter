@@ -46,7 +46,7 @@ export interface Robo {
   regrasForaDocumentacao: RegraRobo[];
 }
 
-export type DadosFormularioRobo = Omit<Robo, "id" | "ultimaPublicacaoEm" | "alteracoes"> & {
+export type DadosFormularioRobo = Omit<Robo, "id" | "ultimaPublicacaoEm" | "alteracoes" | "clienteCor"> & {
   alteracoesRealizadas: RegraRobo[];
 };
 
@@ -80,6 +80,7 @@ export interface Cliente {
   id: string;
   nome: string;
   tenant: string;
+  cor: CorBadgeRobo;
 }
 
 export type DadosCadastroCliente = Omit<Cliente, "id">;

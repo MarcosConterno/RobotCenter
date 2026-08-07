@@ -1,7 +1,8 @@
 "use client";
 
+import { ChevronDown, KeyRound, LogOut, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 
 import { createClient } from "@/lib/supabase/client";
 import ThemeToggle from "@/components/theme/ThemeToggle";
@@ -34,6 +35,12 @@ export default function Topbar({ title }: TopbarProps) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState("Usuário");
   const [roleName, setRoleName] = useState("Usuário");
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [updatingPassword, setUpdatingPassword] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -73,6 +80,37 @@ export default function Topbar({ title }: TopbarProps) {
     router.refresh();
   }
 
+  function openPasswordDialog() {
+    setUserMenuOpen(false);
+    setNewPassword("");
+    setPasswordError("");
+    setPasswordSuccess("");
+    setPasswordDialogOpen(true);
+  }
+
+  async function updatePassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (newPassword.length < 6) {
+      setPasswordError("A nova senha deve possuir pelo menos 6 caracteres.");
+      return;
+    }
+
+    setUpdatingPassword(true);
+    setPasswordError("");
+    setPasswordSuccess("");
+    const supabase = createClient();
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setUpdatingPassword(false);
+
+    if (error) {
+      setPasswordError(error.message || "Não foi possível atualizar a senha.");
+      return;
+    }
+
+    setNewPassword("");
+    setPasswordSuccess("Senha atualizada com sucesso.");
+  }
+
   return (
     <header className="app-topbar">
       <div>
@@ -81,43 +119,81 @@ export default function Topbar({ title }: TopbarProps) {
       </div>
 
       <div className="topbar-actions">
-        <label className="topbar-search">
-          <svg
-            width="15"
-            height="15"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
-          <input type="text" placeholder="Pesquisar no sistema" aria-label="Pesquisar no sistema" />
-          <span>⌘ K</span>
-        </label>
-
         <ThemeToggle />
 
         <div className="topbar-divider" />
-        <button
-          type="button"
-          className="topbar-user"
-          title="Sair do sistema"
-          aria-label={`Sair da conta de ${displayName}`}
-          onClick={logout}
-          style={{ border: 0, padding: 0, background: "transparent", cursor: "pointer", textAlign: "left" }}
-        >
-          <span className="topbar-avatar">{getInitials(displayName)}</span>
-          <span className="topbar-user-copy">
-            <strong>{displayName}</strong>
-            <small>{roleName}</small>
-          </span>
-        </button>
+        <div className="topbar-user-menu">
+          <button
+            type="button"
+            className="topbar-user"
+            aria-label={`Abrir opções da conta de ${displayName}`}
+            aria-haspopup="menu"
+            aria-expanded={userMenuOpen}
+            onClick={() => setUserMenuOpen((current) => !current)}
+          >
+            <span className="topbar-avatar">{getInitials(displayName)}</span>
+            <span className="topbar-user-copy">
+              <strong>{displayName}</strong>
+              <small>{roleName}</small>
+            </span>
+            <ChevronDown className={userMenuOpen ? "is-open" : undefined} size={15} aria-hidden="true" />
+          </button>
+
+          {userMenuOpen && (
+            <div className="topbar-user-dropdown" role="menu">
+              <button type="button" role="menuitem" onClick={openPasswordDialog}>
+                <KeyRound size={15} /> Trocar senha
+              </button>
+              <button type="button" role="menuitem" className="is-danger" onClick={() => void logout()}>
+                <LogOut size={15} /> Sair
+              </button>
+            </div>
+          )}
+        </div>
       </div>
+
+      {passwordDialogOpen && (
+        <div className="password-dialog-backdrop" role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setPasswordDialogOpen(false);
+        }}>
+          <section className="password-dialog" role="dialog" aria-modal="true" aria-labelledby="password-dialog-title">
+            <header>
+              <div>
+                <span>Segurança da conta</span>
+                <h2 id="password-dialog-title">Nova senha</h2>
+              </div>
+              <button type="button" aria-label="Fechar alteração de senha" onClick={() => setPasswordDialogOpen(false)}>
+                <X size={18} />
+              </button>
+            </header>
+            <form onSubmit={updatePassword}>
+              <label>
+                <span>Nova senha</span>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={6}
+                  value={newPassword}
+                  onChange={(event) => {
+                    setNewPassword(event.target.value);
+                    setPasswordError("");
+                    setPasswordSuccess("");
+                  }}
+                  placeholder="Digite a nova senha"
+                  autoFocus
+                  required
+                />
+              </label>
+              {passwordError && <p className="password-dialog__error" role="alert">{passwordError}</p>}
+              {passwordSuccess && <p className="password-dialog__success" role="status">{passwordSuccess}</p>}
+              <footer>
+                <button type="button" className="is-secondary" onClick={() => setPasswordDialogOpen(false)}>Cancelar</button>
+                <button type="submit" disabled={updatingPassword}>{updatingPassword ? "Atualizando..." : "Atualizar senha"}</button>
+              </footer>
+            </form>
+          </section>
+        </div>
+      )}
     </header>
   );
 }
