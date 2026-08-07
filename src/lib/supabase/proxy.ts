@@ -48,12 +48,5 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (isAuthenticated && request.nextUrl.pathname === "/login") {
-    const destination = request.nextUrl.clone();
-    destination.pathname = "/robos";
-    destination.search = "";
-    return NextResponse.redirect(destination);
-  }
-
   return response;
 }

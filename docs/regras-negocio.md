@@ -1,5 +1,12 @@
 # Regras de negócio atuais
 
+## Autenticação
+
+1. A entrada pela rota `/` sempre direciona para `/login`.
+2. A página `/login` permanece acessível mesmo quando existe uma sessão ativa.
+3. Após autenticação válida, o usuário segue para a rota interna solicitada ou, por padrão, `/robos`.
+4. Dashboard, Robôs e Configurações continuam protegidos pelo proxy e exigem sessão Supabase válida.
+
 ## Robôs
 
 1. Um Robô deve possuir nome, sistema, pacote, descrição, ambiente, stack, fila, versão e responsável não vazios.

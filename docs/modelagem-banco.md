@@ -10,7 +10,7 @@ A fonte temporária de dados é `AppDataProvider`, inicializada pelo conjunto ú
 
 | Rota | Responsabilidade | Fonte de dados |
 |---|---|---|
-| `/` | Redirecionar para `/robos`. | Nenhuma. |
+| `/` | Redirecionar sempre para `/login`, inclusive quando existir sessão ativa. | Nenhuma. |
 | `/dashboard` | Indicadores calculados, feed e tabela consolidada. | `useAppData()`. |
 | `/robos` | Filtrar, cadastrar, importar, editar, excluir e publicar robôs. | `useAppData()` e autorização administrativa. |
 | `/configuracoes` | Cadastrar, editar e arquivar usuários e clientes como administrador. | API administrativa e `useAppData()`. |
