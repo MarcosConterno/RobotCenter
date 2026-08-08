@@ -59,6 +59,15 @@ export default function RobosPage() {
     setRobotSelecionadoDoDashboard(params.get("robot")?.trim() ?? null);
   }, []);
 
+  useEffect(() => {
+    if (!detailsOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setDetailsOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [detailsOpen]);
+
   const pacotes = useMemo(
     () => [TODAS_OPCOES, ...Array.from(new Set(robos.map((robo) => robo.pacote))).sort()],
     [robos],
@@ -198,25 +207,19 @@ async function salvarRobot(dados: DadosFormularioRobo, publicar: boolean) {
 
         {detailsOpen && selectedRobot && (
           <div onClick={() => setDetailsOpen(false)} style={overlayStyle}>
-            <div onClick={(event) => event.stopPropagation()} style={modalStyle}>
-              <div style={modalHeaderStyle}>
-                <div style={{ color: "var(--text-strong)", fontWeight: 700 }}>Detalhes do robô</div>
-                <button type="button" onClick={() => setDetailsOpen(false)} style={closeButtonStyle}>Fechar</button>
-              </div>
-              <div style={{ padding: 20 }}>
-                <RobotDetails
-                  robot={selectedRobot}
-                  clientes={clientes}
-                  robos={robos}
-                  onEdit={canManageRobots ? (robo) => {
-                    setSelectedRobot(robo);
-                    setDrawerMode("edit");
-                    setDrawerOpen(true);
-                    setDetailsOpen(false);
-                  } : undefined}
-                />
-              </div>
-            </div>
+            <section role="dialog" aria-modal="true" aria-label={`Detalhes de ${selectedRobot.nome}`} onClick={(event) => event.stopPropagation()} style={modalStyle}>
+              <RobotDetails
+                robot={selectedRobot}
+                clientes={clientes}
+                robos={robos}
+                onEdit={canManageRobots ? (robo) => {
+                  setSelectedRobot(robo);
+                  setDrawerMode("edit");
+                  setDrawerOpen(true);
+                  setDetailsOpen(false);
+                } : undefined}
+              />
+            </section>
           </div>
         )}
       </AppShell>
@@ -255,16 +258,9 @@ async function salvarRobot(dados: DadosFormularioRobo, publicar: boolean) {
 
 const overlayStyle: React.CSSProperties = {
   position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center",
-  padding: 24, background: "rgba(2, 6, 23, 0.72)",
+  padding: 18, background: "color-mix(in srgb, var(--overlay) 88%, transparent)", backdropFilter: "blur(3px)",
 };
 const modalStyle: React.CSSProperties = {
-  width: "min(860px, 100%)", maxHeight: "90vh", overflow: "auto", borderRadius: 16,
-  border: "1px solid var(--border)", background: "var(--card)", boxShadow: "var(--shadow)",
-};
-const modalHeaderStyle: React.CSSProperties = {
-  display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 20px",
-  borderBottom: "1px solid var(--separator)",
-};
-const closeButtonStyle: React.CSSProperties = {
-  border: "1px solid var(--border)", background: "transparent", color: "var(--text)", padding: "6px 10px", borderRadius: 8,
+  width: "min(760px, 100%)", maxHeight: "84vh", overflow: "auto", borderRadius: 16,
+  background: "transparent", scrollbarWidth: "thin",
 };

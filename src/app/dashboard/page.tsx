@@ -1,7 +1,7 @@
 "use client";
 
 import { Activity, LayoutDashboard, TableProperties } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Feed from "@/components/dashboard/Feed";
 import { useAdminAccess } from "@/auth/AdminAccessProvider";
@@ -21,6 +21,15 @@ export default function DashboardPage() {
   function openRobotDetails(robot: Robo) {
     setSelectedRobot(robot);
   }
+
+  useEffect(() => {
+    if (!selectedRobot) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSelectedRobot(null);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [selectedRobot]);
 
   return (
     <>
@@ -91,16 +100,7 @@ export default function DashboardPage() {
             onClick={(event) => event.stopPropagation()}
             style={modalStyle}
           >
-            <div style={modalHeaderStyle}>
-              <div style={{ color: "var(--text-strong)", fontWeight: 700 }}>Detalhes do robô</div>
-              <button type="button" onClick={() => setSelectedRobot(null)} style={closeButtonStyle}>
-                Fechar
-              </button>
-            </div>
-
-            <div style={{ padding: 20 }}>
-              <RobotDetails robot={selectedRobot} clientes={clientes} robos={robos} />
-            </div>
+            <RobotDetails robot={selectedRobot} clientes={clientes} robos={robos} />
           </section>
         </div>
       )}
@@ -115,34 +115,16 @@ const overlayStyle: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  padding: 24,
-  background: "var(--overlay)",
+  padding: 18,
+  background: "color-mix(in srgb, var(--overlay) 88%, transparent)",
+  backdropFilter: "blur(3px)",
 };
 
 const modalStyle: React.CSSProperties = {
-  width: "min(860px, 100%)",
-  maxHeight: "90vh",
+  width: "min(760px, 100%)",
+  maxHeight: "84vh",
   overflow: "auto",
-  border: "1px solid var(--border)",
-  borderRadius: 16,
-  background: "var(--card)",
-  boxShadow: "var(--shadow)",
-};
-
-const modalHeaderStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  gap: 16,
-  padding: "18px 20px",
-  borderBottom: "1px solid var(--separator)",
-};
-
-const closeButtonStyle: React.CSSProperties = {
-  border: "1px solid var(--border)",
-  borderRadius: 8,
-  padding: "6px 10px",
   background: "transparent",
-  color: "var(--text)",
-  cursor: "pointer",
+  borderRadius: 16,
+  scrollbarWidth: "thin",
 };
