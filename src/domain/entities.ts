@@ -7,12 +7,73 @@ export const CATEGORIAS_PUBLICACAO = [
   "Atualização do Robô",
 ] as const;
 export const TIPOS_DISPARO_ROBO = ["Agendado", "Manual", "Gatilho"] as const;
+export const TIPOS_NODE_FLUXO = ["robot", "trigger", "system", "decision", "note", "text", "group"] as const;
+export const STATUS_FLUXO = ["rascunho", "publicado"] as const;
 
 export type AmbienteRobo = (typeof AMBIENTES_ROBO)[number];
 export type TipoUsuario = (typeof TIPOS_USUARIO)[number];
 export type CorBadgeRobo = (typeof CORES_BADGE_ROBO)[number];
 export type CategoriaPublicacao = (typeof CATEGORIAS_PUBLICACAO)[number];
 export type TipoDisparoRobo = (typeof TIPOS_DISPARO_ROBO)[number];
+export type TipoNodeFluxo = (typeof TIPOS_NODE_FLUXO)[number];
+export type StatusFluxo = (typeof STATUS_FLUXO)[number];
+
+export interface ViewportFluxo {
+  x: number;
+  y: number;
+  zoom: number;
+}
+
+export interface Fluxo {
+  id: string;
+  clienteId: string;
+  nome: string;
+  descricao: string;
+  versao: number;
+  status: StatusFluxo;
+  viewport: ViewportFluxo;
+  criadoPor: string;
+  criadoEm: string;
+  atualizadoEm: string;
+  quantidadeRobos: number;
+  quantidadeConexoes: number;
+}
+
+export interface NodeFluxo {
+  id: string;
+  fluxoId: string;
+  tipo: TipoNodeFluxo;
+  roboId: string | null;
+  posicaoX: number;
+  posicaoY: number;
+  dados: Record<string, unknown>;
+}
+
+export interface EdgeFluxo {
+  id: string;
+  fluxoId: string;
+  nodeOrigemId: string;
+  nodeDestinoId: string;
+  tipo: string;
+  rotulo: string;
+  condicao: string;
+  descricao: string;
+}
+
+export interface VersaoFluxo {
+  id: string;
+  fluxoId: string;
+  versao: number;
+  snapshot: Record<string, unknown>;
+  criadoPor: string;
+  criadoEm: string;
+}
+
+export interface DadosNovoFluxo {
+  clienteId: string;
+  nome: string;
+  descricao: string;
+}
 
 export interface RegraRobo {
   descricao: string;

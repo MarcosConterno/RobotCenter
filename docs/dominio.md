@@ -112,3 +112,15 @@ O Robô possui uma forma de disparo controlada: Agendado, Manual ou por Gatilho.
 ## Importação segura
 
 O UUID é a identidade estável do Robô na planilha. `DadosImportacaoRobo` separa a operação dos campos presentes na linha, permitindo atualização parcial sem transformar células vazias em novos valores.
+
+## Fluxos por Cliente
+
+Um Fluxo é a documentação visual de uma automação e pertence obrigatoriamente a um Cliente. O cadastro principal mantém nome, descrição, status, versão atual e viewport. A composição é normalizada em Nodes e Edges; snapshots completos existem apenas no histórico de versões.
+
+- `FlowNode` representa robô, gatilho, sistema, decisão, nota, texto ou grupo.
+- Nodes de robô referenciam `robos.id`; nome, ambiente, CourtName, sistema e status são sempre lidos do cadastro atual do Robô.
+- `FlowEdge` conecta dois Nodes do mesmo Fluxo e pode registrar tipo, rótulo, condição e descrição de negócio.
+- `FlowVersion` é um snapshot imutável produzido na publicação.
+- Notas, textos, grupos e decisões documentam o processo, sem alterar Robôs.
+
+O papel Cliente edita apenas Fluxos do seu Cliente. Admin cria, edita, publica e exclui qualquer Fluxo. Operador e Suporte possuem somente visualização.

@@ -117,6 +117,175 @@ export type Database = {
           },
         ]
       }
+      flow_edges: {
+        Row: {
+          condition: string
+          created_at: string
+          created_by: string
+          description: string
+          flow_id: string
+          id: string
+          label: string
+          source_node_id: string
+          target_node_id: string
+          type: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          condition?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          flow_id: string
+          id?: string
+          label?: string
+          source_node_id: string
+          target_node_id: string
+          type?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          condition?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          flow_id?: string
+          id?: string
+          label?: string
+          source_node_id?: string
+          target_node_id?: string
+          type?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "flow_edges_flow_id_fkey"; columns: ["flow_id"]; isOneToOne: false; referencedRelation: "flows"; referencedColumns: ["id"] },
+          { foreignKeyName: "flow_edges_source_same_flow_fkey"; columns: ["source_node_id", "flow_id"]; isOneToOne: false; referencedRelation: "flow_nodes"; referencedColumns: ["id", "flow_id"] },
+          { foreignKeyName: "flow_edges_target_same_flow_fkey"; columns: ["target_node_id", "flow_id"]; isOneToOne: false; referencedRelation: "flow_nodes"; referencedColumns: ["id", "flow_id"] },
+        ]
+      }
+      flow_nodes: {
+        Row: {
+          created_at: string
+          created_by: string
+          data: Json
+          flow_id: string
+          id: string
+          position_x: number
+          position_y: number
+          robot_id: string | null
+          type: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          data?: Json
+          flow_id: string
+          id?: string
+          position_x?: number
+          position_y?: number
+          robot_id?: string | null
+          type: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          data?: Json
+          flow_id?: string
+          id?: string
+          position_x?: number
+          position_y?: number
+          robot_id?: string | null
+          type?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "flow_nodes_flow_id_fkey"; columns: ["flow_id"]; isOneToOne: false; referencedRelation: "flows"; referencedColumns: ["id"] },
+          { foreignKeyName: "flow_nodes_robot_id_fkey"; columns: ["robot_id"]; isOneToOne: false; referencedRelation: "robos"; referencedColumns: ["id"] },
+        ]
+      }
+      flow_versions: {
+        Row: {
+          created_at: string
+          created_by: string
+          flow_id: string
+          id: string
+          snapshot: Json
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          flow_id: string
+          id?: string
+          snapshot: Json
+          version: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          flow_id?: string
+          id?: string
+          snapshot?: Json
+          version?: number
+        }
+        Relationships: [
+          { foreignKeyName: "flow_versions_flow_id_fkey"; columns: ["flow_id"]; isOneToOne: false; referencedRelation: "flows"; referencedColumns: ["id"] },
+        ]
+      }
+      flows: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          name: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          viewport: Json
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          name: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          viewport?: Json
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          name?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          viewport?: Json
+        }
+        Relationships: [
+          { foreignKeyName: "flows_client_id_fkey"; columns: ["client_id"]; isOneToOne: false; referencedRelation: "clientes"; referencedColumns: ["id"] },
+          { foreignKeyName: "flows_created_by_fkey"; columns: ["created_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "flows_updated_by_fkey"; columns: ["updated_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
+      }
       permissions: {
         Row: {
           acao: string
@@ -642,6 +811,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      publish_flow: {
+        Args: { target_flow_id: string; target_snapshot: Json }
+        Returns: number
+      }
       update_robot_capacity: {
         Args: {
           target_ideal: number

@@ -39,8 +39,13 @@ export async function GET() {
   }
 
   const roles = [...new Set(userRoles?.flatMap((item) => extractRoleCodes(item.roles)) ?? [])];
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("cliente_id")
+    .eq("id", user.id)
+    .single();
   return NextResponse.json(
-    { allowed: roles.includes("admin"), roles },
+    { allowed: roles.includes("admin"), roles, clientId: profile?.cliente_id ?? null },
     { status: 200, headers: { "Cache-Control": "no-store" } },
   );
 }

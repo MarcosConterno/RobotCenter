@@ -200,6 +200,46 @@ Todos os formulários validam antes de chamar o provedor. Campos obrigatórios d
 - Unicidade de nome do robô, login, nome do cliente e tenant.
 - Significado técnico de tenant.
 - Se Sistema e Pacote continuarão texto ou serão catálogos.
+
+## Módulo de Fluxos por Cliente
+
+```mermaid
+erDiagram
+  clientes ||--o{ flows : possui
+  profiles ||--o{ flows : cria
+  flows ||--o{ flow_nodes : contem
+  flows ||--o{ flow_edges : conecta
+  flows ||--o{ flow_versions : versiona
+  robos ||--o{ flow_nodes : referencia
+  flow_nodes ||--o{ flow_edges : origem
+  flow_nodes ||--o{ flow_edges : destino
+```
+
+### `flows`
+
+`id`, `client_id`, `name`, `description`, `version`, `status`, `viewport`, `created_by`, `created_at`, `updated_at`, `updated_by`.
+
+- `client_id` é obrigatório e usa `on delete restrict`.
+- `status` aceita `rascunho` ou `publicado`.
+- `viewport` armazena somente `x`, `y` e `zoom`; nodes e edges não são agregados neste JSON.
+
+### `flow_nodes`
+
+`id`, `flow_id`, `type`, `robot_id`, `position_x`, `position_y`, `data`, auditoria e timestamps.
+
+- `type`: `robot`, `trigger`, `system`, `decision`, `note`, `text` ou `group`.
+- `robot_id` é obrigatório somente para o tipo `robot`.
+- A policy valida que o Robô pertence ao mesmo Cliente do Fluxo.
+
+### `flow_edges`
+
+`id`, `flow_id`, `source_node_id`, `target_node_id`, `type`, `label`, `condition`, `description`, auditoria e timestamps. Chaves estrangeiras compostas garantem que origem e destino pertençam ao mesmo Fluxo.
+
+### `flow_versions`
+
+`id`, `flow_id`, `version`, `snapshot`, `created_by`, `created_at`. A combinação `(flow_id, version)` é única. Não existem grants ou policies de update/delete para usuários autenticados.
+
+Índices cobrem `client_id`, `flow_id`, `robot_id`, nodes de origem/destino, autoria e ordenação do histórico. Todas as quatro tabelas possuem RLS habilitada.
 - Se Responsável continuará texto ou ganhará entidade própria de equipe/pessoa.
 - Relações Cliente–Robô e Cliente–Usuário.
 - Estratégia Supabase Auth, perfis, papéis e RLS.

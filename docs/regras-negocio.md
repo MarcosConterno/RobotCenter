@@ -131,3 +131,19 @@
 - Linhas de criação mantêm o ID vazio. O cliente continua sendo relacionado pelo nome.
 - Regras e alterações históricas não são substituídas pela planilha de atualização.
 - A gravação exige confirmação após uma prévia das criações e atualizações.
+
+## Fluxos por Cliente
+
+1. Todo Fluxo pertence a exatamente um Cliente ativo.
+2. Somente Admin cria ou exclui Fluxos.
+3. Admin edita e publica qualquer Fluxo; Cliente edita e publica somente Fluxos do próprio Cliente.
+4. Operador e Suporte visualizam todos os Fluxos, sem criar, editar, publicar ou excluir.
+5. Usuário Cliente não recebe filtro de Cliente; o escopo é determinado pelo profile autenticado e pela RLS.
+6. Um Node do tipo `robot` referencia obrigatoriamente um Robô ativo do mesmo Cliente do Fluxo.
+7. Dados principais do Robô não são editados pelo Fluxo e refletem o cadastro atual.
+8. Uma Edge conecta apenas Nodes pertencentes ao mesmo Fluxo e não pode conectar um Node a ele mesmo.
+9. Posição de Nodes e viewport são persistidos; propriedades de conexão ficam em `flow_edges`.
+10. Publicar incrementa a versão, altera o status para `publicado` e cria snapshot imutável na mesma transação.
+11. Versões anteriores abrem exclusivamente em modo de visualização.
+12. Alterações não salvas impedem a publicação até que o estado normalizado seja persistido.
+13. Alterar URL, payload ou `client_id` não amplia acesso; a autorização é validada no PostgreSQL.

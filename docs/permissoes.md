@@ -46,4 +46,17 @@ As policies consultam `roles`, `permissions`, `user_roles` e `role_permissions` 
 - O histórico do Dashboard respeita `publicacoes_select`; somente papéis com `publications.create` podem inserir registros por **Salvar e publicar**.
 - O bucket privado `robot-manuals` permite leitura somente a quem possui `robots.read` e acesso ao cliente do robô. Upload e substituição exigem `robots.update`; não existe acesso anônimo.
 - Os relacionamentos de gatilho fazem parte de `robos`: leitura segue `robots.read` e alteração segue `robots.update`, com o mesmo isolamento por cliente já aplicado pela RLS.
+
+## Fluxos
+
+| Papel | Ler | Criar | Editar/Publicar | Excluir |
+|---|---:|---:|---:|---:|
+| Admin | Todos | Sim | Todos | Sim |
+| Operador | Todos | Não | Não | Não |
+| Suporte | Todos | Não | Não | Não |
+| Cliente | Próprio cliente | Não | Próprio cliente | Não |
+
+As permissões RBAC são `flows.read`, `flows.create`, `flows.update`, `flows.delete` e `flows.publish`. As policies de `flow_nodes`, `flow_edges` e `flow_versions` herdam o cliente consultando o Fluxo relacionado. `client_id` recebido da interface nunca é suficiente para autorizar uma operação.
+
+O RPC `publish_flow` usa `SECURITY INVOKER`: as policies e permissões da sessão continuam ativas durante a atualização do Fluxo e a criação da versão. Não há acesso anônimo às tabelas ou ao RPC.
 - A importação permanece restrita à capacidade administrativa. UUIDs fora das linhas visíveis ao usuário são rejeitados na validação, e a RLS continua sendo a barreira definitiva na gravação.

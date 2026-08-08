@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, ChevronRight, LayoutDashboard, Settings2, Sparkles } from "lucide-react";
+import { Bot, ChevronRight, GitFork, LayoutDashboard, Settings2, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -9,15 +9,17 @@ import { useAdminAccess } from "@/auth/AdminAccessProvider";
 const navigation = [
   { href: "/dashboard", label: "Dashboard", description: "Visão geral", icon: LayoutDashboard, access: "dashboard" },
   { href: "/robos", label: "Robôs", description: "Consulta e detalhes", icon: Bot, access: "robots" },
+  { href: "/fluxos", label: "Fluxos", description: "Documentação visual", icon: GitFork, access: "flows" },
   { href: "/configuracoes", label: "Configurações", description: "Usuários e clientes", icon: Settings2, access: "settings" },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { canAccessRobots, canAccessSettings, status } = useAdminAccess();
+  const { canAccessRobots, canAccessFlows, canAccessSettings, status } = useAdminAccess();
   const visibleNavigation = navigation.filter((item) => (
     item.access === "dashboard"
     || (item.access === "robots" && canAccessRobots)
+    || (item.access === "flows" && canAccessFlows)
     || (item.access === "settings" && canAccessSettings)
   ));
 
