@@ -372,6 +372,8 @@ export type Database = {
           id: string
           ideal: number
           max: number
+          manual_nome: string | null
+          manual_path: string | null
           nome: string
           pacote: string
           pacote_cor: string
@@ -398,6 +400,8 @@ export type Database = {
           id?: string
           ideal?: number
           max?: number
+          manual_nome?: string | null
+          manual_path?: string | null
           nome: string
           pacote: string
           pacote_cor?: string
@@ -424,6 +428,8 @@ export type Database = {
           id?: string
           ideal?: number
           max?: number
+          manual_nome?: string | null
+          manual_path?: string | null
           nome?: string
           pacote?: string
           pacote_cor?: string

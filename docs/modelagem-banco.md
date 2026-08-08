@@ -245,6 +245,10 @@ A migration `20260807230000_add_client_color.sql` adiciona `clientes.cor`, com v
 ## Persistência do feed de atualizações
 
 O componente **Atualizações recentes** lê `public.publicacoes`, ordenada por `publicada_em` decrescente. A ação **Salvar e publicar** insere o evento nessa tabela pelo cliente autenticado do Supabase. `localStorage` não é fonte de persistência para novas publicações.
+
+## Manual PDF do robô
+
+`robos.manual_path` e `robos.manual_nome` referenciam o manual armazenado no bucket privado `robot-manuals`. O objeto usa o caminho `<robo_id>/manual.pdf`, aceita somente PDF de até 20 MB e é aberto por URL assinada temporária. O banco não armazena o conteúdo binário.
 ## Distribuição automática de cores
 
 `clientes.cor` guarda a cor visual única do cadastro do cliente. `robos.pacote_cor` é sincronizada por nome normalizado de pacote: o trigger `robos_set_package_color` reutiliza a cor existente ou escolhe a próxima opção da paleta para pacotes inéditos. A migration preserva os registros e não altera as policies RLS.

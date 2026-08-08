@@ -31,6 +31,24 @@ function gerarTenant(nome: string) {
     .replace(/^-|-$/g, "") || "cliente-importado";
 }
 
+async function enviarManualRobo(roboId: string, arquivo?: File | null) {
+  if (!arquivo) return null;
+  if (arquivo.type !== "application/pdf") throw new Error("O manual deve ser um arquivo PDF.");
+  if (arquivo.size > 20 * 1024 * 1024) throw new Error("O manual deve ter no máximo 20 MB.");
+
+  const supabase = createClient();
+  const manualPath = `${roboId}/manual.pdf`;
+  const { error: uploadError } = await supabase.storage
+    .from("robot-manuals")
+    .upload(manualPath, arquivo, { contentType: "application/pdf", upsert: true });
+  if (uploadError) throw uploadError;
+  const { error: updateError } = await supabase.from("robos")
+    .update({ manual_path: manualPath, manual_nome: arquivo.name })
+    .eq("id", roboId);
+  if (updateError) throw updateError;
+  return { manualPath, manualNome: arquivo.name };
+}
+
 function harmonizarCoresCompartilhadas(robos: Robo[], clientes: Cliente[]) {
   const clientePorId = new Map(clientes.map((cliente) => [cliente.id, cliente]));
   const corPacotePorNome = new Map<string, Robo["pacoteCor"]>();
@@ -112,6 +130,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         fila: item.fila,
         versao: item.versao,
         responsavel: item.responsavel,
+        manualPath: item.manual_path,
+        manualNome: item.manual_nome,
         ultimaPublicacaoEm: publicacoes.find((publicacao) => publicacao.robo_id === item.id)?.publicada_em ?? item.updated_at,
         alteracoes: alteracoes.filter((alteracao) => alteracao.robo_id === item.id).map((alteracao) => ({ id: alteracao.id, descricao: alteracao.descricao, realizadaEm: alteracao.realizada_em })),
         regras: regras.filter((regra) => regra.robo_id === item.id && regra.tipo === "documentacao").map(({ descricao }) => ({ descricao })),
@@ -122,7 +142,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function cadastrarRobo(dados: DadosFormularioRobo) {
-    const { alteracoesRealizadas, ...cadastro } = dados;
+    const { alteracoesRealizadas, manualArquivo, ...cadastro } = dados;
     const supabase = createClient();
     const clienteCor = clientes.find((cliente) => cliente.id === cadastro.clienteId)?.cor ?? "azul";
     const { data: roboCriado, error: erroRobo } = await supabase.from("robos").insert({
@@ -133,6 +153,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       responsavel: cadastro.responsavel,
     }).select("id,updated_at").single();
     if (erroRobo) throw erroRobo;
+    const manual = await enviarManualRobo(roboCriado.id, manualArquivo);
 
     const regras = [
       ...cadastro.regras.map((regra, ordem) => ({ robo_id: roboCriado.id, descricao: regra.descricao, ordem, tipo: "documentacao" })),
@@ -155,6 +176,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       clienteCor,
       id: roboCriado.id,
       ultimaPublicacaoEm: roboCriado.updated_at,
+      manualPath: manual?.manualPath ?? cadastro.manualPath ?? null,
+      manualNome: manual?.manualNome ?? cadastro.manualNome ?? null,
       alteracoes: alteracoesCriadas.map((alteracao) => ({ id: alteracao.id, descricao: alteracao.descricao, realizadaEm: alteracao.realizada_em })),
     };
     setRobos((atuais) => [...atuais, novoRobo]);
@@ -165,7 +188,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const atual = robos.find((robo) => robo.id === id);
     if (!atual) return null;
 
-    const { alteracoesRealizadas, ...cadastro } = dados;
+    const { alteracoesRealizadas, manualArquivo, ...cadastro } = dados;
     const supabase = createClient();
     const { error } = await supabase.from("robos").update({
       cliente_id: cadastro.clienteId, nome: cadastro.nome,
@@ -175,6 +198,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       versao: cadastro.versao, responsavel: cadastro.responsavel,
     }).eq("id", id);
     if (error) throw error;
+    const manual = await enviarManualRobo(id, manualArquivo);
     const clienteSelecionado = clientes.find((cliente) => cliente.id === cadastro.clienteId);
     const idsPacoteMesmoNome = robos
       .filter((robo) => normalizarIdentificador(robo.pacote) === normalizarIdentificador(cadastro.pacote))
@@ -191,7 +215,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       realizadaEm: agora,
     }));
     const novaAlteracao = [...novasAlteracoes, ...atual.alteracoes];
-    const atualizado = { ...atual, ...cadastro, clienteCor: clienteSelecionado?.cor ?? atual.clienteCor, alteracoes: novaAlteracao };
+    const atualizado = {
+      ...atual,
+      ...cadastro,
+      manualPath: manual?.manualPath ?? cadastro.manualPath ?? atual.manualPath ?? null,
+      manualNome: manual?.manualNome ?? cadastro.manualNome ?? atual.manualNome ?? null,
+      clienteCor: clienteSelecionado?.cor ?? atual.clienteCor,
+      alteracoes: novaAlteracao,
+    };
     setRobos((atuais) => atuais.map((robo) => {
       const mesmoPacote = normalizarIdentificador(robo.pacote) === normalizarIdentificador(cadastro.pacote);
       const comCores = {

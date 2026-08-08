@@ -40,6 +40,8 @@ export interface Robo {
   fila: string;
   versao: string;
   responsavel: string;
+  manualPath?: string | null;
+  manualNome?: string | null;
   ultimaPublicacaoEm: string;
   alteracoes: AlteracaoRobo[];
   regras: RegraRobo[];
@@ -48,6 +50,7 @@ export interface Robo {
 
 export type DadosFormularioRobo = Omit<Robo, "id" | "ultimaPublicacaoEm" | "alteracoes" | "clienteCor"> & {
   alteracoesRealizadas: RegraRobo[];
+  manualArquivo?: File | null;
 };
 
 export type DadosImportacaoRobo = Omit<DadosFormularioRobo, "clienteId"> & {

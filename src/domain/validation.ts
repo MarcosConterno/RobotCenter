@@ -25,6 +25,12 @@ export const dadosFormularioRoboSchema = z.object({
   fila: textoObrigatorio("Fila"),
   versao: textoObrigatorio("Versão"),
   responsavel: textoObrigatorio("Responsável"),
+  manualPath: z.string().nullable().optional(),
+  manualNome: z.string().nullable().optional(),
+  manualArquivo: z.custom<File | null>(
+    (arquivo) => arquivo == null || (typeof File !== "undefined" && arquivo instanceof File),
+    "Selecione um arquivo PDF válido.",
+  ).optional(),
   alteracoesRealizadas: z.array(regraRoboSchema),
   regras: z.array(regraRoboSchema),
   regrasForaDocumentacao: z.array(regraRoboSchema),

@@ -100,3 +100,7 @@ O campo apresentado como `Nome` no cadastro de usuários continua persistido em 
 O histórico exibido em **Atualizações recentes** é composto por `Publicacao` persistida no banco. Um novo robô publicado recebe a categoria `Novo Robô`; uma edição publicada recebe `Atualização do Robô`.
 
 Alterações de regras são registradas na descrição da publicação com a categoria funcional e o conteúdo da regra, permitindo diferenciar `Documentação` de `Fora da Documentação` sem criar uma entidade histórica paralela.
+
+## Manual do robô
+
+O Robô pode possuir um manual PDF opcional. `manualPath` identifica o objeto privado no Storage e `manualNome` preserva o nome apresentado ao usuário. O manual não integra regras ou publicações e pode ser substituído durante a edição.

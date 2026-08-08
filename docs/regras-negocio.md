@@ -118,3 +118,5 @@
 - O feed é reconstruído de `public.publicacoes`; novas publicações não dependem do armazenamento do navegador.
 - Somente uma sessão com `publications.create` pode registrar uma atualização, vinculada a um robô ativo.
 - Ao publicar regras novas, a descrição identifica separadamente regras de `Documentação` e de `Fora da Documentação`, incluindo o texto de cada regra. Quando as duas categorias mudam, ambas aparecem no mesmo item do feed.
+- O manual do robô é opcional, deve ser PDF e possuir no máximo 20 MB.
+- Um novo upload substitui o arquivo lógico `<robo_id>/manual.pdf`; os detalhes abrem o manual em modal usando URL assinada temporária.

@@ -10,10 +10,12 @@ import {
   Pencil,
   Server,
   User,
+  X,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { formatarData } from "@/domain/formatters";
 import type { Cliente, Robo } from "@/domain/entities";
+import { createClient } from "@/lib/supabase/client";
 
 interface RobotDetailsProps {
   robot: Robo | null;
@@ -23,6 +25,9 @@ interface RobotDetailsProps {
 
 export default function RobotDetails({ robot, clientes = [], onEdit }: RobotDetailsProps) {
   const [rulesTab, setRulesTab] = useState<"documentacao" | "fora-documentacao">("documentacao");
+  const [manualUrl, setManualUrl] = useState<string | null>(null);
+  const [manualLoading, setManualLoading] = useState(false);
+  const [manualError, setManualError] = useState("");
   if (!robot) {
     return (
       <div style={emptyStyle}>
@@ -36,6 +41,19 @@ export default function RobotDetails({ robot, clientes = [], onEdit }: RobotDeta
   const regrasVisiveis = rulesTab === "documentacao" ? regras : regrasForaDocumentacao;
   const cliente = clientes.find((item) => item.id === robot.clienteId);
 
+  async function abrirManual() {
+    if (!robot?.manualPath) return;
+    setManualLoading(true);
+    setManualError("");
+    const { data, error } = await createClient().storage.from("robot-manuals").createSignedUrl(robot.manualPath, 900);
+    setManualLoading(false);
+    if (error) {
+      setManualError("Não foi possível abrir o manual.");
+      return;
+    }
+    setManualUrl(data.signedUrl);
+  }
+
   return (
     <article style={containerStyle}>
       <header style={headerStyle}>
@@ -45,7 +63,15 @@ export default function RobotDetails({ robot, clientes = [], onEdit }: RobotDeta
           </div>
           <div style={{ minWidth: 0 }}>
             <div style={eyebrowStyle}>ROBÔ INTEGRADOR</div>
-            <h2 style={titleStyle}>{robot.nome}</h2>
+            <div style={titleRowStyle}>
+              <h2 style={titleStyle}>{robot.nome}</h2>
+              {robot.manualPath && (
+                <button type="button" onClick={abrirManual} disabled={manualLoading} style={manualButtonStyle}>
+                  <FileText size={14} /> {manualLoading ? "Abrindo..." : robot.manualNome ?? "Manual.pdf"}
+                </button>
+              )}
+            </div>
+            {manualError && <span style={manualErrorStyle}>{manualError}</span>}
             <div style={badgesStyle}>
               <span style={systemBadgeStyle}>{robot.sistema}</span>
               <span
@@ -141,6 +167,21 @@ export default function RobotDetails({ robot, clientes = [], onEdit }: RobotDeta
           </div>
         </DetailSection>
       </div>
+
+      {manualUrl && (
+        <div role="dialog" aria-modal="true" aria-label={`Manual de ${robot.nome}`} style={manualBackdropStyle} onMouseDown={() => setManualUrl(null)}>
+          <div style={manualModalStyle} onMouseDown={(event) => event.stopPropagation()}>
+            <header style={manualModalHeaderStyle}>
+              <div>
+                <strong style={manualModalTitleStyle}>{robot.manualNome ?? "Manual do robô"}</strong>
+                <span style={manualModalSubtitleStyle}>{robot.nome}</span>
+              </div>
+              <button type="button" aria-label="Fechar manual" onClick={() => setManualUrl(null)} style={manualCloseStyle}><X size={18} /></button>
+            </header>
+            <iframe title={`Manual de ${robot.nome}`} src={manualUrl} style={manualFrameStyle} />
+          </div>
+        </div>
+      )}
     </article>
   );
 }
@@ -186,6 +227,16 @@ const identityStyle = { display: "flex", alignItems: "center", gap: 16, minWidth
 const avatarStyle = { width: 54, height: 54, flexShrink: 0, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--accent-soft)", border: "1px solid var(--accent)" } as const;
 const eyebrowStyle = { color: "var(--muted)", fontSize: 10, fontWeight: 800, letterSpacing: 1.4, marginBottom: 4 } as const;
 const titleStyle = { color: "var(--text-strong)", margin: 0, fontSize: 24, lineHeight: 1.2 } as const;
+const titleRowStyle = { display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10 } as const;
+const manualButtonStyle = { maxWidth: 260, height: 30, display: "inline-flex", alignItems: "center", gap: 6, overflow: "hidden", border: "1px solid var(--border)", borderRadius: 8, padding: "0 9px", color: "var(--accent)", background: "var(--card)", fontSize: 11, fontWeight: 600, textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: "pointer" } as const;
+const manualErrorStyle = { display: "block", marginTop: 5, color: "var(--danger)", fontSize: 10.5 } as const;
+const manualBackdropStyle = { position: "fixed", zIndex: 250, inset: 0, display: "grid", placeItems: "center", padding: 24, background: "rgba(3, 10, 20, .72)", backdropFilter: "blur(4px)" } as const;
+const manualModalStyle = { width: "min(1080px, 96vw)", height: "min(820px, 92vh)", display: "grid", gridTemplateRows: "58px minmax(0, 1fr)", overflow: "hidden", border: "1px solid var(--border)", borderRadius: 14, background: "var(--card)", boxShadow: "0 28px 90px rgba(0,0,0,.35)" } as const;
+const manualModalHeaderStyle = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "0 16px 0 20px", borderBottom: "1px solid var(--separator)" } as const;
+const manualModalTitleStyle = { display: "block", color: "var(--text-strong)", fontSize: 13 } as const;
+const manualModalSubtitleStyle = { display: "block", marginTop: 2, color: "var(--muted)", fontSize: 10.5 } as const;
+const manualCloseStyle = { width: 34, height: 34, display: "inline-flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-2)", background: "var(--surface)", cursor: "pointer" } as const;
+const manualFrameStyle = { width: "100%", height: "100%", border: 0, background: "#fff" } as const;
 const badgesStyle = { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 9 } as const;
 const systemBadgeStyle = { color: "var(--text-2)", fontSize: 12, padding: "4px 9px", borderRadius: 999, background: "var(--surface)" } as const;
 const statusBadgeStyle = { display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, padding: "4px 9px", borderRadius: 999, fontWeight: 600 } as const;

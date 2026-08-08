@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, FileText, GripVertical, Layers3, Plus, Save, Send, Trash2, X } from "lucide-react";
+import { Bot, FileText, GripVertical, Layers3, Paperclip, Plus, Save, Send, Trash2, Upload, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { formatarData } from "@/domain/formatters";
 import { AMBIENTES_ROBO, type AlteracaoRobo, type Cliente, type DadosFormularioRobo } from "@/domain/entities";
@@ -110,6 +110,26 @@ export default function RobotForm({
                 <span style={{ ...switchKnobStyle, transform: form.ativo ? "translateX(18px)" : "translateX(0)" }} />
               </span>
             </label>
+          </div>
+          <div style={fullWidthStyle}>
+            <span style={labelStyle}>Manual do robô</span>
+            <label style={manualUploadStyle}>
+              <span style={manualUploadIconStyle}><Upload size={17} /></span>
+              <span style={{ minWidth: 0 }}>
+                <strong style={manualUploadTitleStyle}>{form.manualArquivo?.name ?? form.manualNome ?? "Selecionar manual em PDF"}</strong>
+                <small style={manualUploadHintStyle}>PDF de até 20 MB. Um novo arquivo substitui o manual atual.</small>
+              </span>
+              <input type="file" accept="application/pdf,.pdf" onChange={(event) => {
+                const arquivo = event.target.files?.[0] ?? null;
+                if (arquivo && arquivo.type !== "application/pdf") {
+                  setFormError("O manual deve ser um arquivo PDF.");
+                  event.target.value = "";
+                  return;
+                }
+                update("manualArquivo", arquivo);
+              }} style={hiddenFileInputStyle} />
+            </label>
+            {(form.manualArquivo || form.manualNome) && <span style={manualSelectedStyle}><Paperclip size={12} /> {form.manualArquivo?.name ?? form.manualNome}</span>}
           </div>
         </div>
       </FormSection>
@@ -341,6 +361,12 @@ function NumberField({ label, value, onChange }: { label: string; value: number;
 }
 
 const formStyle = { display: "flex", flexDirection: "column", gap: 16 } as const;
+const manualUploadStyle = { minHeight: 58, display: "flex", alignItems: "center", gap: 11, padding: "10px 12px", border: "1px dashed var(--border-strong)", borderRadius: 9, background: "var(--surface)", cursor: "pointer" } as const;
+const manualUploadIconStyle = { width: 34, height: 34, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0, borderRadius: 8, color: "var(--accent)", background: "var(--accent-soft)" } as const;
+const manualUploadTitleStyle = { display: "block", overflow: "hidden", color: "var(--text)", fontSize: 12, textOverflow: "ellipsis", whiteSpace: "nowrap" } as const;
+const manualUploadHintStyle = { display: "block", marginTop: 3, color: "var(--muted)", fontSize: 10.5 } as const;
+const hiddenFileInputStyle = { position: "absolute", width: 1, height: 1, opacity: 0, pointerEvents: "none" } as const;
+const manualSelectedStyle = { display: "inline-flex", alignItems: "center", gap: 5, marginTop: 6, color: "var(--accent)", fontSize: 10.5 } as const;
 const sectionsGridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(310px, 1fr))", gap: 16 } as const;
 const fieldsGridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 14 } as const;
 const technicalFieldsGridStyle = { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 14 } as const;
@@ -438,6 +464,9 @@ const FORMULARIO_ROBO_INICIAL: DadosFormularioRobo = {
   fila: "",
   versao: "",
   responsavel: "",
+  manualPath: null,
+  manualNome: null,
+  manualArquivo: null,
   alteracoesRealizadas: [],
   regras: [],
   regrasForaDocumentacao: [],
