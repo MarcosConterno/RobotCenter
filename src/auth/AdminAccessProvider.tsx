@@ -18,6 +18,7 @@ interface AdminAccessContextValue {
   canCreateFlows: boolean;
   canDeleteFlows: boolean;
   clientId: string | null;
+  displayName: string;
   roles: string[];
   status: AccessStatus;
   error: string;
@@ -30,15 +31,17 @@ export function AdminAccessProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AccessStatus>("loading");
   const [error, setError] = useState("");
   const [clientId, setClientId] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState("Usuário");
 
   useEffect(() => {
     let active = true;
     void fetch("/api/admin/access", { cache: "no-store" })
       .then(async (response) => {
-        const payload = await response.json() as { roles?: string[]; clientId?: string | null; error?: string };
+        const payload = await response.json() as { roles?: string[]; clientId?: string | null; displayName?: string; error?: string };
         if (!active) return;
         setRoles(response.ok && Array.isArray(payload.roles) ? payload.roles : []);
         setClientId(response.ok ? payload.clientId ?? null : null);
+        setDisplayName(response.ok ? payload.displayName ?? "Usuário" : "Usuário");
         setError(response.status === 401 ? "" : payload.error ?? "");
       })
       .catch(() => {
@@ -69,11 +72,12 @@ export function AdminAccessProvider({ children }: { children: ReactNode }) {
       canCreateFlows: isAdmin,
       canDeleteFlows: isAdmin,
       clientId,
+      displayName,
       roles,
       status,
       error,
     };
-  }, [clientId, error, roles, status]);
+  }, [clientId, displayName, error, roles, status]);
   return <AdminAccessContext.Provider value={value}>{children}</AdminAccessContext.Provider>;
 }
 

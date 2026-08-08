@@ -811,6 +811,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_flow_creator_name: {
+        Args: { target_flow_id: string }
+        Returns: string
+      }
       publish_flow: {
         Args: { target_flow_id: string; target_snapshot: Json }
         Returns: number

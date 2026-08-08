@@ -7,7 +7,7 @@ import { type FormEvent, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import ThemeToggle from "@/components/theme/ThemeToggle";
 
-interface TopbarProps { title: string; }
+interface TopbarProps { title: string; bare?: boolean; }
 
 function getRoleName(roleRelation: unknown) {
   if (Array.isArray(roleRelation)) {
@@ -31,7 +31,7 @@ function getInitials(name: string) {
     .join("") || "US";
 }
 
-export default function Topbar({ title }: TopbarProps) {
+export default function Topbar({ title, bare = false }: TopbarProps) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState("Usuário");
   const [roleName, setRoleName] = useState("Usuário");
@@ -112,11 +112,8 @@ export default function Topbar({ title }: TopbarProps) {
   }
 
   return (
-    <header className="app-topbar">
-      <div>
-        <div className="topbar-context">ROBOT CENTER</div>
-        <h1 className="topbar-title">{title}</h1>
-      </div>
+    <header className={`app-topbar${bare ? " is-bare" : ""}`}>
+      <h1 className="sr-only">{title}</h1>
 
       <div className="topbar-actions">
         <ThemeToggle />

@@ -33,6 +33,7 @@ export interface Fluxo {
   status: StatusFluxo;
   viewport: ViewportFluxo;
   criadoPor: string;
+  criadorNome: string;
   criadoEm: string;
   atualizadoEm: string;
   quantidadeRobos: number;

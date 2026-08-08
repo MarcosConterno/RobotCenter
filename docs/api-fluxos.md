@@ -8,6 +8,7 @@ O módulo usa o cliente Supabase autenticado e Row Level Security. Não expõe u
 - `flow_nodes`, `flow_edges`: composição normalizada de um Fluxo.
 - `flow_versions`: histórico imutável.
 - `robos`: dados atuais para nodes vinculados por `robot_id`.
+- `get_flow_creator_name(target_flow_id)`: retorna somente o login do criador quando a sessão possui `flows.read` e acesso ao Cliente do Fluxo.
 
 Operador e Suporte recebem somente grants/policies de leitura. Cliente recebe somente linhas cujo `flows.client_id` corresponde a `profiles.cliente_id`.
 

@@ -1,6 +1,7 @@
 "use client";
 
-import { Bot, ChevronRight, GitFork, LayoutDashboard, Settings2, Sparkles } from "lucide-react";
+import { Bot, ChevronRight, GitFork, LayoutDashboard, Settings2 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -26,16 +27,15 @@ export default function Sidebar() {
   return (
     <aside className="app-sidebar">
       <div>
-        <div className="sidebar-brand">
+        <Link href="/dashboard" className="sidebar-brand" aria-label="Robot Center — ir para a Dashboard">
           <div className="sidebar-brand-icon">
-            <Bot size={22} />
-            <span className="sidebar-brand-spark"><Sparkles size={10} /></span>
+            <Image src="/images/robot-center-system-logo-transparent.png" alt="" fill sizes="42px" priority />
           </div>
           <div className="sidebar-brand-copy">
             <div className="sidebar-brand-name">Robot Center</div>
             <div className="sidebar-brand-tagline">Automation workspace</div>
           </div>
-        </div>
+        </Link>
 
         <div className="sidebar-section-label">NAVEGAÇÃO</div>
         <nav className="sidebar-nav" aria-label="Navegação principal">

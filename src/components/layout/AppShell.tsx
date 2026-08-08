@@ -5,11 +5,13 @@ import Topbar from "./Topbar";
 interface AppShellProps {
   title: string;
   children: ReactNode;
+  hideTopbar?: boolean;
 }
 
 export default function AppShell({
   title,
   children,
+  hideTopbar = false,
 }: AppShellProps) {
   return (
     <div
@@ -23,17 +25,22 @@ export default function AppShell({
 
       <div
         style={{
+          position: "relative",
           flex: 1,
           display: "flex",
           flexDirection: "column",
         }}
       >
-        <Topbar title={title} />
+        {!hideTopbar && (
+          <div className="app-shell-account-row">
+            <Topbar title={title} bare />
+          </div>
+        )}
 
         <main
+          className={`app-shell-main${hideTopbar ? " has-inline-account" : ""}`}
           style={{
             flex: 1,
-            padding: "32px",
           }}
         >
           {children}

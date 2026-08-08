@@ -9,27 +9,22 @@ export default function StatsCards({ robos }: { robos: Robo[] }) {
     { icon: Code2, title: "Desenvolvimento", value: robos.filter((robo) => robo.ambiente === "Desenvolvimento").length, color: "#A78BFA", background: "rgba(139,92,246,.1)" },
   ];
   return (
-    <section style={containerStyle} aria-label="Resumo dos robôs">
-      {cards.map((card, index) => {
+    <section className="dashboard-stats" aria-label="Resumo dos robôs">
+      {cards.map((card) => {
         const Icon = card.icon;
         return (
-          <div key={card.title} style={{ ...itemStyle, borderRight: index < cards.length - 1 ? "1px solid var(--separator)" : "none" }}>
-            <span style={{ ...iconStyle, color: card.color, background: card.background }}>
+          <article key={card.title} className="dashboard-stat-card" style={{ "--stat-color": card.color, "--stat-background": card.background } as React.CSSProperties}>
+            <span className="dashboard-stat-card__icon">
               <Icon size={15} />
             </span>
-            <span style={{ minWidth: 0 }}>
-              <span style={labelStyle}>{card.title}</span>
-              <span style={valueStyle}>{card.value}</span>
+            <span className="dashboard-stat-card__copy">
+              <span>{card.title}</span>
+              <strong>{card.value}</strong>
             </span>
-          </div>
+          </article>
         );
       })}
     </section>
   );
 }
 
-const containerStyle = { display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", boxShadow: "var(--shadow)" } as const;
-const itemStyle = { display: "flex", alignItems: "center", gap: 9, minWidth: 0, padding: "9px 12px" } as const;
-const iconStyle = { width: 28, height: 28, borderRadius: 8, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 } as const;
-const labelStyle = { display: "block", color: "var(--muted)", fontSize: 10.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } as const;
-const valueStyle = { display: "block", color: "var(--text-strong)", fontSize: 16, lineHeight: 1.05, fontWeight: 700, marginTop: 1 } as const;

@@ -1,4 +1,5 @@
 import ThemeToggle from "@/components/theme/ThemeToggle";
+import Image from "next/image";
 
 interface LoginPageProps {
   searchParams: Promise<{
@@ -14,12 +15,21 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <main style={pageStyle}>
       <ThemeToggle floating />
+      <Image
+        src="/images/robot-center-system-logo-transparent.png"
+        alt="Logo do Robot Center"
+        width={230}
+        height={230}
+        priority
+        style={logoStyle}
+      />
       <section style={cardStyle} aria-labelledby="login-title">
-        <div style={brandStyle}>ROBOT CENTER</div>
-        <h1 id="login-title" style={titleStyle}>Acessar o sistema</h1>
-        <p style={subtitleStyle}>Entre com seu email e senha.</p>
+        <div style={contentStyle}>
+          <div style={brandStyle}>ROBOT CENTER</div>
+          <h1 id="login-title" style={titleStyle}>Bem-vindo</h1>
+          <p style={subtitleStyle}>Entre com seu email e senha.</p>
 
-        <form action="/auth/login" method="post" style={formStyle}>
+          <form action="/auth/login" method="post" style={formStyle}>
           <input type="hidden" name="redirectTo" value="/dashboard" />
 
           <label style={fieldStyle}>
@@ -56,28 +66,43 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           {message && <p role="status" style={successStyle}>{message}</p>}
 
           <button type="submit" style={buttonStyle}>Entrar</button>
-        </form>
+          </form>
+        </div>
       </section>
     </main>
   );
 }
 
 const pageStyle: React.CSSProperties = {
-  display: "grid",
+  display: "flex",
+  flexDirection: "column",
   minHeight: "100vh",
-  placeItems: "center",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 18,
   padding: 24,
   background: "var(--bg)",
 };
 
+const logoStyle: React.CSSProperties = {
+  width: 230,
+  height: 230,
+  objectFit: "contain",
+  filter: "drop-shadow(0 16px 32px rgba(0, 119, 255, 0.22))",
+};
+
 const cardStyle: React.CSSProperties = {
   width: "100%",
-  maxWidth: 420,
+  maxWidth: 430,
   border: "1px solid var(--border)",
   borderRadius: 14,
-  padding: 32,
+  overflow: "hidden",
   background: "var(--card)",
   boxShadow: "var(--shadow)",
+};
+
+const contentStyle: React.CSSProperties = {
+  padding: 30,
 };
 
 const brandStyle: React.CSSProperties = {

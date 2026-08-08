@@ -113,6 +113,9 @@ export default function Feed({ publicacoes, robos, onViewRobot }: FeedProps) {
           const EnvironmentIcon = getEnvironmentIcon(robo.ambiente);
           const { label: updateLabel, Icon: UpdateIcon } = getUpdateKind(publicacao);
           const parsedDescription = parsePublicationDescription(publicacao.descricao);
+          const normalizedDescription = publicacao.descricao.toLocaleLowerCase("pt-BR");
+          const packageChanged = normalizedDescription.includes("pacote");
+          const versionChanged = normalizedDescription.includes("versão") || normalizedDescription.includes("versao");
           const environmentClass = robo.ambiente === "Produção" ? "is-production" : robo.ambiente === "Teste" ? "is-test" : "is-development";
 
           return (
@@ -135,27 +138,26 @@ export default function Feed({ publicacoes, robos, onViewRobot }: FeedProps) {
                 <p>{parsedDescription.description}</p>
               </div>
 
-              {parsedDescription.ruleChanges.length > 0 && (
-                <div className="updates-feed__rule-changes" aria-label="Regras alteradas">
+                <div className={`updates-feed__rule-changes${parsedDescription.ruleChanges.length ? "" : " is-empty"}`} aria-label="Regras alteradas">
                   {parsedDescription.ruleChanges.map((rule, index) => (
                     <div key={`${rule.type}-${index}`} className="updates-feed__rule-change">
                       <strong><Plus size={12} /> {rule.type}</strong>
                     </div>
                   ))}
                 </div>
-              )}
 
               <div className="updates-feed__technical" aria-label="Informações técnicas">
-                <span title={`Pacote: ${robo.pacote}`}><Package size={12} />{robo.pacote}</span>
+                <span className={packageChanged ? "is-changed" : undefined} title={`Pacote: ${robo.pacote}`}><Package size={12} />{robo.pacote}</span>
                 <span title={`Stack: ${robo.stack}`}><Layers3 size={12} />{robo.stack}</span>
-                <span className="is-version" title={`Versão atual: ${robo.versao}`}>v{robo.versao}</span>
+                <span className={`is-version${versionChanged ? " is-changed" : ""}`} title={`Versão atual: ${robo.versao}`}>v{robo.versao}</span>
               </div>
 
-              <span className="updates-feed__time"><Clock size={16} />{formatarDataHoraRelativa(publicacao.publicadaEm)}</span>
-
-              <button type="button" className="updates-feed__details" onClick={() => onViewRobot(robo)}>
-                Ver detalhes <ArrowRight size={13} />
-              </button>
+              <div className="updates-feed__side">
+                <span className="updates-feed__time"><Clock size={13} />{formatarDataHoraRelativa(publicacao.publicadaEm)}</span>
+                <button type="button" className="updates-feed__details" onClick={() => onViewRobot(robo)}>
+                  Ver detalhes <ArrowRight size={13} />
+                </button>
+              </div>
             </article>
           );
         })}

@@ -43,6 +43,7 @@ export default function RobosPage() {
   const { robos, clientes, cadastrarRobo, importarRobos, atualizarRobo, excluirRobo, publicarAlteracoes } = useAppData();
   const [robotSelecionadoDoDashboard, setRobotSelecionadoDoDashboard] = useState<string | null>(null);
   const [pesquisa, setPesquisa] = useState("");
+  const [clienteId, setClienteId] = useState(TODAS_OPCOES);
   const [pacote, setPacote] = useState(TODAS_OPCOES);
   const [sistema, setSistema] = useState(TODAS_OPCOES);
   const [ambiente, setAmbiente] = useState(TODAS_OPCOES);
@@ -87,6 +88,7 @@ export default function RobosPage() {
           valor.toLocaleLowerCase("pt-BR").includes(termoPesquisa),
         );
       const correspondePacote = pacote === TODAS_OPCOES || robo.pacote === pacote;
+      const correspondeCliente = clienteId === TODAS_OPCOES || robo.clienteId === clienteId;
       const correspondeSistema = sistema === TODAS_OPCOES || robo.sistema === sistema;
       const correspondeAmbiente = ambiente === TODAS_OPCOES || robo.ambiente === ambiente;
       const correspondeStatus =
@@ -94,9 +96,9 @@ export default function RobosPage() {
         (status === "Ativo" && robo.ativo) ||
         (status === "Inativo" && !robo.ativo);
 
-      return correspondePesquisa && correspondePacote && correspondeSistema && correspondeAmbiente && correspondeStatus;
+      return correspondePesquisa && correspondeCliente && correspondePacote && correspondeSistema && correspondeAmbiente && correspondeStatus;
     });
-  }, [ambiente, pacote, pesquisa, robos, sistema, status]);
+  }, [ambiente, clienteId, pacote, pesquisa, robos, sistema, status]);
 
   useEffect(() => {
     if (!robotSelecionadoDoDashboard || dashboardSelectionAppliedRef.current) return;
@@ -158,6 +160,7 @@ async function salvarRobot(dados: DadosFormularioRobo, publicar: boolean) {
 
   function limparFiltros() {
     setPesquisa("");
+    setClienteId(TODAS_OPCOES);
     setPacote(TODAS_OPCOES);
     setSistema(TODAS_OPCOES);
     setAmbiente(TODAS_OPCOES);
@@ -171,6 +174,9 @@ async function salvarRobot(dados: DadosFormularioRobo, publicar: boolean) {
         <RobotHeader
           pesquisa={pesquisa}
           onPesquisaChange={(value) => fecharDetalhesAoFiltrar(() => setPesquisa(value))}
+          clienteId={clienteId}
+          clientes={clientes.map((cliente) => ({ value: cliente.id, label: cliente.nome }))}
+          onClienteChange={(value) => fecharDetalhesAoFiltrar(() => setClienteId(value))}
           pacote={pacote}
           pacotes={pacotes}
           onPacoteChange={(value) => fecharDetalhesAoFiltrar(() => setPacote(value))}

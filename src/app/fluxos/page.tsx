@@ -1,7 +1,7 @@
 "use client";
 
-import { GitFork, Plus, Search, Trash2, X } from "lucide-react";
-import Link from "next/link";
+import { Bot, CalendarPlus, Clock3, GitFork, Plus, Search, Trash2, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useMemo, useState, type FormEvent } from "react";
 
 import { useAdminAccess } from "@/auth/AdminAccessProvider";
@@ -11,6 +11,7 @@ import { useFlowsData } from "@/data/FlowsDataProvider";
 import { formatarData } from "@/domain/formatters";
 
 export default function FluxosPage() {
+  const router = useRouter();
   const { clientes } = useAppData();
   const { fluxos, carregando, erro, excluirFluxo } = useFlowsData();
   const { isClient, canCreateFlows, canDeleteFlows } = useAdminAccess();
@@ -44,9 +45,11 @@ export default function FluxosPage() {
             <p>Mapeie robôs, sistemas, decisões e regras de negócio por cliente.</p>
           </div>
           {canCreateFlows && (
-            <button className="flow-primary-button" type="button" onClick={() => setNovoAberto(true)}>
-              <Plus size={16} /> Novo fluxo
-            </button>
+            <div className="flows-page-actions">
+              <button className="flow-primary-button" type="button" onClick={() => setNovoAberto(true)}>
+                <Plus size={16} /> Novo fluxo
+              </button>
+            </div>
           )}
         </header>
 
@@ -76,27 +79,42 @@ export default function FluxosPage() {
             {resultados.map((fluxo) => {
               const cliente = clientes.find((item) => item.id === fluxo.clienteId);
               return (
-                <article className="flow-card" key={fluxo.id}>
+                <article
+                  className="flow-card"
+                  key={fluxo.id}
+                  role="link"
+                  tabIndex={0}
+                  onClick={() => router.push(`/fluxos/${fluxo.id}`)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      router.push(`/fluxos/${fluxo.id}`);
+                    }
+                  }}
+                >
                   <div className="flow-card__top">
-                    <span className="flow-card__client">{cliente?.nome ?? "Cliente"}</span>
-                    <span className={`flow-status is-${fluxo.status}`}>{fluxo.status === "publicado" ? "Publicado" : "Rascunho"}</span>
+                    <span className="flow-card__client"><GitFork size={12} />{cliente?.nome ?? "Cliente"}</span>
+                    <div className="flow-card__top-actions">
+                      <span className={`flow-status is-${fluxo.status}`}>{fluxo.status === "publicado" ? "Publicado" : "Rascunho"}</span>
+                      {canDeleteFlows && (
+                        <button
+                          type="button"
+                          aria-label={`Excluir ${fluxo.nome}`}
+                          disabled={excluindo === fluxo.id}
+                          onClick={(event) => { event.stopPropagation(); void removerFluxo(fluxo.id, fluxo.nome); }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <h2>{fluxo.nome}</h2>
+                  <div className="flow-card__title"><span><GitFork size={17} /></span><h2>{fluxo.nome}</h2></div>
                   <p>{fluxo.descricao || "Sem descrição."}</p>
-                  {!isClient && <div className="flow-card__customer">Cliente: <strong>{cliente?.nome ?? "—"}</strong></div>}
-                  <div className="flow-card__counts"><span>{fluxo.quantidadeRobos} robôs</span><span>{fluxo.quantidadeConexoes} conexões</span></div>
-                  <div className="flow-card__meta">
-                    <span>Versão {fluxo.versao}</span>
-                    <span>Atualizado em {formatarData(fluxo.atualizadoEm)}</span>
+                  <div className="flow-card__facts">
+                    <span><Bot size={13} /><strong>{fluxo.quantidadeRobos}</strong> robôs</span>
+                    <span><CalendarPlus size={13} />Criado em {formatarData(fluxo.criadoEm)}</span>
+                    <span><Clock3 size={13} />Alterado em {formatarData(fluxo.atualizadoEm)}</span>
                   </div>
-                  <footer>
-                    <Link href={`/fluxos/${fluxo.id}`}>Abrir fluxo</Link>
-                    {canDeleteFlows && (
-                      <button type="button" aria-label={`Excluir ${fluxo.nome}`} disabled={excluindo === fluxo.id} onClick={() => void removerFluxo(fluxo.id, fluxo.nome)}>
-                        <Trash2 size={15} />
-                      </button>
-                    )}
-                  </footer>
                 </article>
               );
             })}

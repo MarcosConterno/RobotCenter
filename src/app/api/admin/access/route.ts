@@ -41,11 +41,11 @@ export async function GET() {
   const roles = [...new Set(userRoles?.flatMap((item) => extractRoleCodes(item.roles)) ?? [])];
   const { data: profile } = await supabase
     .from("profiles")
-    .select("cliente_id")
+    .select("cliente_id,login")
     .eq("id", user.id)
     .single();
   return NextResponse.json(
-    { allowed: roles.includes("admin"), roles, clientId: profile?.cliente_id ?? null },
+    { allowed: roles.includes("admin"), roles, clientId: profile?.cliente_id ?? null, displayName: profile?.login ?? user.email ?? "Usuário" },
     { status: 200, headers: { "Cache-Control": "no-store" } },
   );
 }

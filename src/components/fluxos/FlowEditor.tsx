@@ -19,7 +19,7 @@ import {
   type NodeChange,
   type Viewport,
 } from "@xyflow/react";
-import { Bot, Box, FileText, GitBranch, Link2, Save, StickyNote, Type, Zap } from "lucide-react";
+import { Bot, Box, FileText, GitBranch, History, Link2, Maximize2, Minimize2, Save, StickyNote, Type, Zap } from "lucide-react";
 import { useCallback, useMemo, useRef, useState, type DragEvent } from "react";
 
 import type { EdgeFluxo, Fluxo, NodeFluxo, Robo, TipoNodeFluxo, ViewportFluxo } from "@/domain/entities";
@@ -34,6 +34,9 @@ interface FlowEditorProps {
   onDirtyChange: (dirty: boolean) => void;
   onSave: (nodes: NodeFluxo[], edges: EdgeFluxo[], viewport: ViewportFluxo) => Promise<void>;
   onOpenRobot: (robotId: string) => void;
+  expanded: boolean;
+  onToggleExpanded: () => void;
+  onOpenHistory: () => void;
 }
 
 const nodeTypes = { flowNode: FlowCanvasNode };
@@ -81,7 +84,7 @@ export default function FlowEditor(props: FlowEditorProps) {
   return <ReactFlowProvider><FlowEditorInner {...props} /></ReactFlowProvider>;
 }
 
-function FlowEditorInner({ fluxo, initialNodes, initialEdges, robos, editable, onDirtyChange, onSave, onOpenRobot }: FlowEditorProps) {
+function FlowEditorInner({ fluxo, initialNodes, initialEdges, robos, editable, onDirtyChange, onSave, onOpenRobot, expanded, onToggleExpanded, onOpenHistory }: FlowEditorProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition, getViewport } = useReactFlow();
   const [nodes, setNodes] = useState<Node<FlowCanvasNodeData>[]>(() => toCanvasNodes(initialNodes, robos));
@@ -171,7 +174,7 @@ function FlowEditorInner({ fluxo, initialNodes, initialEdges, robos, editable, o
   const paletteGroups = useMemo(() => palette.map((group) => ({ ...group, items: group.items.map((label) => ({ label, kind: group.kind })) })), []);
 
   return (
-    <div className="flow-editor-shell">
+    <div className={`flow-editor-shell${expanded ? " is-expanded" : ""}`}>
       <aside className="flow-elements-panel">
         <span className="flow-panel-title">ELEMENTOS</span>
         {paletteGroups.map((group) => <section key={group.section}><h3>{group.section}</h3>{group.items.map((item) => {
@@ -182,7 +185,10 @@ function FlowEditorInner({ fluxo, initialNodes, initialEdges, robos, editable, o
 
       <div className="flow-canvas" ref={wrapperRef} onDrop={drop} onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "move"; }}>
         {erro && <div className="flow-canvas-error">{erro}</div>}
-        {editable && <button className="flow-save-fab" type="button" disabled={salvando} onClick={() => void save()}><Save size={15} />{salvando ? "Salvando..." : "Salvar"}</button>}
+        <div className="flow-canvas-toolbar">
+          {editable && <button type="button" disabled={salvando} onClick={() => void save()}><Save size={15} />{salvando ? "Salvando..." : "Salvar"}</button>}
+          <button type="button" onClick={onToggleExpanded}>{expanded ? <Minimize2 size={15} /> : <Maximize2 size={15} />}{expanded ? "Reduzir" : "Ampliar"}</button>
+        </div>
         <ReactFlow
           nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
           onConnect={onConnect} nodesDraggable={editable} nodesConnectable={editable} elementsSelectable
@@ -195,7 +201,7 @@ function FlowEditorInner({ fluxo, initialNodes, initialEdges, robos, editable, o
       </div>
 
       <aside className="flow-properties-panel">
-        <span className="flow-panel-title">PROPRIEDADES</span>
+        <div className="flow-panel-heading"><span className="flow-panel-title">PROPRIEDADES</span><button type="button" onClick={onOpenHistory}><History size={13} /> Histórico</button></div>
         {selectedNode ? <NodeProperties node={selectedNode} robos={robos} editable={editable} updateNode={updateNode} onOpenRobot={onOpenRobot} />
           : selectedEdge ? <EdgeProperties edge={selectedEdge} editable={editable} updateEdge={updateEdge} />
           : <div className="flow-properties-empty"><Type size={24} /><p>Selecione um elemento ou uma conexão para ver suas propriedades.</p></div>}

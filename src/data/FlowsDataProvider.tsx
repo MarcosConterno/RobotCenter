@@ -52,6 +52,7 @@ function mapearFluxo(item: {
       zoom: Number(viewport.zoom ?? 1),
     },
     criadoPor: item.created_by,
+    criadorNome: "",
     criadoEm: item.created_at,
     atualizadoEm: item.updated_at,
     quantidadeRobos: counts.robots ?? 0,
@@ -89,17 +90,18 @@ export function FlowsDataProvider({ children }: { children: ReactNode }) {
 
   const carregarDetalhes = useCallback(async (id: string) => {
     const supabase = createClient();
-    const [flowResult, nodesResult, edgesResult, versionsResult] = await Promise.all([
+    const [flowResult, nodesResult, edgesResult, versionsResult, creatorResult] = await Promise.all([
       supabase.from("flows").select("id,client_id,name,description,version,status,viewport,created_by,created_at,updated_at").eq("id", id).maybeSingle(),
       supabase.from("flow_nodes").select("id,flow_id,type,robot_id,position_x,position_y,data").eq("flow_id", id),
       supabase.from("flow_edges").select("id,flow_id,source_node_id,target_node_id,type,label,condition,description").eq("flow_id", id),
       supabase.from("flow_versions").select("id,flow_id,version,snapshot,created_by,created_at").eq("flow_id", id).order("version", { ascending: false }),
+      supabase.rpc("get_flow_creator_name", { target_flow_id: id }),
     ]);
     const error = flowResult.error ?? nodesResult.error ?? edgesResult.error ?? versionsResult.error;
     if (error) throw error;
     if (!flowResult.data) return null;
     return {
-      fluxo: mapearFluxo(flowResult.data),
+      fluxo: { ...mapearFluxo(flowResult.data), criadorNome: creatorResult.data ?? "" },
       nodes: (nodesResult.data ?? []).map((node) => ({
         id: node.id, fluxoId: node.flow_id, tipo: node.type as NodeFluxo["tipo"], roboId: node.robot_id,
         posicaoX: node.position_x, posicaoY: node.position_y, dados: node.data as Record<string, unknown>,

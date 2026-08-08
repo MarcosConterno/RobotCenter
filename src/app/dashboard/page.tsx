@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, LayoutDashboard, TableProperties } from "lucide-react";
+import { LayoutDashboard, TableProperties } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import Feed from "@/components/dashboard/Feed";
@@ -8,13 +8,14 @@ import { useAdminAccess } from "@/auth/AdminAccessProvider";
 import RobotsOverviewTable from "@/components/dashboard/RobotsOverviewTable";
 import StatsCards from "@/components/dashboard/StatsCards";
 import AppShell from "@/components/layout/AppShell";
+import Topbar from "@/components/layout/Topbar";
 import RobotDetails from "@/components/robos/RobotDetails";
 import { useAppData } from "@/data/AppDataProvider";
 import type { Robo } from "@/domain/entities";
 
 export default function DashboardPage() {
   const { robos, publicacoes, clientes, atualizarCapacidadeRobo } = useAppData();
-  const { canUpdateCapacity } = useAdminAccess();
+  const { canUpdateCapacity, displayName } = useAdminAccess();
   const [selectedRobot, setSelectedRobot] = useState<Robo | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "robots">("overview");
 
@@ -33,8 +34,15 @@ export default function DashboardPage() {
 
   return (
     <>
-      <AppShell title="Dashboard">
+      <AppShell title="Dashboard" hideTopbar>
         <div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%", maxWidth: 1480, margin: "0 auto" }}>
+          <div className="dashboard-welcome">
+            <div className="dashboard-welcome__copy">
+              <span className="dashboard-welcome__emoji" aria-hidden="true">👋</span>
+              <div><span>Olá,</span><h1>{displayName}</h1></div>
+            </div>
+            <Topbar title="Conta do usuário" bare />
+          </div>
           <nav className="dashboard-tabs" role="tablist" aria-label="Visualizações da Dashboard">
             <button
               type="button"
@@ -59,24 +67,6 @@ export default function DashboardPage() {
               Tabela de robôs
             </button>
           </nav>
-
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ width: 28, height: 28, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 8, color: "var(--accent)", background: "var(--accent-soft)" }}>
-                  <Activity size={15} />
-                </span>
-                <h2 style={{ color: "var(--text-strong)", fontSize: 21, margin: 0 }}>
-                  {activeTab === "overview" ? "Visão geral" : "Tabela de robôs"}
-                </h2>
-              </div>
-              <p style={{ color: "var(--muted)", fontSize: 12.5, margin: "6px 0 0 36px" }}>
-                {activeTab === "overview"
-                  ? "Acompanhe o ambiente e as últimas atualizações dos robôs."
-                  : "Consulte os dados de todos os robôs em uma visão consolidada."}
-              </p>
-            </div>
-          </div>
 
           {activeTab === "overview" ? (
             <div id="dashboard-overview-panel" role="tabpanel" className="dashboard-tab-panel">

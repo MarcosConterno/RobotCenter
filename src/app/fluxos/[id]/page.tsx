@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Clock3, Eye, GitBranch, History, Pencil, Rocket, UserRound } from "lucide-react";
+import { ArrowLeft, Clock3, Eye, History, Pencil, Rocket, UserRound, X } from "lucide-react";
 import Link from "next/link";
 import { use, useCallback, useEffect, useMemo, useState } from "react";
 
@@ -33,6 +33,8 @@ export default function FluxoDetalhePage({ params }: { params: Promise<{ id: str
   const [erro, setErro] = useState("");
   const [publicando, setPublicando] = useState(false);
   const [versaoSelecionada, setVersaoSelecionada] = useState<number | null>(null);
+  const [historicoAberto, setHistoricoAberto] = useState(false);
+  const [editorExpandido, setEditorExpandido] = useState(false);
 
   const carregar = useCallback(async () => {
     setCarregando(true); setErro("");
@@ -83,10 +85,9 @@ export default function FluxoDetalhePage({ params }: { params: Promise<{ id: str
             <div className="flow-breadcrumb"><Link href="/fluxos"><ArrowLeft size={14} /> Fluxos</Link><span>/</span><span>{cliente?.nome ?? "Cliente"}</span><span>/</span><strong>{fluxoExibido.nome}</strong></div>
             <h1>{fluxoExibido.nome}</h1><p>{fluxoExibido.descricao}</p>
             <div className="flow-detail-meta">
-              <span><GitBranch size={14} /> Versão {historicoSelecionado?.versao ?? fluxo.versao}</span>
               <span className={`flow-status is-${fluxo.status}`}>{isHistorical ? "Histórico" : fluxo.status === "publicado" ? "Publicado" : "Rascunho"}</span>
               <span><Clock3 size={14} /> Última atualização {formatarData(fluxo.atualizadoEm)}</span>
-              <span><UserRound size={14} /> Responsável {fluxo.criadoPor.slice(0, 8)}</span>
+              <span><UserRound size={14} /> Responsável {fluxo.criadorNome || "Usuário"}</span>
             </div>
           </div>
           <div className="flow-detail-actions">
@@ -98,12 +99,11 @@ export default function FluxoDetalhePage({ params }: { params: Promise<{ id: str
         {dirty && <div className="flow-unpublished-warning">Existem alterações não publicadas. Salve antes de publicar uma nova versão.</div>}
         {erro && <div className="flow-message is-error">{erro}</div>}
 
-        <div className="flow-workspace-row">
-          <div className="flow-workspace-main">
-            <FlowEditor key={`${versaoSelecionada ?? "current"}-${modo}`} fluxo={fluxoExibido} initialNodes={nodesExibidos} initialEdges={edgesExibidos} robos={robosDoCliente} editable={canEditFlows && modo === "edit" && !isHistorical} onDirtyChange={setDirty} onSave={handleSave} onOpenRobot={() => window.location.assign("/robos")} />
-          </div>
-          <aside className="flow-history-panel"><div className="flow-history-title"><History size={15} /> HISTÓRICO</div><button className={!versaoSelecionada ? "is-current" : ""} type="button" onClick={() => setVersaoSelecionada(null)}><strong>v{fluxo.versao} Atual</strong><span>{formatarData(fluxo.atualizadoEm)}</span></button>{versoes.map((version) => <button className={versaoSelecionada === version.versao ? "is-current" : ""} type="button" key={version.id} onClick={() => { setVersaoSelecionada(version.versao); setModo("view"); setDirty(false); }}><strong>v{version.versao}</strong><span>{formatarData(version.criadoEm)}</span></button>)}</aside>
+        <div className="flow-workspace-main">
+          <FlowEditor key={`${versaoSelecionada ?? "current"}-${modo}`} fluxo={fluxoExibido} initialNodes={nodesExibidos} initialEdges={edgesExibidos} robos={robosDoCliente} editable={canEditFlows && modo === "edit" && !isHistorical} onDirtyChange={setDirty} onSave={handleSave} onOpenRobot={() => window.location.assign("/robos")} expanded={editorExpandido} onToggleExpanded={() => setEditorExpandido((current) => !current)} onOpenHistory={() => setHistoricoAberto(true)} />
         </div>
+
+        {historicoAberto && <div className="flow-history-backdrop" onMouseDown={() => setHistoricoAberto(false)}><aside className="flow-history-panel is-drawer" onMouseDown={(event) => event.stopPropagation()}><div className="flow-history-title"><span><History size={15} /> HISTÓRICO</span><button type="button" aria-label="Fechar histórico" onClick={() => setHistoricoAberto(false)}><X size={16} /></button></div><button className={!versaoSelecionada ? "is-current" : ""} type="button" onClick={() => { setVersaoSelecionada(null); setHistoricoAberto(false); }}><strong>v{fluxo.versao} Atual</strong><span>{formatarData(fluxo.atualizadoEm)}</span></button>{versoes.map((version) => <button className={versaoSelecionada === version.versao ? "is-current" : ""} type="button" key={version.id} onClick={() => { setVersaoSelecionada(version.versao); setModo("view"); setDirty(false); setHistoricoAberto(false); }}><strong>v{version.versao}</strong><span>{formatarData(version.criadoEm)}</span></button>)}</aside></div>}
       </section>
     </AppShell>
   );

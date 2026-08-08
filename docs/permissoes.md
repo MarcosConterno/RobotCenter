@@ -59,4 +59,6 @@ As policies consultam `roles`, `permissions`, `user_roles` e `role_permissions` 
 As permissões RBAC são `flows.read`, `flows.create`, `flows.update`, `flows.delete` e `flows.publish`. As policies de `flow_nodes`, `flow_edges` e `flow_versions` herdam o cliente consultando o Fluxo relacionado. `client_id` recebido da interface nunca é suficiente para autorizar uma operação.
 
 O RPC `publish_flow` usa `SECURITY INVOKER`: as policies e permissões da sessão continuam ativas durante a atualização do Fluxo e a criação da versão. Não há acesso anônimo às tabelas ou ao RPC.
+
+O nome do criador é resolvido por `get_flow_creator_name`. A função privilegiada permanece no schema privado e valida sessão, `flows.read` e acesso ao Cliente antes de retornar exclusivamente `profiles.login`; não expõe outros campos do profile.
 - A importação permanece restrita à capacidade administrativa. UUIDs fora das linhas visíveis ao usuário são rejeitados na validação, e a RLS continua sendo a barreira definitiva na gravação.

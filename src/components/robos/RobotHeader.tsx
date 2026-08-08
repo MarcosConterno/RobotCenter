@@ -6,6 +6,9 @@ import { useState, type CSSProperties } from "react";
 interface RobotHeaderProps {
   pesquisa: string;
   onPesquisaChange: (value: string) => void;
+  clienteId: string;
+  clientes: readonly { value: string; label: string }[];
+  onClienteChange: (value: string) => void;
   pacote: string;
   pacotes: readonly string[];
   onPacoteChange: (value: string) => void;
@@ -29,7 +32,7 @@ interface RobotHeaderProps {
 interface FilterSelectProps {
   label: string;
   value: string;
-  options: readonly string[];
+  options: readonly (string | { value: string; label: string })[];
   allOptionLabel: string;
   onChange: (value: string) => void;
 }
@@ -49,12 +52,15 @@ function FilterSelect({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           style={selectStyle}
+          className="robot-filter-select"
         >
-          {options.map((item) => (
-            <option key={item} value={item}>
-              {item === "Todos" ? allOptionLabel : item}
+          {options.map((item) => {
+            const value = typeof item === "string" ? item : item.value;
+            const optionLabel = typeof item === "string" ? (item === "Todos" ? allOptionLabel : item) : item.label;
+            return <option key={value} value={value}>
+              {optionLabel}
             </option>
-          ))}
+          })}
         </select>
         <ChevronDown size={16} style={chevronStyle} aria-hidden="true" />
       </span>
@@ -65,6 +71,9 @@ function FilterSelect({
 export default function RobotHeader({
   pesquisa,
   onPesquisaChange,
+  clienteId,
+  clientes,
+  onClienteChange,
   pacote,
   pacotes,
   onPacoteChange,
@@ -88,6 +97,7 @@ export default function RobotHeader({
 
   const filtrosAtivos =
     pesquisa.trim().length > 0 ||
+    clienteId !== "Todos" ||
     pacote !== "Todos" ||
     sistema !== "Todos" ||
     ambiente !== "Todos" ||
@@ -95,10 +105,14 @@ export default function RobotHeader({
 
   return (
     <div style={headerContentStyle}>
-      <div style={titleRowStyle}>
-        <h1 style={pageTitleStyle}>Robôs Integradores</h1>
+      <div className="robots-title-row" style={titleRowStyle}>
+        <div>
+          <span className="robots-page-eyebrow">ROBÔS</span>
+          <h1 style={pageTitleStyle}>Robôs Integradores</h1>
+          <p className="robots-page-subtitle">Veja todas as configurações e regras dos robôs.</p>
+        </div>
 
-        <div style={actionsStyle}>
+        <div className="robots-page-actions" style={actionsStyle}>
           {canImport && (
             <button type="button" onClick={onImport} style={secondaryButtonStyle}>
               <FileUp size={16} />
@@ -114,7 +128,7 @@ export default function RobotHeader({
         </div>
       </div>
 
-      <section style={panelStyle} aria-label="Filtros de robôs">
+      <section className="robots-filter-panel" style={panelStyle} aria-label="Filtros de robôs">
         <button
           type="button"
           onClick={() => setFiltersOpen((isOpen) => !isOpen)}
@@ -163,6 +177,13 @@ export default function RobotHeader({
             </div>
 
             <div style={selectRowStyle}>
+              <FilterSelect
+                label="Cliente"
+                value={clienteId}
+                options={["Todos", ...clientes]}
+                allOptionLabel="Todos os clientes"
+                onChange={onClienteChange}
+              />
               <FilterSelect
                 label="Pacote"
                 value={pacote}
@@ -243,7 +264,7 @@ const secondaryButtonStyle: CSSProperties = {
 };
 
 const pageTitleStyle: CSSProperties = {
-  margin: 0,
+  margin: "6px 0 0",
   color: "var(--text-strong)",
   fontSize: 30,
   fontWeight: 700,
