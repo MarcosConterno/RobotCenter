@@ -1,12 +1,11 @@
 import {
-  Calendar,
   Cpu,
+  GitBranch,
   Layers3,
+  Package,
   Server,
-  User,
 } from "lucide-react";
 import type { CSSProperties } from "react";
-import { formatarData } from "@/domain/formatters";
 import type { Robo } from "@/domain/entities";
 
 interface RobotCardProps {
@@ -83,7 +82,7 @@ export default function RobotCard({
             }}
           >
             <Cpu size={14} />
-            {robot.sistema}
+            {robot.courtName}
           </div>
         </div>
 
@@ -130,16 +129,16 @@ export default function RobotCard({
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <Calendar size={14} style={{ flexShrink: 0 }} />
+          <Package size={14} style={{ flexShrink: 0 }} />
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {formatarData(robot.ultimaPublicacaoEm)}
+            {robot.pacote}
           </span>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <Layers3 size={14} style={{ flexShrink: 0 }} />
+          <GitBranch size={14} style={{ flexShrink: 0 }} />
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {robot.stack}
+            {robot.versao}
           </span>
         </div>
 
@@ -151,9 +150,9 @@ export default function RobotCard({
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <User size={14} style={{ flexShrink: 0 }} />
+          <Layers3 size={14} style={{ flexShrink: 0 }} />
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {robot.responsavel}
+            {robot.stack}
           </span>
         </div>
       </div>
