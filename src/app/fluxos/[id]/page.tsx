@@ -69,7 +69,13 @@ export default function FluxoDetalhePage({ params }: { params: Promise<{ id: str
     try {
       await publicarFluxo(fluxo.id, snapshot as unknown as Record<string, unknown>);
       await carregar();
-    } catch { setErro("Não foi possível publicar a nova versão."); }
+    } catch (error) {
+      console.error("Falha ao publicar a versão do fluxo", error);
+      const detail = error && typeof error === "object" && "message" in error
+        ? String(error.message)
+        : "Erro não identificado pelo Supabase.";
+      setErro(`Não foi possível publicar a nova versão. ${detail}`);
+    }
     finally { setPublicando(false); }
   }
 

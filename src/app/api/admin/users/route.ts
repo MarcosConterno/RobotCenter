@@ -10,6 +10,10 @@ const createUserSchema = z.object({
   email: z.string().trim().email("Informe um email válido."),
   password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres."),
   tipo: z.enum(TIPOS_USUARIO),
+  clientId: z.string().uuid().nullable().optional(),
+}).refine((data) => data.tipo !== "Cliente" || Boolean(data.clientId), {
+  message: "O perfil Cliente exige a seleção de um cliente.",
+  path: ["clientId"],
 });
 
 const updateUserSchema = z.object({
@@ -17,6 +21,10 @@ const updateUserSchema = z.object({
   login: z.string().trim().min(1, "Login é obrigatório."),
   email: z.string().trim().email("Informe um email válido."),
   tipo: z.enum(TIPOS_USUARIO),
+  clientId: z.string().uuid().nullable().optional(),
+}).refine((data) => data.tipo !== "Cliente" || Boolean(data.clientId), {
+  message: "O perfil Cliente exige a seleção de um cliente.",
+  path: ["clientId"],
 });
 
 const deleteUserSchema = z.object({ id: z.string().uuid() });
@@ -59,7 +67,7 @@ export async function GET() {
     admin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
     admin
       .from("profiles")
-      .select("id, login, user_roles:user_roles!user_roles_user_id_fkey(roles(codigo))")
+      .select("id, login, cliente_id, user_roles:user_roles!user_roles_user_id_fkey(roles(codigo))")
       .is("deleted_at", null)
       .eq("ativo", true),
   ]);
@@ -79,7 +87,7 @@ export async function GET() {
     const assignments = profile.user_roles as unknown as Array<{ roles: { codigo?: string } | Array<{ codigo?: string }> | null }>;
     const code = assignments?.flatMap((assignment) => Array.isArray(assignment.roles) ? assignment.roles : [assignment.roles]).find(Boolean)?.codigo;
     const tipo = TIPOS_USUARIO.find((item) => item.toLowerCase() === code) ?? "Operador";
-    return { id: profile.id, login: profile.login, email: emailById.get(profile.id) ?? "", tipo };
+    return { id: profile.id, login: profile.login, email: emailById.get(profile.id) ?? "", tipo, clienteId: profile.cliente_id };
   });
 
   return NextResponse.json({ users, currentUserId: access.user.id }, { headers: { "Cache-Control": "no-store" } });
@@ -99,7 +107,7 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
-  const { login, email, password, tipo } = parsed.data;
+  const { login, email, password, tipo, clientId = null } = parsed.data;
   const roleCode = tipo.toLowerCase();
 
   const { data: role, error: roleError } = await admin
@@ -113,11 +121,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Papel de usuário não encontrado." }, { status: 400 });
   }
 
-  if (roleCode === "cliente") {
-    return NextResponse.json(
-      { error: "O cadastro de usuário Cliente exige a seleção de um cliente." },
-      { status: 400 },
-    );
+  if (clientId) {
+    const { data: client, error: clientError } = await admin
+      .from("clientes")
+      .select("id")
+      .eq("id", clientId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (clientError || !client) {
+      return NextResponse.json({ error: "Cliente não encontrado ou arquivado." }, { status: 400 });
+    }
   }
 
   const { data: createdUser, error: createError } = await admin.auth.admin.createUser({
@@ -137,7 +150,7 @@ export async function POST(request: Request) {
   const userId = createdUser.user.id;
   const { error: profileError } = await admin
     .from("profiles")
-    .update({ login })
+    .update({ login, cliente_id: clientId })
     .eq("id", userId);
 
   const { error: assignmentError } = profileError
@@ -153,7 +166,7 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json(
-    { id: userId, login, email, tipo },
+    { id: userId, login, email, tipo, clienteId: clientId },
     { status: 201, headers: { "Cache-Control": "no-store" } },
   );
 }
@@ -165,20 +178,39 @@ export async function PATCH(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Dados inválidos." }, { status: 400 });
 
   const admin = createAdminClient();
-  const { id, login, email, tipo } = parsed.data;
+  const { id, login, email, tipo, clientId = null } = parsed.data;
   const { data: role, error: roleError } = await admin.from("roles").select("id").eq("codigo", tipo.toLowerCase()).eq("ativo", true).single();
   if (roleError || !role) return NextResponse.json({ error: "Papel de usuário não encontrado." }, { status: 400 });
 
+  if (clientId) {
+    const { data: client, error: clientError } = await admin
+      .from("clientes")
+      .select("id")
+      .eq("id", clientId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (clientError || !client) return NextResponse.json({ error: "Cliente não encontrado ou arquivado." }, { status: 400 });
+  }
+
   const { error: authUpdateError } = await admin.auth.admin.updateUserById(id, { email });
   if (authUpdateError) return NextResponse.json({ error: "Não foi possível atualizar o email." }, { status: 400 });
-  const { error: profileError } = await admin.from("profiles").update({ login }).eq("id", id).is("deleted_at", null);
-  if (profileError) return NextResponse.json({ error: "Não foi possível atualizar o perfil." }, { status: 400 });
-
-  const { error: removeRoleError } = await admin.from("user_roles").delete().eq("user_id", id);
-  const { error: addRoleError } = removeRoleError ? { error: removeRoleError } : await admin.from("user_roles").insert({ user_id: id, role_id: role.id });
+  let profileError: unknown = null;
+  let removeRoleError: unknown = null;
+  let addRoleError: unknown = null;
+  if (tipo === "Cliente") {
+    ({ error: profileError } = await admin.from("profiles").update({ login, cliente_id: clientId }).eq("id", id).is("deleted_at", null));
+    if (!profileError) ({ error: removeRoleError } = await admin.from("user_roles").delete().eq("user_id", id));
+    if (!profileError && !removeRoleError) ({ error: addRoleError } = await admin.from("user_roles").insert({ user_id: id, role_id: role.id }));
+  } else {
+    ({ error: removeRoleError } = await admin.from("user_roles").delete().eq("user_id", id));
+    if (!removeRoleError) ({ error: addRoleError } = await admin.from("user_roles").insert({ user_id: id, role_id: role.id }));
+    if (!removeRoleError && !addRoleError) ({ error: profileError } = await admin.from("profiles").update({ login, cliente_id: clientId }).eq("id", id).is("deleted_at", null));
+  }
+  if (profileError) return NextResponse.json({ error: "Não foi possível atualizar o perfil e o cliente vinculado." }, { status: 400 });
+  if (removeRoleError) return NextResponse.json({ error: "Não foi possível substituir o papel atual do usuário." }, { status: 500 });
   if (addRoleError) return NextResponse.json({ error: "Não foi possível atualizar o papel do usuário." }, { status: 500 });
 
-  return NextResponse.json({ id, login, email, tipo });
+  return NextResponse.json({ id, login, email, tipo, clienteId: clientId });
 }
 
 export async function DELETE(request: Request) {

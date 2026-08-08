@@ -2,6 +2,12 @@
 
 O módulo usa o cliente Supabase autenticado e Row Level Security. Não expõe uma Route Handler paralela nem utiliza chave `service_role` no navegador.
 
+## Propriedades do Montador
+
+`flow_nodes.data` persiste somente propriedades específicas da documentação visual, incluindo descrição, observações, vínculo com grupo e dimensões. Os dados principais de Robôs não são duplicados e continuam resolvidos por `robot_id`.
+
+As conexões persistem `type`, `condition`, `queue` e `description` em `flow_edges`. `queue` é opcional, utiliza string vazia quando ausente e segue a autorização herdada por `flow_id`.
+
 ## Leituras
 
 - `flows`: listagem e metadados autorizados.

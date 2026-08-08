@@ -132,6 +132,13 @@
 - Regras e alterações históricas não são substituídas pela planilha de atualização.
 - A gravação exige confirmação após uma prévia das criações e atualizações.
 
+## Vínculo de Usuário com Cliente
+
+1. Somente Admin pode criar usuários ou alterar `profiles.cliente_id` pela API administrativa.
+2. O papel Cliente exige vínculo com um Cliente existente e não arquivado.
+3. Admin, Operador e Suporte podem permanecer sem Cliente ou possuir vínculo informativo.
+4. O Cliente selecionado no frontend não é confiável por si só; o endpoint valida sessão, papel Admin, UUID e existência do Cliente antes da gravação.
+
 ## Fluxos por Cliente
 
 1. Todo Fluxo pertence a exatamente um Cliente ativo.
@@ -147,3 +154,8 @@
 11. Versões anteriores abrem exclusivamente em modo de visualização.
 12. Alterações não salvas impedem a publicação até que o estado normalizado seja persistido.
 13. Alterar URL, payload ou `client_id` não amplia acesso; a autorização é validada no PostgreSQL.
+14. O montador usa como elementos principais Robô, Sistema Externo, Decisão/Regra, Grupo/Contexto e Anotação; Stack, Ambiente e Status pertencem ao Robô.
+15. Fila é uma propriedade opcional da conexão e nunca um Node independente.
+16. Grupos são exclusivamente visuais, podem conter Nodes e não participam da execução do Fluxo.
+17. Conexões aceitam os tipos Envia para, Dispara, Processa, Gera Job, Depende de e Condição.
+18. Regra e Decisão compartilham o tipo persistido `decision`; o modo Decisão usa losango e nenhum dos modos limita a quantidade de conexões.

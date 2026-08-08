@@ -44,6 +44,8 @@ Evento histórico relacionado a um Robô por `roboId`. Possui categoria, descri�
 
 ### Usuário
 
+O perfil de usuário pode possuir vínculo opcional com um Cliente por `profiles.cliente_id`. Para o papel Cliente, o vínculo é obrigatório; para Admin, Operador e Suporte, é opcional. O vínculo determina o escopo de dados do usuário Cliente e não pode ser inferido pelo email ou pelo papel isoladamente.
+
 Identidade cadastrada para futuro acesso à aplicação. Possui login e tipo. A senha existe somente no dado transitório do formulário e não pertence à entidade persistível de perfil.
 
 O tipo **Suporte** representa consulta operacional restrita às Dashboards e não recebe permissões de escrita. Operador mantém consulta aos detalhes e atualização exclusiva da capacidade `ideal`/`max`; Admin permanece responsável pelo cadastro completo.
@@ -114,6 +116,10 @@ O Robô possui uma forma de disparo controlada: Agendado, Manual ou por Gatilho.
 O UUID é a identidade estável do Robô na planilha. `DadosImportacaoRobo` separa a operação dos campos presentes na linha, permitindo atualização parcial sem transformar células vazias em novos valores.
 
 ## Fluxos por Cliente
+
+O Montador de Fluxos documenta Robôs, Sistemas Externos, Decisões/Regras, Grupos/Contextos e Anotações. O Robô continua sendo referenciado por `robot_id`, portanto Nome, Sistema, Stack, Ambiente, Status, Agendamento e Versão refletem o cadastro atual. Grupos são apenas organização visual. Tipo, condição, fila e descrição das conexões pertencem à Edge.
+
+Nodes de estrutura usam `decisionMode` em `flow_nodes.data`: `rule` mantém apresentação em card e `decision` usa apresentação em losango. Ambos aceitam múltiplas conexões de entrada e saída; a quantidade de Edges não é limitada pelo modo visual.
 
 Um Fluxo é a documentação visual de uma automação e pertence obrigatoriamente a um Cliente. O cadastro principal mantém nome, descrição, status, versão atual e viewport. A composição é normalizada em Nodes e Edges; snapshots completos existem apenas no histórico de versões.
 

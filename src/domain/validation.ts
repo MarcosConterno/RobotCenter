@@ -47,6 +47,10 @@ export const dadosCadastroUsuarioSchema = z.object({
   email: z.string().trim().email("Informe um email válido."),
   senha: z.string().min(6, "A senha deve ter pelo menos 6 caracteres."),
   tipo: z.enum(TIPOS_USUARIO),
+  clienteId: z.string().uuid("Selecione um cliente válido.").nullable().optional(),
+}).refine((dados) => dados.tipo !== "Cliente" || Boolean(dados.clienteId), {
+  message: "Usuário Cliente deve estar vinculado a um cliente.",
+  path: ["clienteId"],
 });
 
 export const dadosCadastroClienteSchema = z.object({

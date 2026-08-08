@@ -233,13 +233,15 @@ erDiagram
 
 ### `flow_edges`
 
-`id`, `flow_id`, `source_node_id`, `target_node_id`, `type`, `label`, `condition`, `description`, auditoria e timestamps. Chaves estrangeiras compostas garantem que origem e destino pertençam ao mesmo Fluxo.
+`id`, `flow_id`, `source_node_id`, `target_node_id`, `type`, `label`, `condition`, `queue`, `description`, auditoria e timestamps. `queue` registra opcionalmente a fila vinculada à conexão, sem transformá-la em Node. Chaves estrangeiras compostas garantem que origem e destino pertençam ao mesmo Fluxo.
 
 ### `flow_versions`
 
 `id`, `flow_id`, `version`, `snapshot`, `created_by`, `created_at`. A combinação `(flow_id, version)` é única. Não existem grants ou policies de update/delete para usuários autenticados.
 
 Índices cobrem `client_id`, `flow_id`, `robot_id`, nodes de origem/destino, autoria e ordenação do histórico. Todas as quatro tabelas possuem RLS habilitada.
+
+`flows`, `flow_nodes` e `flow_edges` usam `private.set_flow_row_audit_fields()`, função de auditoria própria para registros sem exclusão lógica. Ela preserva autoria e criação e atualiza `updated_at`/`updated_by`, sem acessar campos `deleted_at` ou `deleted_by` inexistentes nessas tabelas.
 - Se Responsável continuará texto ou ganhará entidade própria de equipe/pessoa.
 - Relações Cliente–Robô e Cliente–Usuário.
 - Estratégia Supabase Auth, perfis, papéis e RLS.
@@ -267,6 +269,8 @@ A persistência inicial está definida pelas migrations em `supabase/migrations`
 3. catálogo mínimo e idempotente de papéis e permissões.
 
 `auth.users` é gerida pelo Supabase Auth e relacionada 1:1 com `profiles`. `robos.cliente_id` estabelece o isolamento por cliente. `regras_robo` preserva categoria e ordem das duas listas de regras, e a última publicação permanece um dado derivado de `publicacoes`.
+
+`profiles.cliente_id` é uma FK opcional para `clientes`, com `on delete restrict` e índice próprio. O valor é obrigatório por regra de negócio quando o profile recebe o papel Cliente e pode permanecer nulo ou ser preenchido para Admin, Operador e Suporte.
 
 Os tipos do schema ficam em `src/types/database.types.ts`. Após aplicar as migrations no Supabase Cloud, esse arquivo deve ser regenerado pela CLI para refletir o schema remoto como fonte final.
 

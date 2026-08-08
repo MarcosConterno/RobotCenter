@@ -126,6 +126,7 @@ export type Database = {
           flow_id: string
           id: string
           label: string
+          queue: string
           source_node_id: string
           target_node_id: string
           type: string
@@ -140,6 +141,7 @@ export type Database = {
           flow_id: string
           id?: string
           label?: string
+          queue?: string
           source_node_id: string
           target_node_id: string
           type?: string
@@ -154,6 +156,7 @@ export type Database = {
           flow_id?: string
           id?: string
           label?: string
+          queue?: string
           source_node_id?: string
           target_node_id?: string
           type?: string

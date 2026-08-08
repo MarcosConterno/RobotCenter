@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, ChevronRight, GitFork, LayoutDashboard, Settings2 } from "lucide-react";
+import { Bot, ChevronRight, GitFork, LayoutDashboard, PanelLeftClose, PanelLeftOpen, Settings2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -14,7 +14,12 @@ const navigation = [
   { href: "/configuracoes", label: "Configurações", description: "Usuários e clientes", icon: Settings2, access: "settings" },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  collapsed: boolean;
+  onToggle: () => void;
+}
+
+export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const { canAccessRobots, canAccessFlows, canAccessSettings, status } = useAdminAccess();
   const visibleNavigation = navigation.filter((item) => (
@@ -25,7 +30,16 @@ export default function Sidebar() {
   ));
 
   return (
-    <aside className="app-sidebar">
+    <aside className={`app-sidebar${collapsed ? " is-collapsed" : ""}`}>
+      <button
+        type="button"
+        className="sidebar-collapse-toggle"
+        aria-label={collapsed ? "Expandir menu de navegação" : "Recolher menu de navegação"}
+        title={collapsed ? "Expandir menu" : "Recolher menu"}
+        onClick={onToggle}
+      >
+        {collapsed ? <PanelLeftOpen size={14} /> : <PanelLeftClose size={14} />}
+      </button>
       <div>
         <Link href="/dashboard" className="sidebar-brand" aria-label="Robot Center — ir para a Dashboard">
           <div className="sidebar-brand-icon">
@@ -47,6 +61,7 @@ export default function Sidebar() {
                 key={item.href}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
+                title={collapsed ? item.label : undefined}
                 className={`sidebar-link${active ? " sidebar-link-active" : ""}`}
               >
                 <span className="sidebar-link-icon"><Icon size={17} /></span>

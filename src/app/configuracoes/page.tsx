@@ -26,6 +26,7 @@ export default function ConfiguracoesPage() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [tipoUsuario, setTipoUsuario] = useState<TipoUsuario>("Operador");
+  const [clienteUsuarioId, setClienteUsuarioId] = useState("");
   const [nomeCliente, setNomeCliente] = useState("");
   const [tenant, setTenant] = useState("");
   const [corCliente, setCorCliente] = useState<CorBadgeRobo>(() =>
@@ -43,6 +44,7 @@ export default function ConfiguracoesPage() {
   const [usuarioEditandoLogin, setUsuarioEditandoLogin] = useState("");
   const [usuarioEditandoEmail, setUsuarioEditandoEmail] = useState("");
   const [usuarioEditandoTipo, setUsuarioEditandoTipo] = useState<TipoUsuario>("Operador");
+  const [usuarioEditandoClienteId, setUsuarioEditandoClienteId] = useState("");
   const [clienteEditandoId, setClienteEditandoId] = useState<string | null>(null);
   const [clienteEditandoNome, setClienteEditandoNome] = useState("");
   const [clienteEditandoTenant, setClienteEditandoTenant] = useState("");
@@ -81,7 +83,7 @@ export default function ConfiguracoesPage() {
   async function cadastrarUsuario(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const result = dadosCadastroUsuarioSchema.safeParse({ login, email, senha, tipo: tipoUsuario });
+    const result = dadosCadastroUsuarioSchema.safeParse({ login, email, senha, tipo: tipoUsuario, clienteId: clienteUsuarioId || null });
     if (!result.success) {
       setErroUsuario(primeiraMensagemErro(result.error));
       return;
@@ -100,6 +102,7 @@ export default function ConfiguracoesPage() {
           email: result.data.email,
           password: result.data.senha,
           tipo: result.data.tipo,
+          clientId: result.data.clienteId ?? null,
         }),
       });
       const payload = await response.json() as { error?: string };
@@ -113,6 +116,7 @@ export default function ConfiguracoesPage() {
       setEmail("");
       setSenha("");
       setTipoUsuario("Operador");
+      setClienteUsuarioId("");
       setSucessoUsuario("Usuário cadastrado com sucesso.");
       setUsuariosGerenciados((atuais) => [...atuais, payload as Usuario]);
     } catch {
@@ -127,6 +131,7 @@ export default function ConfiguracoesPage() {
     setUsuarioEditandoLogin(usuario.login);
     setUsuarioEditandoEmail(usuario.email ?? "");
     setUsuarioEditandoTipo(usuario.tipo);
+    setUsuarioEditandoClienteId(usuario.clienteId ?? "");
     setErroUsuario("");
     setSucessoUsuario("");
   }
@@ -137,6 +142,10 @@ export default function ConfiguracoesPage() {
     const emailNormalizado = usuarioEditandoEmail.trim();
     if (!loginNormalizado || !emailNormalizado) {
       setErroUsuario("Informe o nome e o email do usuário.");
+      return;
+    }
+    if (usuarioEditandoTipo === "Cliente" && !usuarioEditandoClienteId) {
+      setErroUsuario("Usuário Cliente deve estar vinculado a um cliente.");
       return;
     }
 
@@ -151,6 +160,7 @@ export default function ConfiguracoesPage() {
           login: loginNormalizado,
           email: emailNormalizado,
           tipo: usuarioEditandoTipo,
+          clientId: usuarioEditandoClienteId || null,
         }),
       });
       const payload = await response.json() as { error?: string };
@@ -261,7 +271,7 @@ export default function ConfiguracoesPage() {
 
   return (
     <AppShell title="Configurações">
-      <div style={pageStyle}>
+      <div className="settings-page" style={pageStyle}>
         <div>
           <h1 style={titleStyle}>Cadastros</h1>
           <p style={subtitleStyle}>Gerencie usuários e clientes do Robot Center.</p>
@@ -341,10 +351,23 @@ export default function ConfiguracoesPage() {
                 <span style={labelStyle}>Tipo de usuário</span>
                 <select
                   value={tipoUsuario}
-                onChange={(event) => { setTipoUsuario(event.target.value as TipoUsuario); setErroUsuario(""); setSucessoUsuario(""); }}
+                  onChange={(event) => { setTipoUsuario(event.target.value as TipoUsuario); setErroUsuario(""); setSucessoUsuario(""); }}
                   style={inputStyle}
                 >
                   {TIPOS_USUARIO.map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
+                </select>
+              </label>
+
+              <label style={fieldStyle}>
+                <span style={labelStyle}>Cliente {tipoUsuario === "Cliente" ? "*" : "(opcional)"}</span>
+                <select
+                  value={clienteUsuarioId}
+                  onChange={(event) => { setClienteUsuarioId(event.target.value); setErroUsuario(""); setSucessoUsuario(""); }}
+                  required={tipoUsuario === "Cliente"}
+                  style={inputStyle}
+                >
+                  <option value="">Nenhum cliente</option>
+                  {clientes.map((cliente) => <option key={cliente.id} value={cliente.id}>{cliente.nome}</option>)}
                 </select>
               </label>
 
@@ -375,11 +398,16 @@ export default function ConfiguracoesPage() {
                       <select aria-label="Tipo de usuário" value={usuarioEditandoTipo} onChange={(event) => setUsuarioEditandoTipo(event.target.value as TipoUsuario)} style={compactInputStyle}>
                         {TIPOS_USUARIO.map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
                       </select>
+                      <select aria-label="Cliente vinculado" value={usuarioEditandoClienteId} onChange={(event) => setUsuarioEditandoClienteId(event.target.value)} required={usuarioEditandoTipo === "Cliente"} style={compactInputStyle}>
+                        <option value="">Nenhum cliente</option>
+                        {clientes.map((cliente) => <option key={cliente.id} value={cliente.id}>{cliente.nome}</option>)}
+                      </select>
                     </div>
                   ) : (
                     <div style={itemContentStyle}>
                       <span style={itemNameStyle}>{usuario.login}</span>
                       {usuario.email && <span style={itemSecondaryStyle}>{usuario.email}</span>}
+                      {usuario.clienteId && <span style={itemSecondaryStyle}>Cliente: {clientes.find((cliente) => cliente.id === usuario.clienteId)?.nome ?? "Cliente não encontrado"}</span>}
                     </div>
                   )}
                   <div style={itemActionsStyle}>
@@ -789,7 +817,7 @@ const editGridStyle: React.CSSProperties = {
   display: "grid",
   minWidth: 0,
   flex: 1,
-  gridTemplateColumns: "repeat(3, minmax(120px, 1fr))",
+  gridTemplateColumns: "repeat(2, minmax(150px, 1fr))",
   gap: 8,
   padding: "8px 0",
 };

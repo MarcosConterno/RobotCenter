@@ -93,7 +93,7 @@ export function FlowsDataProvider({ children }: { children: ReactNode }) {
     const [flowResult, nodesResult, edgesResult, versionsResult, creatorResult] = await Promise.all([
       supabase.from("flows").select("id,client_id,name,description,version,status,viewport,created_by,created_at,updated_at").eq("id", id).maybeSingle(),
       supabase.from("flow_nodes").select("id,flow_id,type,robot_id,position_x,position_y,data").eq("flow_id", id),
-      supabase.from("flow_edges").select("id,flow_id,source_node_id,target_node_id,type,label,condition,description").eq("flow_id", id),
+      supabase.from("flow_edges").select("id,flow_id,source_node_id,target_node_id,type,label,condition,queue,description").eq("flow_id", id),
       supabase.from("flow_versions").select("id,flow_id,version,snapshot,created_by,created_at").eq("flow_id", id).order("version", { ascending: false }),
       supabase.rpc("get_flow_creator_name", { target_flow_id: id }),
     ]);
@@ -109,7 +109,7 @@ export function FlowsDataProvider({ children }: { children: ReactNode }) {
       edges: (edgesResult.data ?? []).map((edge) => ({
         id: edge.id, fluxoId: edge.flow_id, nodeOrigemId: edge.source_node_id,
         nodeDestinoId: edge.target_node_id, tipo: edge.type, rotulo: edge.label,
-        condicao: edge.condition, descricao: edge.description,
+        condicao: edge.condition, fila: edge.queue, descricao: edge.description,
       })),
       versoes: (versionsResult.data ?? []).map((version) => ({
         id: version.id, fluxoId: version.flow_id, versao: version.version,
@@ -162,7 +162,7 @@ export function FlowsDataProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.from("flow_edges").upsert(edges.map((edge) => ({
         id: edge.id, flow_id: fluxo.id, source_node_id: edge.nodeOrigemId,
         target_node_id: edge.nodeDestinoId, type: edge.tipo, label: edge.rotulo,
-        condition: edge.condicao, description: edge.descricao,
+        condition: edge.condicao, queue: edge.fila, description: edge.descricao,
       })));
       if (error) throw error;
     }

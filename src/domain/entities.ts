@@ -58,6 +58,7 @@ export interface EdgeFluxo {
   tipo: string;
   rotulo: string;
   condicao: string;
+  fila: string;
   descricao: string;
 }
 
@@ -148,6 +149,7 @@ export interface Usuario {
   login: string;
   email?: string;
   tipo: TipoUsuario;
+  clienteId?: string | null;
 }
 
 export interface DadosCadastroUsuario {
@@ -155,6 +157,7 @@ export interface DadosCadastroUsuario {
   email: string;
   senha: string;
   tipo: TipoUsuario;
+  clienteId?: string | null;
 }
 
 export interface Cliente {

@@ -27,6 +27,7 @@ Nenhuma policy deve ser criada antes dessas decisões, pois apenas usar o papel 
 As migrations implementam autorização por tabelas RBAC e RLS deny-by-default:
 
 - **Admin**: gerencia clientes, profiles, papéis, permissões, robôs, regras e publicações conforme os grants disponíveis. Pode editar e arquivar usuários e clientes, sem excluir fisicamente seus históricos.
+- O vínculo entre usuário e Cliente é alterado somente pelo endpoint `/api/admin/users`, após validação server-side do papel Admin. A operação usa o cliente administrativo apenas depois dessa validação; papéis não administrativos recebem `403` e não podem escolher outro `cliente_id` por payload.
 - O primeiro administrador é inicializado de forma idempotente para `marcos.vinicius@loylegal.com`; os demais vínculos são gerenciados pela tela administrativa.
 - A importação em lote de robôs e o download do modelo são exclusivos do papel Admin. A interface reutiliza a autorização da sessão autenticada, carregada centralmente, evitando validações repetidas a cada ação; operações persistentes continuam protegidas no servidor e pelas policies RLS.
 - **Operador**: consulta robôs e detalhes e altera somente `ideal` e `max` pela permissão `robots.capacity.update`; não acessa Configurações nem a manutenção completa de robôs.
@@ -57,6 +58,10 @@ As policies consultam `roles`, `permissions`, `user_roles` e `role_permissions` 
 | Cliente | Próprio cliente | Não | Próprio cliente | Não |
 
 As permissões RBAC são `flows.read`, `flows.create`, `flows.update`, `flows.delete` e `flows.publish`. As policies de `flow_nodes`, `flow_edges` e `flow_versions` herdam o cliente consultando o Fluxo relacionado. `client_id` recebido da interface nunca é suficiente para autorizar uma operação.
+
+A fila de uma conexão é armazenada em `flow_edges.queue` e segue exatamente a mesma RLS da Edge. A adição dessa propriedade não amplia os grants nem altera o escopo por Cliente.
+
+Os triggers de auditoria dos Fluxos executam uma função privada sem grants diretos para usuários. A função apenas preenche autoria e timestamps; não ignora nem substitui as policies RLS aplicadas à operação original.
 
 O RPC `publish_flow` usa `SECURITY INVOKER`: as policies e permissões da sessão continuam ativas durante a atualização do Fluxo e a criação da versão. Não há acesso anônimo às tabelas ou ao RPC.
 

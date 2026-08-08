@@ -1,4 +1,5 @@
 import ThemeToggle from "@/components/theme/ThemeToggle";
+import PasswordInput from "@/components/auth/PasswordInput";
 import Image from "next/image";
 
 interface LoginPageProps {
@@ -47,15 +48,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
           <label style={fieldStyle}>
             <span style={labelStyle}>Senha</span>
-            <input
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              minLength={6}
-              placeholder="Digite sua senha"
-              style={inputStyle}
-            />
+            <PasswordInput inputStyle={inputStyle} />
           </label>
 
           <a href="/recuperar-senha" style={forgotPasswordStyle}>
