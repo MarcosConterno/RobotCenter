@@ -140,7 +140,6 @@ export default function Feed({ publicacoes, robos, onViewRobot }: FeedProps) {
                   {parsedDescription.ruleChanges.map((rule, index) => (
                     <div key={`${rule.type}-${index}`} className="updates-feed__rule-change">
                       <strong><Plus size={12} /> {rule.type}</strong>
-                      <span>Adicionada regra: {rule.description}</span>
                     </div>
                   ))}
                 </div>
