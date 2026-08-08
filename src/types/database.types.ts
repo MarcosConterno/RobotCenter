@@ -369,6 +369,9 @@ export type Database = {
           deleted_by: string | null
           descricao: string
           fila: string
+          disparo: string
+          gatilho_de_robo_id: string | null
+          gatilho_para_robo_id: string | null
           id: string
           ideal: number
           max: number
@@ -397,6 +400,9 @@ export type Database = {
           deleted_by?: string | null
           descricao: string
           fila: string
+          disparo?: string
+          gatilho_de_robo_id?: string | null
+          gatilho_para_robo_id?: string | null
           id?: string
           ideal?: number
           max?: number
@@ -425,6 +431,9 @@ export type Database = {
           deleted_by?: string | null
           descricao?: string
           fila?: string
+          disparo?: string
+          gatilho_de_robo_id?: string | null
+          gatilho_para_robo_id?: string | null
           id?: string
           ideal?: number
           max?: number
@@ -453,6 +462,20 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "robos_gatilho_de_fkey"
+            columns: ["gatilho_de_robo_id"]
+            isOneToOne: false
+            referencedRelation: "robos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "robos_gatilho_para_fkey"
+            columns: ["gatilho_para_robo_id"]
+            isOneToOne: false
+            referencedRelation: "robos"
             referencedColumns: ["id"]
           },
           {

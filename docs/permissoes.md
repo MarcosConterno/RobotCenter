@@ -45,3 +45,5 @@ As policies consultam `roles`, `permissions`, `user_roles` e `role_permissions` 
 - Todo usuário autenticado pode alterar exclusivamente a própria senha pelo menu da conta. A operação usa a sessão atual do Supabase Auth e não concede acesso administrativo a outros usuários.
 - O histórico do Dashboard respeita `publicacoes_select`; somente papéis com `publications.create` podem inserir registros por **Salvar e publicar**.
 - O bucket privado `robot-manuals` permite leitura somente a quem possui `robots.read` e acesso ao cliente do robô. Upload e substituição exigem `robots.update`; não existe acesso anônimo.
+- Os relacionamentos de gatilho fazem parte de `robos`: leitura segue `robots.read` e alteração segue `robots.update`, com o mesmo isolamento por cliente já aplicado pela RLS.
+- A importação permanece restrita à capacidade administrativa. UUIDs fora das linhas visíveis ao usuário são rejeitados na validação, e a RLS continua sendo a barreira definitiva na gravação.

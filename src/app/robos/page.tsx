@@ -207,6 +207,7 @@ async function salvarRobot(dados: DadosFormularioRobo, publicar: boolean) {
                 <RobotDetails
                   robot={selectedRobot}
                   clientes={clientes}
+                  robos={robos}
                   onEdit={canManageRobots ? (robo) => {
                     setSelectedRobot(robo);
                     setDrawerMode("edit");
@@ -227,6 +228,8 @@ async function salvarRobot(dados: DadosFormularioRobo, publicar: boolean) {
       >
         <RobotForm
           clientes={clientes}
+          robos={robos}
+          currentRobotId={drawerMode === "edit" ? selectedRobot?.id : undefined}
           alteracoesExistentes={drawerMode === "edit" && selectedRobot ? selectedRobot.alteracoes : []}
           key={`${drawerMode}-${selectedRobot?.id ?? "new"}`}
           initialValues={drawerMode === "edit" && selectedRobot ? obterDadosFormulario(selectedRobot) : undefined}
@@ -238,6 +241,8 @@ async function salvarRobot(dados: DadosFormularioRobo, publicar: boolean) {
       </RobotDrawer>}
       {canManageRobots && <RobotImportDialog
         open={importOpen}
+        robos={robos}
+        clientes={clientes}
         onClose={() => setImportOpen(false)}
         onImport={async (items) => {
           await importarRobos(items);

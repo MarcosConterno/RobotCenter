@@ -120,3 +120,14 @@
 - Ao publicar regras novas, a descrição identifica separadamente regras de `Documentação` e de `Fora da Documentação`, incluindo o texto de cada regra. Quando as duas categorias mudam, ambas aparecem no mesmo item do feed.
 - O manual do robô é opcional, deve ser PDF e possuir no máximo 20 MB.
 - Um novo upload substitui o arquivo lógico `<robo_id>/manual.pdf`; os detalhes abrem o manual em modal usando URL assinada temporária.
+- Disparo aceita somente Agendado, Manual ou por Gatilho; registros existentes assumem Manual.
+- Gatilho De e Gatilho Para são opcionais, não aceitam o próprio robô e somente podem selecionar robôs ativos do mesmo cliente.
+
+## Importação de robôs
+
+- Cada linha informa explicitamente `Criar` ou `Atualizar`.
+- Atualizações usam exclusivamente o UUID de `robos.id`; células vazias preservam o banco.
+- ID ausente, desconhecido ou repetido invalida a planilha antes de qualquer gravação.
+- Linhas de criação mantêm o ID vazio. O cliente continua sendo relacionado pelo nome.
+- Regras e alterações históricas não são substituídas pela planilha de atualização.
+- A gravação exige confirmação após uma prévia das criações e atualizações.

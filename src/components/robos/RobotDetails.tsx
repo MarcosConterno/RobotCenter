@@ -10,6 +10,8 @@ import {
   Pencil,
   Server,
   User,
+  Workflow,
+  Zap,
   X,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
@@ -20,10 +22,11 @@ import { createClient } from "@/lib/supabase/client";
 interface RobotDetailsProps {
   robot: Robo | null;
   clientes?: Cliente[];
+  robos?: Robo[];
   onEdit?: (robot: Robo) => void;
 }
 
-export default function RobotDetails({ robot, clientes = [], onEdit }: RobotDetailsProps) {
+export default function RobotDetails({ robot, clientes = [], robos = [], onEdit }: RobotDetailsProps) {
   const [rulesTab, setRulesTab] = useState<"documentacao" | "fora-documentacao">("documentacao");
   const [manualUrl, setManualUrl] = useState<string | null>(null);
   const [manualLoading, setManualLoading] = useState(false);
@@ -40,6 +43,8 @@ export default function RobotDetails({ robot, clientes = [], onEdit }: RobotDeta
   const regrasForaDocumentacao = robot.regrasForaDocumentacao ?? [];
   const regrasVisiveis = rulesTab === "documentacao" ? regras : regrasForaDocumentacao;
   const cliente = clientes.find((item) => item.id === robot.clienteId);
+  const gatilhoDe = robos.find((item) => item.id === robot.gatilhoDeRoboId);
+  const gatilhoPara = robos.find((item) => item.id === robot.gatilhoParaRoboId);
 
   async function abrirManual() {
     if (!robot?.manualPath) return;
@@ -124,6 +129,9 @@ export default function RobotDetails({ robot, clientes = [], onEdit }: RobotDeta
             <DetailRow icon={<Bot size={17} />} label="Max" value={robot.max} />
             <DetailRow icon={<Package size={17} />} label="Pacote" value={robot.pacote} />
             <DetailRow icon={<Bot size={17} />} label="Versão" value={robot.versao} />
+            <DetailRow icon={<Zap size={17} />} label="Disparo" value={robot.disparo === "Gatilho" ? "Por Gatilho" : robot.disparo ?? "Manual"} />
+            <DetailRow icon={<Workflow size={17} />} label="Gatilho De" value={gatilhoDe?.nome ?? "Nenhum"} />
+            <DetailRow icon={<Workflow size={17} />} label="Gatilho Para" value={gatilhoPara?.nome ?? "Nenhum"} />
           </div>
         </DetailSection>
       </div>

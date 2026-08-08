@@ -99,7 +99,7 @@ export default function DashboardPage() {
             </div>
 
             <div style={{ padding: 20 }}>
-              <RobotDetails robot={selectedRobot} clientes={clientes} />
+              <RobotDetails robot={selectedRobot} clientes={clientes} robos={robos} />
             </div>
           </section>
         </div>

@@ -14,6 +14,7 @@ import {
   type Usuario,
 } from "@/domain/entities";
 import { createClient } from "@/lib/supabase/client";
+import type { Database } from "@/types/database.types";
 
 const LIMITE_PUBLICACOES = 20;
 
@@ -130,6 +131,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         fila: item.fila,
         versao: item.versao,
         responsavel: item.responsavel,
+        disparo: item.disparo as Robo["disparo"],
+        gatilhoDeRoboId: item.gatilho_de_robo_id,
+        gatilhoParaRoboId: item.gatilho_para_robo_id,
         manualPath: item.manual_path,
         manualNome: item.manual_nome,
         ultimaPublicacaoEm: publicacoes.find((publicacao) => publicacao.robo_id === item.id)?.publicada_em ?? item.updated_at,
@@ -151,6 +155,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       pacote_cor: cadastro.pacoteCor, descricao: cadastro.descricao, ambiente: cadastro.ambiente,
       ativo: cadastro.ativo, stack: cadastro.stack, fila: cadastro.fila, versao: cadastro.versao,
       responsavel: cadastro.responsavel,
+      disparo: cadastro.disparo, gatilho_de_robo_id: cadastro.gatilhoDeRoboId,
+      gatilho_para_robo_id: cadastro.gatilhoParaRoboId,
     }).select("id,updated_at").single();
     if (erroRobo) throw erroRobo;
     const manual = await enviarManualRobo(roboCriado.id, manualArquivo);
@@ -196,6 +202,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       pacote: cadastro.pacote, pacote_cor: cadastro.pacoteCor, descricao: cadastro.descricao,
       ambiente: cadastro.ambiente, ativo: cadastro.ativo, stack: cadastro.stack, fila: cadastro.fila,
       versao: cadastro.versao, responsavel: cadastro.responsavel,
+      disparo: cadastro.disparo, gatilho_de_robo_id: cadastro.gatilhoDeRoboId,
+      gatilho_para_robo_id: cadastro.gatilhoParaRoboId,
     }).eq("id", id);
     if (error) throw error;
     const manual = await enviarManualRobo(id, manualArquivo);
@@ -306,11 +314,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       if (!corPacotePorNome.has(chaveNomePacote)) corPacotePorNome.set(chaveNomePacote, robo.pacoteCor);
     });
 
-    const novosRobos: Robo[] = [];
-    for (const dados of itens) {
-      const { alteracoesRealizadas, clienteNome, ...cadastro } = dados;
+    async function obterCliente(clienteNome: string) {
       const chaveCliente = normalizarIdentificador(clienteNome);
-      const chavePacote = normalizarIdentificador(cadastro.pacote);
       let cliente = clientesPorNome.get(chaveCliente);
       if (!cliente) {
         const nome = clienteNome.trim() || "Cliente não informado";
@@ -328,6 +333,81 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         clientesPorNome.set(chaveCliente, cliente);
         tenantsEmUso.add(tenant);
       }
+      return cliente;
+    }
+
+    const novosRobos: Robo[] = [];
+    const robosAtualizados: Robo[] = [];
+    for (const item of itens) {
+      const { campos } = item;
+
+      if (item.operacao === "Atualizar") {
+        const atual = robos.find((robo) => robo.id === item.roboId);
+        if (!atual || !item.roboId) throw new Error(`Linha ${item.linha}: robô não encontrado para atualização.`);
+        const clienteAtual = clientesAtualizados.find((cliente) => cliente.id === atual.clienteId);
+        const cliente = campos.clienteNome ? await obterCliente(campos.clienteNome) : clienteAtual;
+        if (!cliente) throw new Error(`Linha ${item.linha}: cliente atual não encontrado.`);
+        const proximoPacote = campos.pacote ?? atual.pacote;
+        const chavePacote = normalizarIdentificador(proximoPacote);
+        const pacoteCor = corPacotePorNome.get(chavePacote) ?? atual.pacoteCor;
+        const patch: Database["public"]["Tables"]["robos"]["Update"] = {};
+        if (campos.clienteNome !== undefined) patch.cliente_id = cliente.id;
+        if (campos.nome !== undefined) patch.nome = campos.nome;
+        if (campos.sistema !== undefined) patch.sistema = campos.sistema;
+        if (campos.courtName !== undefined) patch.court_name = campos.courtName;
+        if (campos.ideal !== undefined) patch.ideal = campos.ideal;
+        if (campos.max !== undefined) patch.max = campos.max;
+        if (campos.pacote !== undefined) { patch.pacote = campos.pacote; patch.pacote_cor = pacoteCor; }
+        if (campos.descricao !== undefined) patch.descricao = campos.descricao;
+        if (campos.ambiente !== undefined) patch.ambiente = campos.ambiente;
+        if (campos.ativo !== undefined) patch.ativo = campos.ativo;
+        if (campos.stack !== undefined) patch.stack = campos.stack;
+        if (campos.fila !== undefined) patch.fila = campos.fila;
+        if (campos.versao !== undefined) patch.versao = campos.versao;
+        if (campos.responsavel !== undefined) patch.responsavel = campos.responsavel;
+        if (campos.disparo !== undefined) patch.disparo = campos.disparo;
+        if (campos.gatilhoDeRoboId !== undefined) patch.gatilho_de_robo_id = campos.gatilhoDeRoboId;
+        if (campos.gatilhoParaRoboId !== undefined) patch.gatilho_para_robo_id = campos.gatilhoParaRoboId;
+        const { error } = await supabase.from("robos").update(patch).eq("id", item.roboId);
+        if (error) throw new Error(`Linha ${item.linha}: ${error.message}`);
+        const atualizado: Robo = {
+          ...atual,
+          ...campos,
+          clienteId: cliente.id,
+          clienteCor: cliente.cor,
+          pacoteCor,
+        };
+        delete (atualizado as Robo & { clienteNome?: string }).clienteNome;
+        robosAtualizados.push(atualizado);
+        continue;
+      }
+
+      const cliente = await obterCliente(campos.clienteNome ?? "Cliente não informado");
+      const cadastro: DadosFormularioRobo = {
+        clienteId: cliente.id,
+        nome: campos.nome ?? `Robô importado ${item.linha - 1}`,
+        sistema: campos.sistema ?? "Não informado",
+        courtName: campos.courtName ?? "Não informado",
+        fila: campos.fila ?? "Não informado",
+        stack: campos.stack ?? "Não informado",
+        ideal: campos.ideal ?? 0,
+        max: Math.max(campos.max ?? 0, campos.ideal ?? 0),
+        pacote: campos.pacote ?? "Não informado",
+        pacoteCor: campos.pacoteCor ?? "violeta",
+        versao: campos.versao ?? "Não informado",
+        descricao: campos.descricao ?? "Não informado",
+        ambiente: campos.ambiente ?? "Desenvolvimento",
+        ativo: campos.ativo ?? false,
+        responsavel: campos.responsavel ?? "Não informado",
+        disparo: campos.disparo ?? "Manual",
+        gatilhoDeRoboId: campos.gatilhoDeRoboId ?? null,
+        gatilhoParaRoboId: campos.gatilhoParaRoboId ?? null,
+        alteracoesRealizadas: campos.alteracoesRealizadas ?? [],
+        regras: campos.regras ?? [],
+        regrasForaDocumentacao: campos.regrasForaDocumentacao ?? [],
+      };
+      const { alteracoesRealizadas, ...cadastroSemAlteracoes } = cadastro;
+      const chavePacote = normalizarIdentificador(cadastro.pacote);
       const clienteCor = cliente.cor;
       const pacoteCor = corPacotePorNome.get(chavePacote) ?? cadastro.pacoteCor;
       corPacotePorNome.set(chavePacote, pacoteCor);
@@ -336,6 +416,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         ideal: cadastro.ideal, max: cadastro.max, pacote: cadastro.pacote, pacote_cor: pacoteCor, descricao: cadastro.descricao,
         ambiente: cadastro.ambiente, ativo: cadastro.ativo, stack: cadastro.stack, fila: cadastro.fila,
         versao: cadastro.versao, responsavel: cadastro.responsavel,
+        disparo: cadastro.disparo, gatilho_de_robo_id: cadastro.gatilhoDeRoboId,
+        gatilho_para_robo_id: cadastro.gatilhoParaRoboId,
       }).select("id,updated_at").single();
       if (erroRobo) throw erroRobo;
       const regras = [
@@ -354,7 +436,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         alteracoesCriadas = data;
       }
       novosRobos.push({
-        ...cadastro,
+        ...cadastroSemAlteracoes,
         clienteCor,
         pacoteCor,
         clienteId: cliente.id,
@@ -364,8 +446,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       });
     }
     setClientes(clientesAtualizados);
-    setRobos((atuais) => [...atuais, ...novosRobos]);
-    return novosRobos;
+    setRobos((atuais) => {
+      const atualizadosPorId = new Map(robosAtualizados.map((robo) => [robo.id, robo]));
+      return [...atuais.map((robo) => atualizadosPorId.get(robo.id) ?? robo), ...novosRobos];
+    });
+    return [...novosRobos, ...robosAtualizados];
   }
 
   async function atualizarCliente(id: string, dados: DadosCadastroCliente) {

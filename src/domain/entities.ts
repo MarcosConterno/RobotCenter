@@ -6,11 +6,13 @@ export const CATEGORIAS_PUBLICACAO = [
   "Atualização de Regra",
   "Atualização do Robô",
 ] as const;
+export const TIPOS_DISPARO_ROBO = ["Agendado", "Manual", "Gatilho"] as const;
 
 export type AmbienteRobo = (typeof AMBIENTES_ROBO)[number];
 export type TipoUsuario = (typeof TIPOS_USUARIO)[number];
 export type CorBadgeRobo = (typeof CORES_BADGE_ROBO)[number];
 export type CategoriaPublicacao = (typeof CATEGORIAS_PUBLICACAO)[number];
+export type TipoDisparoRobo = (typeof TIPOS_DISPARO_ROBO)[number];
 
 export interface RegraRobo {
   descricao: string;
@@ -40,6 +42,9 @@ export interface Robo {
   fila: string;
   versao: string;
   responsavel: string;
+  disparo?: TipoDisparoRobo;
+  gatilhoDeRoboId?: string | null;
+  gatilhoParaRoboId?: string | null;
   manualPath?: string | null;
   manualNome?: string | null;
   ultimaPublicacaoEm: string;
@@ -53,9 +58,20 @@ export type DadosFormularioRobo = Omit<Robo, "id" | "ultimaPublicacaoEm" | "alte
   manualArquivo?: File | null;
 };
 
-export type DadosImportacaoRobo = Omit<DadosFormularioRobo, "clienteId"> & {
-  clienteNome: string;
+export type OperacaoImportacaoRobo = "Criar" | "Atualizar";
+
+export type CamposImportacaoRobo = Partial<
+  Omit<DadosFormularioRobo, "clienteId" | "manualArquivo" | "manualPath" | "manualNome">
+> & {
+  clienteNome?: string;
 };
+
+export interface DadosImportacaoRobo {
+  operacao: OperacaoImportacaoRobo;
+  roboId?: string;
+  linha: number;
+  campos: CamposImportacaoRobo;
+}
 
 export interface Publicacao {
   id: string;

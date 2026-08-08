@@ -3,13 +3,15 @@
 import { Bot, FileText, GripVertical, Layers3, Paperclip, Plus, Save, Send, Trash2, Upload, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { formatarData } from "@/domain/formatters";
-import { AMBIENTES_ROBO, type AlteracaoRobo, type Cliente, type DadosFormularioRobo } from "@/domain/entities";
+import { AMBIENTES_ROBO, TIPOS_DISPARO_ROBO, type AlteracaoRobo, type Cliente, type DadosFormularioRobo, type Robo } from "@/domain/entities";
 import { dadosFormularioRoboSchema, primeiraMensagemErro } from "@/domain/validation";
 import { PALETAS_BADGE_ROBO } from "@/domain/badge-colors";
 import { CORES_BADGE_ROBO, type CorBadgeRobo } from "@/domain/entities";
 
 interface RobotFormProps {
   clientes: Cliente[];
+  robos: Robo[];
+  currentRobotId?: string;
   alteracoesExistentes?: AlteracaoRobo[];
   initialValues?: DadosFormularioRobo;
   mode: "create" | "edit";
@@ -20,6 +22,8 @@ interface RobotFormProps {
 
 export default function RobotForm({
   clientes,
+  robos,
+  currentRobotId,
   alteracoesExistentes = [],
   initialValues = FORMULARIO_ROBO_INICIAL,
   mode,
@@ -31,6 +35,9 @@ export default function RobotForm({
   const [formError, setFormError] = useState("");
   const [rulesTab, setRulesTab] = useState<"documentacao" | "fora-documentacao">("documentacao");
   const [draggedRuleIndex, setDraggedRuleIndex] = useState<number | null>(null);
+  const robosDoCliente = robos
+    .filter((robo) => robo.clienteId === form.clienteId && robo.id !== currentRobotId && robo.ativo)
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
   function update<K extends keyof DadosFormularioRobo>(field: K, value: DadosFormularioRobo[K]) {
     setForm((old) => ({ ...old, [field]: value }));
@@ -138,7 +145,11 @@ export default function RobotForm({
         <div style={technicalFieldsGridStyle}>
           <div>
             <label style={labelStyle}>Cliente</label>
-            <select value={form.clienteId || ""} onChange={(event) => update("clienteId", event.target.value)} required style={inputStyle}>
+            <select value={form.clienteId || ""} onChange={(event) => {
+              const clienteId = event.target.value;
+              setForm((old) => ({ ...old, clienteId, gatilhoDeRoboId: null, gatilhoParaRoboId: null }));
+              setFormError("");
+            }} required style={inputStyle}>
               <option value="" disabled>Selecione um cliente</option>
               {clientes.map((cliente) => <option key={cliente.id} value={cliente.id}>{cliente.nome}</option>)}
             </select>
@@ -156,6 +167,26 @@ export default function RobotForm({
             <ColorPicker label="Cor do pacote" value={form.pacoteCor} onChange={(value) => update("pacoteCor", value)} />
           </div>
           <Field label="Versão" placeholder="Ex.: 1.0.0" value={form.versao} onChange={(v) => update("versao", v)} required />
+          <div>
+            <label style={labelStyle}>Disparo</label>
+            <select value={form.disparo} onChange={(event) => update("disparo", event.target.value as DadosFormularioRobo["disparo"])} style={inputStyle}>
+              {TIPOS_DISPARO_ROBO.map((tipo) => <option key={tipo} value={tipo}>{tipo === "Gatilho" ? "Por Gatilho" : tipo}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={labelStyle}>Gatilho De</label>
+            <select value={form.gatilhoDeRoboId ?? ""} onChange={(event) => update("gatilhoDeRoboId", event.target.value || null)} style={inputStyle}>
+              <option value="">Nenhum</option>
+              {robosDoCliente.map((robo) => <option key={robo.id} value={robo.id}>{robo.nome}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={labelStyle}>Gatilho Para</label>
+            <select value={form.gatilhoParaRoboId ?? ""} onChange={(event) => update("gatilhoParaRoboId", event.target.value || null)} style={inputStyle}>
+              <option value="">Nenhum</option>
+              {robosDoCliente.map((robo) => <option key={robo.id} value={robo.id}>{robo.nome}</option>)}
+            </select>
+          </div>
         </div>
       </FormSection>
 
@@ -464,6 +495,9 @@ const FORMULARIO_ROBO_INICIAL: DadosFormularioRobo = {
   fila: "",
   versao: "",
   responsavel: "",
+  disparo: "Manual",
+  gatilhoDeRoboId: null,
+  gatilhoParaRoboId: null,
   manualPath: null,
   manualNome: null,
   manualArquivo: null,

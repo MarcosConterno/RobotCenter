@@ -104,3 +104,11 @@ Alterações de regras são registradas na descrição da publicação com a cat
 ## Manual do robô
 
 O Robô pode possuir um manual PDF opcional. `manualPath` identifica o objeto privado no Storage e `manualNome` preserva o nome apresentado ao usuário. O manual não integra regras ou publicações e pode ser substituído durante a edição.
+
+## Disparo e fluxo
+
+O Robô possui uma forma de disparo controlada: Agendado, Manual ou por Gatilho. `gatilhoDeRoboId` identifica o robô anterior que pode iniciar o atual; `gatilhoParaRoboId` identifica o próximo robô que pode ser iniciado. Ambos pertencem obrigatoriamente ao mesmo Cliente.
+
+## Importação segura
+
+O UUID é a identidade estável do Robô na planilha. `DadosImportacaoRobo` separa a operação dos campos presentes na linha, permitindo atualização parcial sem transformar células vazias em novos valores.

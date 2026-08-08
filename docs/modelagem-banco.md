@@ -249,6 +249,14 @@ O componente **Atualizações recentes** lê `public.publicacoes`, ordenada por 
 ## Manual PDF do robô
 
 `robos.manual_path` e `robos.manual_nome` referenciam o manual armazenado no bucket privado `robot-manuals`. O objeto usa o caminho `<robo_id>/manual.pdf`, aceita somente PDF de até 20 MB e é aberto por URL assinada temporária. O banco não armazena o conteúdo binário.
+
+## Disparo e relacionamentos entre robôs
+
+`robos.disparo` aceita `Agendado`, `Manual` ou `Gatilho`. `gatilho_de_robo_id` e `gatilho_para_robo_id` são chaves estrangeiras opcionais para `robos.id`, indexadas para futuras consultas de fluxo. Um trigger impede autorreferência, robôs excluídos e relações entre clientes diferentes.
 ## Distribuição automática de cores
 
 `clientes.cor` guarda a cor visual única do cadastro do cliente. `robos.pacote_cor` é sincronizada por nome normalizado de pacote: o trigger `robos_set_package_color` reutiliza a cor existente ou escolhe a próxima opção da paleta para pacotes inéditos. A migration preserva os registros e não altera as policies RLS.
+
+## Importação e atualização em lote
+
+A planilha usa `robos.id` como chave de atualização e não cria unicidade artificial sobre nome ou CourtName. Updates enviam apenas colunas preenchidas. A estrutura do banco não muda e inserts/updates continuam sujeitos às policies existentes.
