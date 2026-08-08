@@ -159,3 +159,4 @@
 16. Grupos são exclusivamente visuais, podem conter Nodes e não participam da execução do Fluxo.
 17. Conexões aceitam os tipos Envia para, Dispara, Processa, Gera Job, Depende de e Condição.
 18. Regra e Decisão compartilham o tipo persistido `decision`; o modo Decisão usa losango e nenhum dos modos limita a quantidade de conexões.
+19. A etiqueta de uma conexão pode ser redimensionada manualmente; dimensões ausentes mantêm o tamanho automático e dimensões informadas respeitam os mínimos de 70 × 34 pixels.

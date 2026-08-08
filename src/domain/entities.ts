@@ -60,6 +60,8 @@ export interface EdgeFluxo {
   condicao: string;
   fila: string;
   descricao: string;
+  rotuloLargura: number | null;
+  rotuloAltura: number | null;
 }
 
 export interface VersaoFluxo {

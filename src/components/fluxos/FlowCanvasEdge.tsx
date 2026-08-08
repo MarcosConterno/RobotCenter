@@ -8,6 +8,11 @@ export interface FlowCanvasEdgeData extends Record<string, unknown> {
   condicao?: string;
   fila?: string;
   descricao?: string;
+  labelWidth?: number | null;
+  labelHeight?: number | null;
+  editable?: boolean;
+  onLabelResize?: (width: number, height: number) => void;
+  onSelect?: () => void;
 }
 
 export default function FlowCanvasEdge(props: EdgeProps) {
@@ -21,8 +26,11 @@ export default function FlowCanvasEdge(props: EdgeProps) {
       {labels.length ? (
         <EdgeLabelRenderer>
           <div
-            className={`flow-edge-label${props.selected ? " is-selected" : ""}`}
-            style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
+            className={`flow-edge-label nodrag nopan${props.selected ? " is-selected" : ""}`}
+            style={{
+              transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+            }}
+            onClick={() => data.onSelect?.()}
           >
             {labels.map((label) => <span key={label}>{label}</span>)}
           </div>

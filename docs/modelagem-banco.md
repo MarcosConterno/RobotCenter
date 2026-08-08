@@ -233,7 +233,7 @@ erDiagram
 
 ### `flow_edges`
 
-`id`, `flow_id`, `source_node_id`, `target_node_id`, `type`, `label`, `condition`, `queue`, `description`, auditoria e timestamps. `queue` registra opcionalmente a fila vinculada à conexão, sem transformá-la em Node. Chaves estrangeiras compostas garantem que origem e destino pertençam ao mesmo Fluxo.
+`id`, `flow_id`, `source_node_id`, `target_node_id`, `type`, `label`, `condition`, `queue`, `description`, `label_width`, `label_height`, auditoria e timestamps. `queue` registra opcionalmente a fila vinculada à conexão, sem transformá-la em Node. `label_width` e `label_height` preservam o tamanho manual da etiqueta da conexão. Chaves estrangeiras compostas garantem que origem e destino pertençam ao mesmo Fluxo.
 
 ### `flow_versions`
 

@@ -6,7 +6,7 @@ O módulo usa o cliente Supabase autenticado e Row Level Security. Não expõe u
 
 `flow_nodes.data` persiste somente propriedades específicas da documentação visual, incluindo descrição, observações, vínculo com grupo e dimensões. Os dados principais de Robôs não são duplicados e continuam resolvidos por `robot_id`.
 
-As conexões persistem `type`, `condition`, `queue` e `description` em `flow_edges`. `queue` é opcional, utiliza string vazia quando ausente e segue a autorização herdada por `flow_id`.
+As conexões persistem `type`, `condition`, `queue`, `description`, `label_width` e `label_height` em `flow_edges`. `queue` é opcional, utiliza string vazia quando ausente, e as dimensões opcionais preservam o redimensionamento manual da etiqueta. Todos os campos seguem a autorização herdada por `flow_id`.
 
 ## Leituras
 

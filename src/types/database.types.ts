@@ -126,6 +126,8 @@ export type Database = {
           flow_id: string
           id: string
           label: string
+          label_height: number | null
+          label_width: number | null
           queue: string
           source_node_id: string
           target_node_id: string
@@ -141,6 +143,8 @@ export type Database = {
           flow_id: string
           id?: string
           label?: string
+          label_height?: number | null
+          label_width?: number | null
           queue?: string
           source_node_id: string
           target_node_id: string
@@ -156,6 +160,8 @@ export type Database = {
           flow_id?: string
           id?: string
           label?: string
+          label_height?: number | null
+          label_width?: number | null
           queue?: string
           source_node_id?: string
           target_node_id?: string

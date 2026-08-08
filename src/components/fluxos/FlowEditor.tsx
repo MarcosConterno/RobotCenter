@@ -120,7 +120,15 @@ function toCanvasEdges(edges: EdgeFluxo[]): Edge[] {
     id: edge.id,
     source: edge.nodeOrigemId,
     target: edge.nodeDestinoId,
-    data: { tipo: edge.tipo, rotulo: edge.rotulo, condicao: edge.condicao, fila: edge.fila, descricao: edge.descricao },
+    data: {
+      tipo: edge.tipo,
+      rotulo: edge.rotulo,
+      condicao: edge.condicao,
+      fila: edge.fila,
+      descricao: edge.descricao,
+      labelWidth: edge.rotuloLargura,
+      labelHeight: edge.rotuloAltura,
+    },
     type: "flowEdge",
     markerEnd: { type: MarkerType.ArrowClosed },
   }));
@@ -344,6 +352,19 @@ function FlowEditorInner({ fluxo, initialNodes, initialEdges, robos, editable, o
     markDirty();
   }
 
+  const updateEdgeLabelSize = useCallback((edgeId: string, width: number, height: number) => {
+    const edge = edges.find((item) => item.id === edgeId);
+    const currentWidth = Number(edge?.data?.labelWidth ?? 0);
+    const currentHeight = Number(edge?.data?.labelHeight ?? 0);
+    if (Math.abs(currentWidth - width) < 2 && Math.abs(currentHeight - height) < 2) return;
+    remember();
+    setEdges((current) => current.map((item) => item.id === edgeId ? {
+      ...item,
+      data: { ...(item.data ?? {}), labelWidth: width, labelHeight: height },
+    } : item));
+    markDirty();
+  }, [edges, markDirty, remember]);
+
   function organizeFlow() {
     if (!editable) return;
     remember();
@@ -413,6 +434,8 @@ function FlowEditorInner({ fluxo, initialNodes, initialEdges, robos, editable, o
       condicao: String(edge.data?.condicao ?? ""),
       fila: String(edge.data?.fila ?? ""),
       descricao: String(edge.data?.descricao ?? ""),
+      rotuloLargura: edge.data?.labelWidth == null ? null : Number(edge.data.labelWidth),
+      rotuloAltura: edge.data?.labelHeight == null ? null : Number(edge.data.labelHeight),
     }));
     try {
       await onSave(mappedNodes, mappedEdges, getViewport());
@@ -431,6 +454,15 @@ function FlowEditorInner({ fluxo, initialNodes, initialEdges, robos, editable, o
   }
 
   const nodeNames = useMemo(() => new Map(nodes.map((node) => [node.id, node.data.robot?.nome ?? node.data.label])), [nodes]);
+  const renderedEdges = useMemo(() => edges.map((edge) => ({
+    ...edge,
+    data: {
+      ...(edge.data ?? {}),
+      editable,
+      onLabelResize: (width: number, height: number) => updateEdgeLabelSize(edge.id, width, height),
+      onSelect: () => { setSelectedEdgeId(edge.id); setSelectedNodeId(null); setPanelTab("properties"); },
+    },
+  })), [edges, editable, updateEdgeLabelSize]);
   const renderedNodes = useMemo(() => [...nodes]
     .sort((a, b) => Number(b.data.kind === "group") - Number(a.data.kind === "group"))
     .map((node) => ({
@@ -481,7 +513,7 @@ function FlowEditorInner({ fluxo, initialNodes, initialEdges, robos, editable, o
         </div>
         <ReactFlow
           nodes={renderedNodes}
-          edges={edges}
+          edges={renderedEdges}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           onNodesChange={onNodesChange}
