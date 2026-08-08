@@ -4,7 +4,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import {
-  CATEGORIAS_PUBLICACAO,
   type Cliente,
   type DadosCadastroCliente,
   type DadosCadastroUsuario,
@@ -16,10 +15,7 @@ import {
 } from "@/domain/entities";
 import { createClient } from "@/lib/supabase/client";
 
-const PUBLICACOES_STORAGE_KEY = "robot-center-publications";
-
-const PUBLICACOES_STORAGE_VERSION = 1;
-const LIMITE_PUBLICACOES_LOCAIS = 20;
+const LIMITE_PUBLICACOES = 20;
 
 function normalizarIdentificador(valor: string) {
   return valor
@@ -53,12 +49,12 @@ interface AppDataContextValue {
   publicacoes: Publicacao[];
   usuarios: Usuario[];
   clientes: Cliente[];
-  cadastrarRobo: (dados: DadosFormularioRobo) => Robo;
+  cadastrarRobo: (dados: DadosFormularioRobo) => Promise<Robo>;
   importarRobos: (dados: DadosImportacaoRobo[]) => Promise<Robo[]>;
   atualizarRobo: (id: string, dados: DadosFormularioRobo) => Promise<Robo | null>;
   atualizarCapacidadeRobo: (id: string, ideal: number, max: number) => Promise<Robo | null>;
   excluirRobo: (id: string) => void;
-  publicarAlteracoes: (id: string, robotAtualizado?: Robo, descricaoPublicacao?: string) => Robo | null;
+  publicarAlteracoes: (id: string, robotAtualizado?: Robo, descricaoPublicacao?: string) => Promise<Robo | null>;
   cadastrarUsuario: (dados: DadosCadastroUsuario) => void;
   cadastrarCliente: (dados: DadosCadastroCliente) => Promise<Cliente>;
   atualizarCliente: (id: string, dados: DadosCadastroCliente) => Promise<Cliente | null>;
@@ -67,51 +63,6 @@ interface AppDataContextValue {
 
 const AppDataContext = createContext<AppDataContextValue | null>(null);
 
-function lerPublicacoesLocais(): Publicacao[] {
-  try {
-    const storedValue = JSON.parse(localStorage.getItem(PUBLICACOES_STORAGE_KEY) ?? "[]") as unknown;
-    const value = Array.isArray(storedValue)
-      ? storedValue
-      : storedValue && typeof storedValue === "object" && Array.isArray((storedValue as { items?: unknown }).items)
-        ? (storedValue as { items: unknown[] }).items
-        : [];
-
-    return value.flatMap((item) => {
-      if (!item || typeof item !== "object") return [];
-      const record = item as Record<string, unknown>;
-      const legacyRobot = record.robot as { id?: unknown } | undefined;
-      const roboId = typeof record.roboId === "string" ? record.roboId : legacyRobot?.id;
-      const categoria = record.categoria ?? record.category;
-      const descricao = record.descricao ?? record.description;
-      const publicadaEm = record.publicadaEm ?? new Date().toISOString();
-
-      if (
-        typeof record.id !== "string" ||
-        typeof roboId !== "string" ||
-        typeof categoria !== "string" ||
-        !CATEGORIAS_PUBLICACAO.includes(categoria as (typeof CATEGORIAS_PUBLICACAO)[number]) ||
-        typeof descricao !== "string" ||
-        typeof publicadaEm !== "string"
-      ) return [];
-
-      return [{ id: record.id, roboId, categoria, descricao, publicadaEm } as Publicacao];
-    });
-  } catch {
-    return [];
-  }
-}
-
-function salvarPublicacoesLocais(publicacoes: Publicacao[]) {
-  try {
-    localStorage.setItem(
-      PUBLICACOES_STORAGE_KEY,
-      JSON.stringify({ version: PUBLICACOES_STORAGE_VERSION, items: publicacoes }),
-    );
-  } catch {
-    // O estado em memória continua válido quando o armazenamento do navegador não está disponível.
-  }
-}
-
 export function AppDataProvider({ children }: { children: ReactNode }) {
   const [robos, setRobos] = useState<Robo[]>([]);
   const [publicacoesLocais, setPublicacoesLocais] = useState<Publicacao[]>([]);
@@ -119,7 +70,6 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [clientes, setClientes] = useState<Cliente[]>([]);
 
   useEffect(() => {
-    setPublicacoesLocais(lerPublicacoesLocais());
     const supabase = createClient();
     void Promise.all([
       supabase.from("clientes").select("id,nome,tenant,cor").is("deleted_at", null).order("nome"),
@@ -171,31 +121,43 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  function cadastrarRobo(dados: DadosFormularioRobo) {
+  async function cadastrarRobo(dados: DadosFormularioRobo) {
     const { alteracoesRealizadas, ...cadastro } = dados;
-    const agora = new Date().toISOString();
+    const supabase = createClient();
+    const clienteCor = clientes.find((cliente) => cliente.id === cadastro.clienteId)?.cor ?? "azul";
+    const { data: roboCriado, error: erroRobo } = await supabase.from("robos").insert({
+      cliente_id: cadastro.clienteId, cliente_cor: clienteCor, nome: cadastro.nome, sistema: cadastro.sistema,
+      court_name: cadastro.courtName, ideal: cadastro.ideal, max: cadastro.max, pacote: cadastro.pacote,
+      pacote_cor: cadastro.pacoteCor, descricao: cadastro.descricao, ambiente: cadastro.ambiente,
+      ativo: cadastro.ativo, stack: cadastro.stack, fila: cadastro.fila, versao: cadastro.versao,
+      responsavel: cadastro.responsavel,
+    }).select("id,updated_at").single();
+    if (erroRobo) throw erroRobo;
+
+    const regras = [
+      ...cadastro.regras.map((regra, ordem) => ({ robo_id: roboCriado.id, descricao: regra.descricao, ordem, tipo: "documentacao" })),
+      ...cadastro.regrasForaDocumentacao.map((regra, ordem) => ({ robo_id: roboCriado.id, descricao: regra.descricao, ordem, tipo: "fora_documentacao" })),
+    ];
+    if (regras.length) {
+      const { error } = await supabase.from("regras_robo").insert(regras);
+      if (error) throw error;
+    }
+    let alteracoesCriadas: { id: string; descricao: string; realizada_em: string }[] = [];
+    if (alteracoesRealizadas.length) {
+      const { data, error } = await supabase.from("alteracoes_robo")
+        .insert(alteracoesRealizadas.map((alteracao) => ({ robo_id: roboCriado.id, descricao: alteracao.descricao })))
+        .select("id,descricao,realizada_em");
+      if (error) throw error;
+      alteracoesCriadas = data;
+    }
     const novoRobo: Robo = {
       ...cadastro,
-      clienteCor: clientes.find((cliente) => cliente.id === cadastro.clienteId)?.cor ?? "azul",
-      id: crypto.randomUUID(),
-      ultimaPublicacaoEm: agora,
-      alteracoes: alteracoesRealizadas.map((alteracao, index) => ({
-        id: crypto.randomUUID(),
-        descricao: alteracao.descricao,
-        realizadaEm: agora,
-      })),
+      clienteCor,
+      id: roboCriado.id,
+      ultimaPublicacaoEm: roboCriado.updated_at,
+      alteracoes: alteracoesCriadas.map((alteracao) => ({ id: alteracao.id, descricao: alteracao.descricao, realizadaEm: alteracao.realizada_em })),
     };
-    const publicacao: Publicacao = {
-      id: crypto.randomUUID(),
-      categoria: "Novo Robô",
-      roboId: novoRobo.id,
-      descricao: cadastro.descricao,
-      publicadaEm: agora,
-    };
-    const proximasPublicacoes = [publicacao, ...publicacoesLocais].slice(0, LIMITE_PUBLICACOES_LOCAIS);
     setRobos((atuais) => [...atuais, novoRobo]);
-    setPublicacoesLocais(proximasPublicacoes);
-    salvarPublicacoesLocais(proximasPublicacoes);
     return novoRobo;
   }
 
@@ -260,24 +222,31 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setRobos((atuais) => atuais.filter((robo) => robo.id !== id));
   }
 
-  function publicarAlteracoes(id: string, robotAtualizado?: Robo, descricaoPublicacao?: string) {
+  async function publicarAlteracoes(id: string, robotAtualizado?: Robo, descricaoPublicacao?: string) {
     const atual = robotAtualizado ?? robos.find((robo) => robo.id === id);
     if (!atual) return null;
 
     const publicadaEm = new Date().toISOString();
     const atualizado = { ...atual, ultimaPublicacaoEm: publicadaEm };
+    const descricao = descricaoPublicacao?.trim() || atual.alteracoes[0]?.descricao || `Novas alterações foram publicadas para o robô ${atual.nome}.`;
+    const categoria: Publicacao["categoria"] = robotAtualizado && !robos.some((robo) => robo.id === id)
+      ? "Novo Robô"
+      : "Atualização do Robô";
+    const supabase = createClient();
+    const { data, error } = await supabase.from("publicacoes").insert({
+      robo_id: id, categoria, descricao, publicada_em: publicadaEm,
+    }).select("id,robo_id,categoria,descricao,publicada_em").single();
+    if (error) throw error;
     const publicacao: Publicacao = {
-      id: crypto.randomUUID(),
-      categoria: "Atualização do Robô",
-      roboId: id,
-      descricao: descricaoPublicacao?.trim() || atual.alteracoes[0]?.descricao || `Novas alterações foram publicadas para o robô ${atual.nome}.`,
-      publicadaEm,
+      id: data.id, roboId: data.robo_id, categoria: data.categoria as Publicacao["categoria"],
+      descricao: data.descricao, publicadaEm: data.publicada_em,
     };
-    const proximasPublicacoes = [publicacao, ...publicacoesLocais].slice(0, LIMITE_PUBLICACOES_LOCAIS);
+    const proximasPublicacoes = [publicacao, ...publicacoesLocais]
+      .sort((a, b) => b.publicadaEm.localeCompare(a.publicadaEm))
+      .slice(0, LIMITE_PUBLICACOES);
 
     setRobos((atuais) => atuais.map((robo) => (robo.id === id ? atualizado : robo)));
     setPublicacoesLocais(proximasPublicacoes);
-    salvarPublicacoesLocais(proximasPublicacoes);
     return atualizado;
   }
 

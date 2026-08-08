@@ -19,6 +19,19 @@ const ambientes = [TODAS_OPCOES, ...AMBIENTES_ROBO] as const;
 const statusOptions = [TODAS_OPCOES, "Ativo", "Inativo"] as const;
 type DrawerMode = "create" | "edit";
 
+const MARCADOR_REGRA_DOCUMENTACAO = "[REGRA_DOCUMENTACAO]";
+const MARCADOR_REGRA_FORA_DOCUMENTACAO = "[REGRA_FORA_DOCUMENTACAO]";
+
+function obterRegrasAdicionadas(
+  regrasNovas: DadosFormularioRobo["regras"],
+  regrasAtuais: Robo["regras"] = [],
+) {
+  const atuais = new Set(regrasAtuais.map((regra) => regra.descricao.trim().toLocaleLowerCase("pt-BR")));
+  return regrasNovas
+    .map((regra) => regra.descricao.trim())
+    .filter((descricao) => descricao && !atuais.has(descricao.toLocaleLowerCase("pt-BR")));
+}
+
 function obterDadosFormulario(robo: Robo): DadosFormularioRobo {
   const { id: _id, ultimaPublicacaoEm: _ultimaPublicacaoEm, alteracoes: _alteracoes, clienteCor: _clienteCor, ...dados } = robo;
   return { ...dados, alteracoesRealizadas: [] };
@@ -95,20 +108,29 @@ export default function RobosPage() {
     setDetailsOpen(false);
   }
 
-  async function salvarRobot(dados: DadosFormularioRobo, publicar: boolean) {
+async function salvarRobot(dados: DadosFormularioRobo, publicar: boolean) {
+    const regrasDocumentacaoAdicionadas = obterRegrasAdicionadas(
+      dados.regras,
+      drawerMode === "edit" ? selectedRobot?.regras : [],
+    );
+    const regrasForaDocumentacaoAdicionadas = obterRegrasAdicionadas(
+      dados.regrasForaDocumentacao,
+      drawerMode === "edit" ? selectedRobot?.regrasForaDocumentacao : [],
+    );
     const roboSalvo = drawerMode === "create"
-      ? cadastrarRobo(dados)
+      ? await cadastrarRobo(dados)
       : selectedRobot
         ? await atualizarRobo(selectedRobot.id, dados)
         : null;
 
     if (roboSalvo) {
       if (publicar) {
-        const descricaoPublicacao = dados.alteracoesRealizadas
-          .map((alteracao) => alteracao.descricao.trim())
-          .filter(Boolean)
-          .join(" • ");
-        const roboPublicado = publicarAlteracoes(roboSalvo.id, roboSalvo, descricaoPublicacao);
+        const descricaoPublicacao = [
+          ...dados.alteracoesRealizadas.map((alteracao) => alteracao.descricao.trim()).filter(Boolean),
+          ...regrasDocumentacaoAdicionadas.map((descricao) => `${MARCADOR_REGRA_DOCUMENTACAO} ${descricao}`),
+          ...regrasForaDocumentacaoAdicionadas.map((descricao) => `${MARCADOR_REGRA_FORA_DOCUMENTACAO} ${descricao}`),
+        ].join(" • ");
+        const roboPublicado = await publicarAlteracoes(roboSalvo.id, roboSalvo, descricaoPublicacao);
         setSelectedRobot(roboPublicado ?? roboSalvo);
         router.push("/dashboard");
       } else {

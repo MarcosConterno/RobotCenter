@@ -115,3 +115,6 @@
 - A publicação de uma edição gera um item identificado como `Nova atualização`.
 - Quando várias alterações forem informadas no mesmo salvamento, suas descrições são reunidas na publicação para representar exatamente o conteúdo alterado.
 - Nome e CourtName são informações principais; pacote, versão e stack aparecem como contexto técnico.
+- O feed é reconstruído de `public.publicacoes`; novas publicações não dependem do armazenamento do navegador.
+- Somente uma sessão com `publications.create` pode registrar uma atualização, vinculada a um robô ativo.
+- Ao publicar regras novas, a descrição identifica separadamente regras de `Documentação` e de `Fora da Documentação`, incluindo o texto de cada regra. Quando as duas categorias mudam, ambas aparecem no mesmo item do feed.

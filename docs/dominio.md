@@ -94,3 +94,9 @@ A cor do Cliente pertence ao seu cadastro. A cor do Pacote é armazenada nos rob
 ## Nome do usuário e credencial
 
 O campo apresentado como `Nome` no cadastro de usuários continua persistido em `profiles.login` por compatibilidade com o modelo existente. A senha pertence ao Supabase Auth e pode ser alterada pelo próprio usuário autenticado, sem ser armazenada nas tabelas públicas da aplicação.
+
+## Publicações do Dashboard
+
+O histórico exibido em **Atualizações recentes** é composto por `Publicacao` persistida no banco. Um novo robô publicado recebe a categoria `Novo Robô`; uma edição publicada recebe `Atualização do Robô`.
+
+Alterações de regras são registradas na descrição da publicação com a categoria funcional e o conteúdo da regra, permitindo diferenciar `Documentação` de `Fora da Documentação` sem criar uma entidade histórica paralela.
