@@ -103,9 +103,15 @@ O histórico exibido em **Atualizações recentes** é composto por `Publicacao`
 
 Alterações de regras são registradas na descrição da publicação com a categoria funcional e o conteúdo da regra, permitindo diferenciar `Documentação` de `Fora da Documentação` sem criar uma entidade histórica paralela.
 
-## Manual do robô
+## Documentação Upada
 
-O Robô pode possuir um manual PDF opcional. `manualPath` identifica o objeto privado no Storage e `manualNome` preserva o nome apresentado ao usuário. O manual não integra regras ou publicações e pode ser substituído durante a edição.
+O Robô pode possuir um PDF externo opcional, denominado Documentação Upada. No domínio, `uploadedDocumentationPath` e `uploadedDocumentationName` mapeiam os campos físicos legados `robos.manual_path` e `robos.manual_nome`. O objeto permanece privado no bucket `robot-manuals`. O arquivo não integra regras, publicações ou o motor DOCX/PDF e pode ser substituído durante a edição sem afetar outros documentos.
+
+## Documentação Robot Center
+
+A Documentação Robot Center é independente da Documentação Upada. Cada Robô pode possuir no máximo uma documentação interna, com um rascunho corrente e futuras versões publicadas imutáveis. Nesta etapa existem apenas a raiz documental, o rascunho sem blocos editoriais e o registro mínimo de versões; editor, geração e publicação serão adicionados posteriormente.
+
+São válidos os estados: somente Documentação Upada, somente Documentação Robot Center, ambas ou nenhuma. As RFs permanecem em `regras_robo` como fonte de verdade e não são duplicadas no módulo.
 
 ## Disparo e fluxo
 

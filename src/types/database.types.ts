@@ -533,6 +533,127 @@ export type Database = {
           },
         ]
       }
+      robot_center_documentation_drafts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          documentation_id: string
+          id: string
+          revision: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          documentation_id: string
+          id?: string
+          revision?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          documentation_id?: string
+          id?: string
+          revision?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "robot_center_documentation_drafts_documentation_id_fkey"
+            columns: ["documentation_id"]
+            isOneToOne: true
+            referencedRelation: "robot_center_documentations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      robot_center_documentation_versions: {
+        Row: {
+          created_at: string
+          created_by: string
+          documentation_id: string
+          id: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          documentation_id: string
+          id?: string
+          version: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          documentation_id?: string
+          id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "robot_center_documentation_versions_documentation_id_fkey"
+            columns: ["documentation_id"]
+            isOneToOne: false
+            referencedRelation: "robot_center_documentations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "robot_center_documentation_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      robot_center_documentations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          robo_id: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          robo_id: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          robo_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "robot_center_documentations_robo_id_fkey"
+            columns: ["robo_id"]
+            isOneToOne: true
+            referencedRelation: "robos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       robos: {
         Row: {
           alteracao_realizada: string

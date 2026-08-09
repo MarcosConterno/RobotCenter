@@ -2,6 +2,7 @@
 
 import {
   Bot,
+  Download,
   FileText,
   GitBranch,
   Layers3,
@@ -14,7 +15,9 @@ import {
   Zap,
   X,
 } from "lucide-react";
+import Link from "next/link";
 import { useState, type ReactNode } from "react";
+import { useAdminAccess } from "@/auth/AdminAccessProvider";
 import { formatarData } from "@/domain/formatters";
 import type { Cliente, Robo } from "@/domain/entities";
 import { createClient } from "@/lib/supabase/client";
@@ -27,6 +30,7 @@ interface RobotDetailsProps {
 }
 
 export default function RobotDetails({ robot, clientes = [], robos = [], onEdit }: RobotDetailsProps) {
+  const { isAdmin } = useAdminAccess();
   const [rulesTab, setRulesTab] = useState<"documentacao" | "fora-documentacao">("documentacao");
   const [manualUrl, setManualUrl] = useState<string | null>(null);
   const [manualLoading, setManualLoading] = useState(false);
@@ -47,10 +51,10 @@ export default function RobotDetails({ robot, clientes = [], robos = [], onEdit 
   const gatilhoPara = robos.find((item) => item.id === robot.gatilhoParaRoboId);
 
   async function abrirManual() {
-    if (!robot?.manualPath) return;
+    if (!robot?.uploadedDocumentationPath) return;
     setManualLoading(true);
     setManualError("");
-    const { data, error } = await createClient().storage.from("robot-manuals").createSignedUrl(robot.manualPath, 900);
+    const { data, error } = await createClient().storage.from("robot-manuals").createSignedUrl(robot.uploadedDocumentationPath, 900);
     setManualLoading(false);
     if (error) {
       setManualError("Não foi possível abrir o manual.");
@@ -68,15 +72,7 @@ export default function RobotDetails({ robot, clientes = [], robos = [], onEdit 
           </div>
           <div style={{ minWidth: 0 }}>
             <div style={eyebrowStyle}>ROBÔ INTEGRADOR</div>
-            <div style={titleRowStyle}>
-              <h2 style={titleStyle}>{robot.nome}</h2>
-              {robot.manualPath && (
-                <button type="button" onClick={abrirManual} disabled={manualLoading} style={manualButtonStyle}>
-                  <FileText size={14} /> {manualLoading ? "Abrindo..." : robot.manualNome ?? "Manual.pdf"}
-                </button>
-              )}
-            </div>
-            {manualError && <span style={manualErrorStyle}>{manualError}</span>}
+            <div style={titleRowStyle}><h2 style={titleStyle}>{robot.nome}</h2></div>
             <div style={badgesStyle}>
               <span style={systemBadgeStyle}>{robot.sistema}</span>
               <span
@@ -137,6 +133,30 @@ export default function RobotDetails({ robot, clientes = [], robos = [], onEdit 
       </div>
 
       <div style={followingBlockStyle}>
+        <DetailSection title="Documentação">
+          <div style={documentationGridStyle}>
+            <div style={documentationCardStyle}>
+              <div style={documentationCardHeaderStyle}><FileText size={17} /><strong>Documentação Upada</strong></div>
+              <p style={documentationDescriptionStyle}>Arquivo externo anexado manualmente ao robô.</p>
+              {robot.uploadedDocumentationPath ? (
+                <button type="button" onClick={abrirManual} disabled={manualLoading} style={manualButtonStyle}>
+                  <FileText size={14} /> {manualLoading ? "Abrindo..." : robot.uploadedDocumentationName ?? "Documentação.pdf"}
+                </button>
+              ) : <span style={documentationEmptyStyle}>Nenhum arquivo enviado.</span>}
+            </div>
+            <div style={documentationCardStyle}>
+              <div style={documentationCardHeaderStyle}><Bot size={17} /><strong>Documentação Robot Center</strong></div>
+              <p style={documentationDescriptionStyle}>Documentação interna estruturada, independente do arquivo externo.</p>
+              {isAdmin
+                ? <Link href={`/robos/${robot.id}/documentacao-robot-center`} style={documentationLinkStyle}>Acessar estrutura</Link>
+                : <span style={documentationEmptyStyle}>Edição disponível somente para Admin.</span>}
+            </div>
+          </div>
+          {manualError && <span style={manualErrorStyle}>{manualError}</span>}
+        </DetailSection>
+      </div>
+
+      <div style={followingBlockStyle}>
         <DetailSection title="Alterações realizadas">
           <div style={changesListStyle}>
             {robot.alteracoes.length === 0 && <div style={noRulesStyle}>Nenhuma alteração registrada.</div>}
@@ -177,16 +197,19 @@ export default function RobotDetails({ robot, clientes = [], robos = [], onEdit 
       </div>
 
       {manualUrl && (
-        <div role="dialog" aria-modal="true" aria-label={`Manual de ${robot.nome}`} style={manualBackdropStyle} onMouseDown={() => setManualUrl(null)}>
+        <div role="dialog" aria-modal="true" aria-label={`Documentação Upada de ${robot.nome}`} style={manualBackdropStyle} onMouseDown={() => setManualUrl(null)}>
           <div style={manualModalStyle} onMouseDown={(event) => event.stopPropagation()}>
             <header style={manualModalHeaderStyle}>
               <div>
-                <strong style={manualModalTitleStyle}>{robot.manualNome ?? "Manual do robô"}</strong>
+                <strong style={manualModalTitleStyle}>{robot.uploadedDocumentationName ?? "Documentação Upada"}</strong>
                 <span style={manualModalSubtitleStyle}>{robot.nome}</span>
               </div>
-              <button type="button" aria-label="Fechar manual" onClick={() => setManualUrl(null)} style={manualCloseStyle}><X size={18} /></button>
+              <div style={manualModalActionsStyle}>
+                <a href={manualUrl} download={robot.uploadedDocumentationName ?? "documentacao-upada.pdf"} style={manualDownloadStyle}><Download size={16} /> Baixar</a>
+                <button type="button" aria-label="Fechar documentação" onClick={() => setManualUrl(null)} style={manualCloseStyle}><X size={18} /></button>
+              </div>
             </header>
-            <iframe title={`Manual de ${robot.nome}`} src={manualUrl} style={manualFrameStyle} />
+            <iframe title={`Documentação Upada de ${robot.nome}`} src={manualUrl} style={manualFrameStyle} />
           </div>
         </div>
       )}
@@ -224,6 +247,12 @@ const containerStyle = {
 const detailTabsStyle = { display: "flex", gap: 4, marginBottom: 12, padding: 4, borderRadius: 8, background: "var(--surface)" } as const;
 const detailsBlockStyle = { padding: "20px 26px 0" } as const;
 const followingBlockStyle = { padding: "16px 26px 0" } as const;
+const documentationGridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, padding: 14 } as const;
+const documentationCardStyle = { minWidth: 0, padding: 14, border: "1px solid var(--separator)", borderRadius: 10, background: "var(--surface)" } as const;
+const documentationCardHeaderStyle = { display: "flex", alignItems: "center", gap: 8, color: "var(--accent)", fontSize: 12.5 } as const;
+const documentationDescriptionStyle = { minHeight: 34, margin: "8px 0 12px", color: "var(--muted)", fontSize: 11.5, lineHeight: 1.45 } as const;
+const documentationEmptyStyle = { color: "var(--muted)", fontSize: 11 } as const;
+const documentationLinkStyle = { display: "inline-flex", alignItems: "center", minHeight: 30, padding: "0 10px", border: "1px solid var(--border)", borderRadius: 8, color: "var(--accent)", background: "var(--card)", fontSize: 11, fontWeight: 700, textDecoration: "none" } as const;
 const rulesSectionStyle = { padding: "16px 26px 26px" } as const;
 const technicalGridStyle = { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" } as const;
 const detailTabStyle = { flex: 1, padding: "7px 8px", border: "none", borderRadius: 6, background: "transparent", color: "var(--muted)", cursor: "pointer", fontSize: 11, fontWeight: 700 } as const;
@@ -243,6 +272,8 @@ const manualModalStyle = { width: "min(1080px, 96vw)", height: "min(820px, 92vh)
 const manualModalHeaderStyle = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "0 16px 0 20px", borderBottom: "1px solid var(--separator)" } as const;
 const manualModalTitleStyle = { display: "block", color: "var(--text-strong)", fontSize: 13 } as const;
 const manualModalSubtitleStyle = { display: "block", marginTop: 2, color: "var(--muted)", fontSize: 10.5 } as const;
+const manualModalActionsStyle = { display: "flex", alignItems: "center", gap: 8 } as const;
+const manualDownloadStyle = { height: 34, display: "inline-flex", alignItems: "center", gap: 6, padding: "0 10px", border: "1px solid var(--border)", borderRadius: 8, color: "var(--accent)", background: "var(--surface)", fontSize: 11, fontWeight: 700, textDecoration: "none" } as const;
 const manualCloseStyle = { width: 34, height: 34, display: "inline-flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-2)", background: "var(--surface)", cursor: "pointer" } as const;
 const manualFrameStyle = { width: "100%", height: "100%", border: 0, background: "#fff" } as const;
 const badgesStyle = { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 9 } as const;

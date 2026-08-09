@@ -160,3 +160,14 @@
 17. Conexões aceitam os tipos Envia para, Dispara, Processa, Gera Job, Depende de e Condição.
 18. Regra e Decisão compartilham o tipo persistido `decision`; o modo Decisão usa losango e nenhum dos modos limita a quantidade de conexões.
 19. A etiqueta de uma conexão pode ser redimensionada manualmente; dimensões ausentes mantêm o tamanho automático e dimensões informadas respeitam os mínimos de 70 × 34 pixels.
+
+## Documentação do robô
+
+1. Documentação Upada e Documentação Robot Center são recursos independentes e podem coexistir.
+2. O PDF externo continua em `robot-manuals`; não é convertido, extraído nem enviado ao motor DOCX/PDF.
+3. Substituir a Documentação Upada não altera rascunhos ou versões internas.
+4. Somente Admin pode criar ou editar a Documentação Robot Center.
+5. A autorização de edição é validada na rota e novamente pelas policies RLS.
+6. Versões publicadas são imutáveis: `UPDATE` e `DELETE` são rejeitados no banco.
+7. As futuras documentações reutilizarão as RFs ordenadas de `regras_robo`; não existe cópia de RF no módulo.
+8. Nesta etapa não há editor, publicação, geração DOCX/PDF nem upload de imagens internas.

@@ -119,24 +119,24 @@ export default function RobotForm({
             </label>
           </div>
           <div style={fullWidthStyle}>
-            <span style={labelStyle}>Manual do robô</span>
+            <span style={labelStyle}>Documentação Upada</span>
             <label style={manualUploadStyle}>
               <span style={manualUploadIconStyle}><Upload size={17} /></span>
               <span style={{ minWidth: 0 }}>
-                <strong style={manualUploadTitleStyle}>{form.manualArquivo?.name ?? form.manualNome ?? "Selecionar manual em PDF"}</strong>
-                <small style={manualUploadHintStyle}>PDF de até 20 MB. Um novo arquivo substitui o manual atual.</small>
+                <strong style={manualUploadTitleStyle}>{form.uploadedDocumentationFile?.name ?? form.uploadedDocumentationName ?? "Selecionar documentação em PDF"}</strong>
+                <small style={manualUploadHintStyle}>Arquivo externo em PDF de até 20 MB. Um novo envio substitui somente a Documentação Upada atual.</small>
               </span>
               <input type="file" accept="application/pdf,.pdf" onChange={(event) => {
                 const arquivo = event.target.files?.[0] ?? null;
                 if (arquivo && arquivo.type !== "application/pdf") {
-                  setFormError("O manual deve ser um arquivo PDF.");
+                  setFormError("A Documentação Upada deve ser um arquivo PDF.");
                   event.target.value = "";
                   return;
                 }
-                update("manualArquivo", arquivo);
+                update("uploadedDocumentationFile", arquivo);
               }} style={hiddenFileInputStyle} />
             </label>
-            {(form.manualArquivo || form.manualNome) && <span style={manualSelectedStyle}><Paperclip size={12} /> {form.manualArquivo?.name ?? form.manualNome}</span>}
+            {(form.uploadedDocumentationFile || form.uploadedDocumentationName) && <span style={manualSelectedStyle}><Paperclip size={12} /> {form.uploadedDocumentationFile?.name ?? form.uploadedDocumentationName}</span>}
           </div>
         </div>
       </FormSection>
@@ -498,9 +498,9 @@ const FORMULARIO_ROBO_INICIAL: DadosFormularioRobo = {
   disparo: "Manual",
   gatilhoDeRoboId: null,
   gatilhoParaRoboId: null,
-  manualPath: null,
-  manualNome: null,
-  manualArquivo: null,
+  uploadedDocumentationPath: null,
+  uploadedDocumentationName: null,
+  uploadedDocumentationFile: null,
   alteracoesRealizadas: [],
   regras: [],
   regrasForaDocumentacao: [],

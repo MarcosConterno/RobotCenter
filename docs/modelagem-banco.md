@@ -292,7 +292,25 @@ O componente **Atualizações recentes** lê `public.publicacoes`, ordenada por 
 
 ## Manual PDF do robô
 
-`robos.manual_path` e `robos.manual_nome` referenciam o manual armazenado no bucket privado `robot-manuals`. O objeto usa o caminho `<robo_id>/manual.pdf`, aceita somente PDF de até 20 MB e é aberto por URL assinada temporária. O banco não armazena o conteúdo binário.
+`robos.manual_path` e `robos.manual_nome` referenciam a Documentação Upada armazenada no bucket privado `robot-manuals`. O objeto usa o caminho `<robo_id>/manual.pdf`, aceita somente PDF de até 20 MB e é aberto por URL assinada temporária. O banco não armazena o conteúdo binário. Nenhum arquivo existente é migrado ou duplicado.
+
+## Base da Documentação Robot Center
+
+- `robot_center_documentations`: raiz 1:1 com `robos`, status, auditoria e exclusão lógica; não contém o arquivo externo nem conteúdo editorial.
+- `robot_center_documentation_drafts`: rascunho 1:1 com a raiz. Nesta etapa armazena somente a revisão e auditoria.
+- `robot_center_documentation_versions`: futuras versões publicadas, únicas por documentação e número. Um trigger bloqueia `UPDATE` e `DELETE`.
+
+```text
+robos
+  ├── manual_path/manual_nome -> robot-manuals (Documentação Upada)
+  └── robot_center_documentations (0..1)
+        ├── robot_center_documentation_drafts (0..1)
+        └── robot_center_documentation_versions (0..N, imutáveis)
+
+robos (1) ── regras_robo (0..N, fonte de verdade das RFs)
+```
+
+A migration `20260808223000_prepare_robot_center_documentation.sql` é somente aditiva. Snapshot, artefatos DOCX/PDF e blocos editoriais serão modelados nas etapas que implementarem essas funcionalidades.
 
 ## Disparo e relacionamentos entre robôs
 

@@ -110,8 +110,8 @@ export interface Robo {
   disparo?: TipoDisparoRobo;
   gatilhoDeRoboId?: string | null;
   gatilhoParaRoboId?: string | null;
-  manualPath?: string | null;
-  manualNome?: string | null;
+  uploadedDocumentationPath?: string | null;
+  uploadedDocumentationName?: string | null;
   ultimaPublicacaoEm: string;
   alteracoes: AlteracaoRobo[];
   regras: RegraRobo[];
@@ -120,13 +120,13 @@ export interface Robo {
 
 export type DadosFormularioRobo = Omit<Robo, "id" | "ultimaPublicacaoEm" | "alteracoes" | "clienteCor"> & {
   alteracoesRealizadas: RegraRobo[];
-  manualArquivo?: File | null;
+  uploadedDocumentationFile?: File | null;
 };
 
 export type OperacaoImportacaoRobo = "Criar" | "Atualizar";
 
 export type CamposImportacaoRobo = Partial<
-  Omit<DadosFormularioRobo, "clienteId" | "manualArquivo" | "manualPath" | "manualNome">
+  Omit<DadosFormularioRobo, "clienteId" | "uploadedDocumentationFile" | "uploadedDocumentationPath" | "uploadedDocumentationName">
 > & {
   clienteNome?: string;
 };

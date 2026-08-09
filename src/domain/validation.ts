@@ -28,9 +28,9 @@ export const dadosFormularioRoboSchema = z.object({
   disparo: z.enum(TIPOS_DISPARO_ROBO).default("Manual"),
   gatilhoDeRoboId: z.string().uuid().nullable().default(null),
   gatilhoParaRoboId: z.string().uuid().nullable().default(null),
-  manualPath: z.string().nullable().optional(),
-  manualNome: z.string().nullable().optional(),
-  manualArquivo: z.custom<File | null>(
+  uploadedDocumentationPath: z.string().nullable().optional(),
+  uploadedDocumentationName: z.string().nullable().optional(),
+  uploadedDocumentationFile: z.custom<File | null>(
     (arquivo) => arquivo == null || (typeof File !== "undefined" && arquivo instanceof File),
     "Selecione um arquivo PDF válido.",
   ).optional(),

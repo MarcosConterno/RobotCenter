@@ -67,3 +67,16 @@ O RPC `publish_flow` usa `SECURITY INVOKER`: as policies e permissões da sessã
 
 O nome do criador é resolvido por `get_flow_creator_name`. A função privilegiada permanece no schema privado e valida sessão, `flows.read` e acesso ao Cliente antes de retornar exclusivamente `profiles.login`; não expõe outros campos do profile.
 - A importação permanece restrita à capacidade administrativa. UUIDs fora das linhas visíveis ao usuário são rejeitados na validação, e a RLS continua sendo a barreira definitiva na gravação.
+
+## Documentação Robot Center
+
+| Permissão | Admin | Operador | Cliente | Suporte |
+|---|---:|---:|---:|---:|
+| `robot_center_documentation.read` | Sim | Não nesta etapa | Não nesta etapa | Não nesta etapa |
+| `robot_center_documentation.manage` | Sim | Não | Não | Não |
+
+- A rota de administração valida sessão e papel Admin no servidor.
+- A raiz documental exige permissão de leitura e acesso ao cliente do Robô.
+- O rascunho exige papel Admin e permissão de gerenciamento.
+- Versões permitem leitura autorizada e inserção somente por Admin; trigger impede atualização ou exclusão.
+- A futura visualização publicada utilizará `read`, separada de `manage`, sem ampliar automaticamente o acesso ao rascunho.

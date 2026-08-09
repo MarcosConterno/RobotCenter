@@ -32,22 +32,22 @@ function gerarTenant(nome: string) {
     .replace(/^-|-$/g, "") || "cliente-importado";
 }
 
-async function enviarManualRobo(roboId: string, arquivo?: File | null) {
+async function enviarDocumentacaoUpadaRobo(roboId: string, arquivo?: File | null) {
   if (!arquivo) return null;
   if (arquivo.type !== "application/pdf") throw new Error("O manual deve ser um arquivo PDF.");
   if (arquivo.size > 20 * 1024 * 1024) throw new Error("O manual deve ter no máximo 20 MB.");
 
   const supabase = createClient();
-  const manualPath = `${roboId}/manual.pdf`;
+  const uploadedDocumentationPath = `${roboId}/manual.pdf`;
   const { error: uploadError } = await supabase.storage
     .from("robot-manuals")
-    .upload(manualPath, arquivo, { contentType: "application/pdf", upsert: true });
+    .upload(uploadedDocumentationPath, arquivo, { contentType: "application/pdf", upsert: true });
   if (uploadError) throw uploadError;
   const { error: updateError } = await supabase.from("robos")
-    .update({ manual_path: manualPath, manual_nome: arquivo.name })
+    .update({ manual_path: uploadedDocumentationPath, manual_nome: arquivo.name })
     .eq("id", roboId);
   if (updateError) throw updateError;
-  return { manualPath, manualNome: arquivo.name };
+  return { uploadedDocumentationPath, uploadedDocumentationName: arquivo.name };
 }
 
 function harmonizarCoresCompartilhadas(robos: Robo[], clientes: Cliente[]) {
@@ -134,8 +134,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         disparo: item.disparo as Robo["disparo"],
         gatilhoDeRoboId: item.gatilho_de_robo_id,
         gatilhoParaRoboId: item.gatilho_para_robo_id,
-        manualPath: item.manual_path,
-        manualNome: item.manual_nome,
+        uploadedDocumentationPath: item.manual_path,
+        uploadedDocumentationName: item.manual_nome,
         ultimaPublicacaoEm: publicacoes.find((publicacao) => publicacao.robo_id === item.id)?.publicada_em ?? item.updated_at,
         alteracoes: alteracoes.filter((alteracao) => alteracao.robo_id === item.id).map((alteracao) => ({ id: alteracao.id, descricao: alteracao.descricao, realizadaEm: alteracao.realizada_em })),
         regras: regras.filter((regra) => regra.robo_id === item.id && regra.tipo === "documentacao").map(({ descricao }) => ({ descricao })),
@@ -146,7 +146,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function cadastrarRobo(dados: DadosFormularioRobo) {
-    const { alteracoesRealizadas, manualArquivo, ...cadastro } = dados;
+    const { alteracoesRealizadas, uploadedDocumentationFile, ...cadastro } = dados;
     const supabase = createClient();
     const clienteCor = clientes.find((cliente) => cliente.id === cadastro.clienteId)?.cor ?? "azul";
     const { data: roboCriado, error: erroRobo } = await supabase.from("robos").insert({
@@ -159,7 +159,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       gatilho_para_robo_id: cadastro.gatilhoParaRoboId,
     }).select("id,updated_at").single();
     if (erroRobo) throw erroRobo;
-    const manual = await enviarManualRobo(roboCriado.id, manualArquivo);
+    const uploadedDocumentation = await enviarDocumentacaoUpadaRobo(roboCriado.id, uploadedDocumentationFile);
 
     const regras = [
       ...cadastro.regras.map((regra, ordem) => ({ robo_id: roboCriado.id, descricao: regra.descricao, ordem, tipo: "documentacao" })),
@@ -182,8 +182,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       clienteCor,
       id: roboCriado.id,
       ultimaPublicacaoEm: roboCriado.updated_at,
-      manualPath: manual?.manualPath ?? cadastro.manualPath ?? null,
-      manualNome: manual?.manualNome ?? cadastro.manualNome ?? null,
+      uploadedDocumentationPath: uploadedDocumentation?.uploadedDocumentationPath ?? cadastro.uploadedDocumentationPath ?? null,
+      uploadedDocumentationName: uploadedDocumentation?.uploadedDocumentationName ?? cadastro.uploadedDocumentationName ?? null,
       alteracoes: alteracoesCriadas.map((alteracao) => ({ id: alteracao.id, descricao: alteracao.descricao, realizadaEm: alteracao.realizada_em })),
     };
     setRobos((atuais) => [...atuais, novoRobo]);
@@ -194,7 +194,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const atual = robos.find((robo) => robo.id === id);
     if (!atual) return null;
 
-    const { alteracoesRealizadas, manualArquivo, ...cadastro } = dados;
+    const { alteracoesRealizadas, uploadedDocumentationFile, ...cadastro } = dados;
     const supabase = createClient();
     const { error } = await supabase.from("robos").update({
       cliente_id: cadastro.clienteId, nome: cadastro.nome,
@@ -206,7 +206,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       gatilho_para_robo_id: cadastro.gatilhoParaRoboId,
     }).eq("id", id);
     if (error) throw error;
-    const manual = await enviarManualRobo(id, manualArquivo);
+    const uploadedDocumentation = await enviarDocumentacaoUpadaRobo(id, uploadedDocumentationFile);
     const clienteSelecionado = clientes.find((cliente) => cliente.id === cadastro.clienteId);
     const idsPacoteMesmoNome = robos
       .filter((robo) => normalizarIdentificador(robo.pacote) === normalizarIdentificador(cadastro.pacote))
@@ -226,8 +226,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const atualizado = {
       ...atual,
       ...cadastro,
-      manualPath: manual?.manualPath ?? cadastro.manualPath ?? atual.manualPath ?? null,
-      manualNome: manual?.manualNome ?? cadastro.manualNome ?? atual.manualNome ?? null,
+      uploadedDocumentationPath: uploadedDocumentation?.uploadedDocumentationPath ?? cadastro.uploadedDocumentationPath ?? atual.uploadedDocumentationPath ?? null,
+      uploadedDocumentationName: uploadedDocumentation?.uploadedDocumentationName ?? cadastro.uploadedDocumentationName ?? atual.uploadedDocumentationName ?? null,
       clienteCor: clienteSelecionado?.cor ?? atual.clienteCor,
       alteracoes: novaAlteracao,
     };
