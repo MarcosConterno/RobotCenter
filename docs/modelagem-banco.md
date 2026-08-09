@@ -303,6 +303,7 @@ O editor mantém `regras_robo` como fonte de verdade. `parent_id` referencia uma
 Blocos agora podem pertencer a uma regra (`requirement_id`) ou seção (`section_id`), nunca às duas. Imagens mantêm arquivo, MIME, nome original, bytes, dimensões, alinhamento e preset de tamanho em `metadata`. Legendas são blocos `caption` ligados à imagem por `related_block_id`. Os arquivos ficam no bucket privado `robot-documentation`, no caminho `<robo_id>/draft/images/<uuid>.<ext>`.
 
 - `robot_center_documentations`: raiz 1:1 com `robos`, status, auditoria e exclusão lógica; não contém o arquivo externo nem conteúdo editorial.
+- A unicidade de `robot_center_documentations` por robô considera somente registros com `deleted_at is null`, permitindo uma nova documentação após exclusão lógica sem sobrescrever o histórico anterior.
 - `robot_center_documentation_drafts`: rascunho 1:1 com a raiz. Nesta etapa armazena somente a revisão e auditoria.
 - `robot_center_documentation_versions`: futuras versões publicadas, únicas por documentação e número. Um trigger bloqueia `UPDATE` e `DELETE`.
 

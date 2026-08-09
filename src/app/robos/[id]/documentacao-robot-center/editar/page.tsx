@@ -105,7 +105,8 @@ export default async function RobotDocumentationEditorPage({ params }: { params:
     metadata: { updatedAt: draft?.updated_at ?? robot.updated_at, schemaVersion: 1, currentVersion: currentVersion?.version ?? null },
   };
 
-  return <AppShell title="Documentação Robot Center"><RobotDocumentationEditor initialSchema={schema} /></AppShell>;
+  const canDeleteDocumentation = user.email?.trim().toLocaleLowerCase("pt-BR") === "marcos.vinicius@loylegal.com";
+  return <AppShell title="Documentação Robot Center"><RobotDocumentationEditor initialSchema={schema} canDeleteDocumentation={canDeleteDocumentation} /></AppShell>;
 }
 
 function Denied({ message = "Acesso negado. Somente Admin pode editar a Documentação Robot Center." }: { message?: string }) {

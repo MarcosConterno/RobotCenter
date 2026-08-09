@@ -373,3 +373,44 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }
+
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id: robotId } = await params;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+
+  const [{ data: userRoles }, { data: documentation }] = await Promise.all([
+    supabase.from("user_roles").select("roles(codigo)").eq("user_id", user.id),
+    supabase.from("robot_center_documentations").select("id")
+      .eq("robo_id", robotId).is("deleted_at", null).maybeSingle(),
+  ]);
+  const isAdmin = [...new Set(userRoles?.flatMap((item) => roleCodes(item.roles)) ?? [])].includes("admin");
+  const isAuthorizedOwner = user.email?.trim().toLocaleLowerCase("pt-BR") === "marcos.vinicius@loylegal.com";
+  if (!isAdmin || !isAuthorizedOwner) {
+    return NextResponse.json({ error: "Somente o usuário autorizado pode excluir esta documentação." }, { status: 403 });
+  }
+  if (!documentation) return NextResponse.json({ error: "Documentação não encontrada." }, { status: 404 });
+
+  const { count: generatingVersions, error: generationError } = await supabase
+    .from("robot_center_documentation_versions")
+    .select("id", { count: "exact", head: true })
+    .eq("documentation_id", documentation.id)
+    .eq("status", "generating");
+  if (generationError) return NextResponse.json({ error: errorMessage(generationError) }, { status: 500 });
+  if (generatingVersions) {
+    return NextResponse.json({ error: "Aguarde a publicação em andamento antes de excluir a documentação." }, { status: 409 });
+  }
+
+  const deletedAt = new Date().toISOString();
+  const { error } = await supabase.from("robot_center_documentations")
+    .update({ deleted_at: deletedAt, deleted_by: user.id })
+    .eq("id", documentation.id)
+    .is("deleted_at", null);
+  if (error) {
+    console.error("Falha ao excluir a documentação Robot Center", error);
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
+}

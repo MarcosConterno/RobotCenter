@@ -70,6 +70,8 @@ O nome do criador é resolvido por `get_flow_creator_name`. A função privilegi
 
 ## Documentação Robot Center
 
+Somente Admin pode criar e editar. A exclusão lógica possui uma restrição adicional de identidade: apenas `marcos.vinicius@loylegal.com` pode executá-la. Essa regra é validada na interface, na rota autenticada e na policy RLS de atualização.
+
 O endpoint e a rota do editor exigem papel `admin`. As tabelas de seções e blocos usam RLS herdada do rascunho, documento, robô e cliente. As RPCs de inicialização, reordenação e arquivamento repetem a validação de Admin e do escopo do robô; ocultar o botão nunca é a única barreira.
 
 O bucket `robot-documentation` é privado. Leitura, inserção, substituição e remoção no caminho de rascunho exigem Admin, `robot_center_documentation.manage` e acesso ao cliente do robô identificado no primeiro segmento da pasta. Versões publicadas terão caminhos e política de leitura próprios na etapa de publicação.

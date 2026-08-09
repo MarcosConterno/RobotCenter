@@ -111,6 +111,8 @@ O Robô pode possuir um PDF externo opcional, denominado Documentação Upada. N
 
 A Documentação Robot Center é independente da Documentação Upada. Cada Robô pode possuir no máximo uma documentação interna, com um rascunho corrente e futuras versões publicadas imutáveis. O editor estruturado altera as regras reais do robô e mantém seções, textos complementares e notas exclusivamente no rascunho.
 
+A exclusão da Documentação Robot Center é lógica, não altera a Documentação Upada e preserva snapshots e arquivos históricos. Após a exclusão lógica, o robô pode receber uma nova documentação interna ativa.
+
 São válidos os estados: somente Documentação Upada, somente Documentação Robot Center, ambas ou nenhuma. As RFs permanecem em `regras_robo` como fonte de verdade e não são duplicadas no módulo.
 
 Os códigos RF/RNF são calculados por categoria, pai e ordem. O UUID da regra é a identidade estável usada pelos blocos documentais e por snapshots futuros.

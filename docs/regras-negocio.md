@@ -158,6 +158,8 @@
 14. Uma tentativa com falha é reprocessada no mesmo número de versão.
 15. Versões publicadas e suas imagens são imutáveis; alterações posteriores afetam apenas o rascunho.
 16. A conclusão da publicação da Documentação Robot Center registra uma atualização do robô em `publicacoes`, tornando o evento visível na dashboard conforme o acesso ao cliente.
+17. A exclusão da Documentação Robot Center é permitida exclusivamente ao usuário autenticado `marcos.vinicius@loylegal.com`, exige perfil Admin e utiliza exclusão lógica; versões e arquivos históricos não são removidos fisicamente.
+18. Excluir a Documentação Robot Center não altera nem remove a Documentação Upada do robô.
 11. Versões anteriores abrem exclusivamente em modo de visualização.
 12. Alterações não salvas impedem a publicação até que o estado normalizado seja persistido.
 13. Alterar URL, payload ou `client_id` não amplia acesso; a autorização é validada no PostgreSQL.

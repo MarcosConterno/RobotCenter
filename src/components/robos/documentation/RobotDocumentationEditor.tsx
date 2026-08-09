@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   ArrowDown,
   ArrowLeft,
@@ -45,7 +46,8 @@ import styles from "./RobotDocumentationEditor.module.css";
 
 type SaveState = "saved" | "pending" | "saving" | "error";
 
-export default function RobotDocumentationEditor({ initialSchema }: { initialSchema: RobotCenterDocumentSchema }) {
+export default function RobotDocumentationEditor({ initialSchema, canDeleteDocumentation = false }: { initialSchema: RobotCenterDocumentSchema; canDeleteDocumentation?: boolean }) {
+  const router = useRouter();
   const [sections, setSections] = useState(initialSchema.sections);
   const [requirements, setRequirements] = useState([
     ...initialSchema.requirements,
@@ -59,6 +61,7 @@ export default function RobotDocumentationEditor({ initialSchema }: { initialSch
   const [previewOpen, setPreviewOpen] = useState(false);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [publishedPdf, setPublishedPdf] = useState<{ url: string | null; versionLabel: string; warning?: string | null } | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState("");
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
@@ -336,6 +339,25 @@ export default function RobotDocumentationEditor({ initialSchema }: { initialSch
     }
   };
 
+  const deleteDocumentation = async () => {
+    const confirmed = window.confirm(
+      `Excluir a Documentação Robot Center de ${initialSchema.robot.name}?\n\nO rascunho e as versões publicadas deixarão de aparecer no sistema. Os arquivos históricos serão preservados e a Documentação Upada não será alterada.`,
+    );
+    if (!confirmed) return;
+    setDeleting(true);
+    setPublishError("");
+    try {
+      const response = await fetch(`/api/robos/${initialSchema.robot.id}/documentacao-robot-center`, { method: "DELETE" });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error ?? "Não foi possível excluir a documentação.");
+      router.push(`/robos/${initialSchema.robot.id}`);
+      router.refresh();
+    } catch (error) {
+      setPublishError(error instanceof Error ? error.message : "Não foi possível excluir a documentação.");
+      setDeleting(false);
+    }
+  };
+
   return (
     <main className={styles.page}>
       <div className={styles.breadcrumb}>
@@ -350,6 +372,11 @@ export default function RobotDocumentationEditor({ initialSchema }: { initialSch
           <p>{initialSchema.robot.technicalName} · {initialSchema.robot.system}</p>
         </div>
         <div className={styles.headerActions}>
+          {canDeleteDocumentation && (
+            <button type="button" className={styles.deleteAction} disabled={deleting || publishing} onClick={() => void deleteDocumentation()}>
+              {deleting ? <LoaderCircle className={styles.spin} size={14} /> : <Trash2 size={14} />}{deleting ? "Excluindo..." : "Excluir documento"}
+            </button>
+          )}
           <Link href={`/robos/${initialSchema.robot.id}/documentacao-robot-center`} onClick={leaveEditor} className={styles.secondaryAction}><History size={14} /> Histórico</Link>
           <button type="button" className={styles.secondaryAction} onClick={() => setPreviewOpen(true)}><Eye size={14} /> Pré-visualizar</button>
           <button type="button" className={styles.publishAction} disabled={publishing || saveState !== "saved"} onClick={() => { setPublishError(""); setPublishDialogOpen(true); }}>
