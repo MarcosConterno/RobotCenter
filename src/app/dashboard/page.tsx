@@ -25,7 +25,7 @@ export default function DashboardPage() {
 
   return (
     <AppShell title="Dashboard" hideTopbar>
-        <div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%", maxWidth: 1480, margin: "0 auto" }}>
+        <div data-tour="dashboard-overview" style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%", maxWidth: 1480, margin: "0 auto" }}>
           <div className="dashboard-welcome">
             <div className="dashboard-welcome__copy">
               <span className="dashboard-welcome__emoji" aria-hidden="true">👋</span>

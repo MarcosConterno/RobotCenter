@@ -21,6 +21,16 @@ function extractRoleCodes(roleRelation: unknown) {
   );
 }
 
+function extractRoleIds(roleRelation: unknown): string[] {
+  if (Array.isArray(roleRelation)) return roleRelation.flatMap(extractRoleIds);
+  return typeof roleRelation === "object" && roleRelation !== null && "id" in roleRelation && typeof roleRelation.id === "string" ? [roleRelation.id] : [];
+}
+
+function extractPermissionCodes(permissionRelation: unknown): string[] {
+  if (Array.isArray(permissionRelation)) return permissionRelation.flatMap(extractPermissionCodes);
+  return typeof permissionRelation === "object" && permissionRelation !== null && "codigo" in permissionRelation && typeof permissionRelation.codigo === "string" ? [permissionRelation.codigo] : [];
+}
+
 export async function GET() {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -30,7 +40,7 @@ export async function GET() {
 
   const { data: userRoles, error: rolesError } = await supabase
     .from("user_roles")
-    .select("roles(codigo)")
+    .select("roles(id,codigo)")
     .eq("user_id", user.id);
 
   if (rolesError) {
@@ -39,6 +49,11 @@ export async function GET() {
   }
 
   const roles = [...new Set(userRoles?.flatMap((item) => extractRoleCodes(item.roles)) ?? [])];
+  const roleIds = [...new Set(userRoles?.flatMap((item) => extractRoleIds(item.roles)) ?? [])];
+  const { data: permissionMappings } = roleIds.length
+    ? await supabase.from("role_permissions").select("permissions(codigo)").in("role_id", roleIds)
+    : { data: [] };
+  const permissions = [...new Set(permissionMappings?.flatMap((item) => extractPermissionCodes(item.permissions)) ?? [])];
   const isMaster = roles.includes("master");
   const { data: profile } = await supabase
     .from("profiles")
@@ -46,7 +61,7 @@ export async function GET() {
     .eq("id", user.id)
     .single();
   return NextResponse.json(
-    { allowed: roles.includes("admin") || isMaster, isMaster, roles, clientId: profile?.cliente_id ?? null, displayName: profile?.login ?? user.email ?? "Usuário" },
+    { allowed: roles.includes("admin") || isMaster, isMaster, roles, permissions, clientId: profile?.cliente_id ?? null, displayName: profile?.login ?? user.email ?? "Usuário" },
     { status: 200, headers: { "Cache-Control": "no-store" } },
   );
 }

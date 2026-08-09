@@ -1072,6 +1072,90 @@ export type Database = {
           },
         ]
       }
+      tutorial_drafts: {
+        Row: { created_at: string; created_by: string; id: string; revision: number; tutorial_id: string; updated_at: string; updated_by: string | null }
+        Insert: { created_at?: string; created_by?: string; id?: string; revision?: number; tutorial_id: string; updated_at?: string; updated_by?: string | null }
+        Update: { created_at?: string; created_by?: string; id?: string; revision?: number; tutorial_id?: string; updated_at?: string; updated_by?: string | null }
+        Relationships: [{ foreignKeyName: "tutorial_drafts_tutorial_id_fkey"; columns: ["tutorial_id"]; isOneToOne: true; referencedRelation: "tutorials"; referencedColumns: ["id"] }]
+      }
+      tutorial_steps: {
+        Row: { condition_key: string | null; created_at: string; created_by: string; descricao: string; draft_id: string; habilitado: boolean; id: string; ordem: number; page_key: string; placement: string; target_key: string; titulo: string; updated_at: string; updated_by: string | null }
+        Insert: { condition_key?: string | null; created_at?: string; created_by?: string; descricao?: string; draft_id: string; habilitado?: boolean; id?: string; ordem: number; page_key: string; placement?: string; target_key: string; titulo: string; updated_at?: string; updated_by?: string | null }
+        Update: { condition_key?: string | null; created_at?: string; created_by?: string; descricao?: string; draft_id?: string; habilitado?: boolean; id?: string; ordem?: number; page_key?: string; placement?: string; target_key?: string; titulo?: string; updated_at?: string; updated_by?: string | null }
+        Relationships: [{ foreignKeyName: "tutorial_steps_draft_id_fkey"; columns: ["draft_id"]; isOneToOne: false; referencedRelation: "tutorial_drafts"; referencedColumns: ["id"] }]
+      }
+      tutorial_versions: {
+        Row: { id: string; published_at: string; published_by: string; snapshot: Json; tutorial_id: string; version: number }
+        Insert: { id?: string; published_at?: string; published_by: string; snapshot: Json; tutorial_id: string; version: number }
+        Update: { id?: string; published_at?: string; published_by?: string; snapshot?: Json; tutorial_id?: string; version?: number }
+        Relationships: [{ foreignKeyName: "tutorial_versions_tutorial_id_fkey"; columns: ["tutorial_id"]; isOneToOne: false; referencedRelation: "tutorials"; referencedColumns: ["id"] }]
+      }
+      tutorials: {
+        Row: { audience_role_id: string; created_at: string; created_by: string; current_version_id: string | null; id: string; nome: string; status: string; tutorial_key: string; updated_at: string; updated_by: string | null }
+        Insert: { audience_role_id: string; created_at?: string; created_by?: string; current_version_id?: string | null; id?: string; nome: string; status?: string; tutorial_key: string; updated_at?: string; updated_by?: string | null }
+        Update: { audience_role_id?: string; created_at?: string; created_by?: string; current_version_id?: string | null; id?: string; nome?: string; status?: string; tutorial_key?: string; updated_at?: string; updated_by?: string | null }
+        Relationships: [
+          { foreignKeyName: "tutorials_audience_role_id_fkey"; columns: ["audience_role_id"]; isOneToOne: false; referencedRelation: "roles"; referencedColumns: ["id"] },
+          { foreignKeyName: "tutorials_current_version_id_fkey"; columns: ["current_version_id"]; isOneToOne: false; referencedRelation: "tutorial_versions"; referencedColumns: ["id"] },
+        ]
+      }
+      user_tutorial_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          current_step: number
+          id: string
+          started_at: string | null
+          status: string
+          tutorial_key: string
+          tutorial_id: string | null
+          tutorial_version: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          current_step?: number
+          id?: string
+          started_at?: string | null
+          status?: string
+          tutorial_key: string
+          tutorial_id?: string | null
+          tutorial_version: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          current_step?: number
+          id?: string
+          started_at?: string | null
+          status?: string
+          tutorial_key?: string
+          tutorial_id?: string | null
+          tutorial_version?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_tutorial_progress_tutorial_id_fkey"
+            columns: ["tutorial_id"]
+            isOneToOne: false
+            referencedRelation: "tutorials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_tutorial_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1123,6 +1207,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_tutorial: {
+        Args: { target_audience_role_id: string; target_name: string }
+        Returns: { tutorial_id: string; draft_id: string }[]
+      }
       get_flow_creator_name: {
         Args: { target_flow_id: string }
         Returns: string
@@ -1130,6 +1218,10 @@ export type Database = {
       publish_flow: {
         Args: { target_flow_id: string; target_snapshot: Json }
         Returns: number
+      }
+      publish_tutorial: {
+        Args: { target_tutorial_id: string }
+        Returns: { version_id: string; version_number: number }[]
       }
       archive_robot_requirement: {
         Args: { target_requirement_id: string; target_robot_id: string }
@@ -1176,6 +1268,10 @@ export type Database = {
           target_requirement_id: string
           target_robot_id: string
         }
+        Returns: undefined
+      }
+      save_tutorial_draft: {
+        Args: { target_audience_role_id: string; target_name: string; target_steps: Json; target_tutorial_id: string }
         Returns: undefined
       }
       update_robot_capacity: {

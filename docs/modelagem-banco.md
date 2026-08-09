@@ -278,6 +278,16 @@ A matriz editável continua normalizada em `role_permissions`, sem novas colunas
 
 Os tipos do schema ficam em `src/types/database.types.ts`. Após aplicar as migrations no Supabase Cloud, esse arquivo deve ser regenerado pela CLI para refletir o schema remoto como fonte final.
 
+## Progresso do tutorial
+
+`user_tutorial_progress` persiste o onboarding por usuário, chave e versão. A identidade funcional é a combinação única `user_id`, `tutorial_key` e `tutorial_version`; `status`, `current_step`, `started_at` e `completed_at` permitem iniciar, retomar, pular, concluir e executar novamente sem depender do navegador. Os textos e passos continuam definidos em código nesta fase.
+
+## Administração de tutoriais
+
+`tutorials` mantém nome, chave, público relacionado a `roles`, status e versão publicada atual. `tutorial_drafts` é o rascunho 1:1; `tutorial_steps` normaliza ordem, página lógica, target catalogado, conteúdo, posição, condição e habilitação. `tutorial_versions` preserva snapshot JSONB completo e imutável de cada publicação. `user_tutorial_progress.tutorial_id` é opcional para preservar os registros anteriores da Fase 1 e passa a identificar tutoriais administrativos.
+
+As RPCs `create_tutorial`, `save_tutorial_draft` e `publish_tutorial` usam `SECURITY INVOKER`, validam `tutorials.manage` e executam criação, substituição ordenada do rascunho e publicação na mesma transação. O snapshot publicado nunca é reconstruído a partir do rascunho atual.
+
 ## Atualização de capacidade e papel Suporte
 
 A migration `20260807221053_add_support_role_and_robot_capacity_permission.sql` adiciona o papel `suporte`, a permissão `robots.capacity.update` e a RPC `public.update_robot_capacity(uuid, integer, integer)`. A função revoga execução de `PUBLIC` e `anon`, exige sessão autenticada e permissão específica e atualiza exclusivamente `robos.ideal` e `robos.max`.

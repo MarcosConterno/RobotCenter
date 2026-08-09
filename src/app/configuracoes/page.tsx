@@ -1,6 +1,7 @@
 "use client";
 
-import { Bot, Building2, Clock3, FileText, GitFork, KeyRound, Pencil, Plus, Save, ShieldCheck, Trash2, Users, X } from "lucide-react";
+import { BookOpen, Bot, Building2, Clock3, FileText, GitFork, KeyRound, Pencil, Plus, Save, ShieldCheck, Trash2, Users, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import AppShell from "@/components/layout/AppShell";
@@ -17,13 +18,14 @@ interface PermissionItem { id: string; codigo: string; recurso: string; acao: st
 interface ClientMetric { clientId: string; robots: number; flows: number; documents: number; updatedAt: string }
 
 export default function ConfiguracoesPage() {
+  const router = useRouter();
   const {
     clientes,
     cadastrarCliente: adicionarCliente,
     atualizarCliente,
     excluirCliente,
   } = useAppData();
-  const { isAdmin: adminAutorizado, isMaster, status: statusAutorizacao, error: erroAutorizacao } = useAdminAccess();
+  const { isAdmin: adminAutorizado, isMaster, canManageTutorials, status: statusAutorizacao, error: erroAutorizacao } = useAdminAccess();
   const carregandoAutorizacao = statusAutorizacao === "loading";
   const [cadastroAtivo, setCadastroAtivo] = useState<CadastroAtivo>("usuarios");
   const [login, setLogin] = useState("");
@@ -327,7 +329,7 @@ export default function ConfiguracoesPage() {
           <p style={subtitleStyle}>Gerencie usuários, clientes e permissões de acesso do Robot Center.</p>
         </header>
 
-        <div style={tabsStyle} role="tablist" aria-label="Tipos de cadastro">
+        <div style={tabsStyle} role="tablist" aria-label="Tipos de cadastro" data-tour="settings-navigation">
           <button
             type="button"
             role="tab"
@@ -357,6 +359,9 @@ export default function ConfiguracoesPage() {
           >
             <ShieldCheck size={17} />
             Permissões
+          </button>}
+          {canManageTutorials && <button type="button" role="tab" aria-selected={false} onClick={() => router.push("/configuracoes/tutoriais")} style={tabStyle}>
+            <BookOpen size={17} /> Tutoriais
           </button>}
         </div>
 
@@ -710,7 +715,7 @@ function resourceLabel(resource: string) {
   const labels: Record<string, string> = {
     access_control: "Controle de acesso", clients: "Clientes", dashboard: "Dashboard", flows: "Fluxos",
     publications: "Publicações", robot_center_documentation: "Documentação Robot Center", robots: "Robôs",
-    settings: "Configurações", users: "Usuários",
+    settings: "Configurações", tutorials: "Tutoriais", users: "Usuários",
   };
   return labels[resource] ?? resource.replaceAll("_", " ");
 }

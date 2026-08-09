@@ -104,7 +104,7 @@ export default function RobotHeader({
     status !== "Todos";
 
   return (
-    <div style={headerContentStyle}>
+    <div style={headerContentStyle} data-tour="robots-header">
       <div className="robots-title-row" style={titleRowStyle}>
         <div>
           <span className="robots-page-eyebrow">ROBÔS</span>

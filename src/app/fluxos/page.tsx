@@ -38,7 +38,7 @@ export default function FluxosPage() {
   return (
     <AppShell title="Fluxos">
       <section className="flows-page">
-        <header className="flows-heading">
+        <header className="flows-heading" data-tour="flows-heading">
           <div>
             <span className="flows-eyebrow">FLUXOS</span>
             <h1>Documentação visual das automações</h1>

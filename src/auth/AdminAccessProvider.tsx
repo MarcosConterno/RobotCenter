@@ -21,6 +21,8 @@ interface AdminAccessContextValue {
   clientId: string | null;
   displayName: string;
   roles: string[];
+  permissions: string[];
+  canManageTutorials: boolean;
   status: AccessStatus;
   error: string;
 }
@@ -29,6 +31,7 @@ const AdminAccessContext = createContext<AdminAccessContextValue | null>(null);
 
 export function AdminAccessProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<string[]>([]);
+  const [permissions, setPermissions] = useState<string[]>([]);
   const [status, setStatus] = useState<AccessStatus>("loading");
   const [error, setError] = useState("");
   const [clientId, setClientId] = useState<string | null>(null);
@@ -38,9 +41,10 @@ export function AdminAccessProvider({ children }: { children: ReactNode }) {
     let active = true;
     void fetch("/api/admin/access", { cache: "no-store" })
       .then(async (response) => {
-        const payload = await response.json() as { roles?: string[]; isMaster?: boolean; clientId?: string | null; displayName?: string; error?: string };
+        const payload = await response.json() as { roles?: string[]; permissions?: string[]; isMaster?: boolean; clientId?: string | null; displayName?: string; error?: string };
         if (!active) return;
         setRoles(response.ok && Array.isArray(payload.roles) ? payload.roles : []);
+        setPermissions(response.ok && Array.isArray(payload.permissions) ? payload.permissions : []);
         setClientId(response.ok ? payload.clientId ?? null : null);
         setDisplayName(response.ok ? payload.displayName ?? "Usuário" : "Usuário");
         setError(response.status === 401 ? "" : payload.error ?? "");
@@ -74,13 +78,15 @@ export function AdminAccessProvider({ children }: { children: ReactNode }) {
       canEditFlows: isAdmin || isClient,
       canCreateFlows: isAdmin,
       canDeleteFlows: isAdmin,
+      canManageTutorials: isMaster || permissions.includes("tutorials.manage"),
       clientId,
       displayName,
       roles,
+      permissions,
       status,
       error,
     };
-  }, [clientId, displayName, error, roles, status]);
+  }, [clientId, displayName, error, permissions, roles, status]);
   return <AdminAccessContext.Provider value={value}>{children}</AdminAccessContext.Provider>;
 }
 

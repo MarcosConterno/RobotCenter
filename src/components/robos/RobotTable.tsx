@@ -14,6 +14,7 @@ export default function RobotTable({
 }: RobotTableProps) {
   return (
     <div
+      data-tour="robots-list"
       style={{
         display: "grid",
         gridTemplateColumns: "repeat(3, minmax(0, 1fr))",

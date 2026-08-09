@@ -211,3 +211,16 @@
 7. A atribuição ou remoção do papel Master e a alteração da permissão `access_control.read` são protegidas no banco, não apenas na interface.
 8. O usuário Master deve conservar um papel administrativo base para permanecer compatível com as rotas, APIs e policies existentes.
 9. Alterações da matriz somente são persistidas após confirmação em **Salvar alterações** e são aplicadas na mesma transação.
+
+## Tutorial e onboarding
+
+1. O tutorial nunca bloqueia o uso do Robot Center e não abre automaticamente no login.
+2. Usuário sem progresso registrado é tratado como não iniciado e recebe somente um destaque discreto na sidebar.
+3. Passos são filtrados pelas capacidades disponíveis ao usuário; targets ausentes são ignorados sem interromper o tour.
+4. Fechar mantém o estado em andamento; pular registra `skipped`; concluir registra `completed`.
+5. O usuário pode retomar ou recomeçar o tutorial da mesma versão e o progresso é persistido no backend.
+6. Somente usuários com `tutorials.manage` ou Master criam, alteram, testam e publicam tutoriais.
+7. Salvar altera somente o rascunho; publicar cria nova versão sequencial e imutável.
+8. O modo de teste nunca cria ou atualiza `user_tutorial_progress`.
+9. Passos aceitam somente páginas e targets presentes no catálogo do código.
+10. Quando a versão publicada aumenta, a ausência de progresso nessa versão volta a destacar discretamente o botão Tutorial sem abrir o tour automaticamente.

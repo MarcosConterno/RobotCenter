@@ -94,6 +94,12 @@ Para persistência, os IDs passam a UUID. Um robô pertence obrigatoriamente a u
 Os dados técnicos operacionais do Robô incluem `courtName`, `fila`, `stack`, `ideal`, `max`, `pacote` e `versao`. `ideal` e `max` são inteiros não negativos, sendo `max` sempre maior ou igual a `ideal`.
 
 Usuário autenticado é representado por `auth.users`; seus dados funcionais ficam em `profiles`, e seu tipo é obtido pelo RBAC. Senha é entrada exclusiva do Supabase Auth e nunca integra uma entidade persistida da aplicação.
+
+## Tutorial do Robot Center
+
+O Tutorial é um onboarding guiado e não obrigatório, resolvido conforme as capacidades reais da interface do usuário. O progresso pertence ao Profile autenticado, suporta versão e permanece disponível entre navegadores. Os estados são não iniciado, em andamento, concluído e pulado; uma conclusão não impede nova execução manual.
+
+Tutoriais administrativos possuem um público baseado nos papéis reais do RBAC, rascunho editável e versões publicadas imutáveis. Página e elemento são escolhidos de um catálogo lógico; seletores CSS não integram o conteúdo informado pelo administrador. A execução utiliza a versão publicada adequada ao papel e ainda ignora passos incompatíveis com as capacidades atuais do usuário.
 ## Identidade visual compartilhada
 
 A cor do Cliente pertence ao seu cadastro. A cor do Pacote é armazenada nos robôs por compatibilidade, mas é compartilhada pelo nome normalizado do pacote. A atribuição inicial usa ciclicamente a paleta `azul`, `violeta`, `verde`, `ambar`, `rosa` e `ciano`.

@@ -43,6 +43,20 @@ O endpoint `/api/admin/client-metrics` exige sessão com papel Admin ou Master a
 
 O tipo da regra (`documentacao` ou `fora_documentacao`) não altera o escopo de acesso. As duas categorias herdam as mesmas policies de `regras_robo`: leitura exige `robots.read` e escrita/reordenação exige `robots.update`, sempre respeitando o cliente vinculado ao robô.
 
+## Progresso do tutorial
+
+Todo usuário autenticado pode consultar, criar e atualizar exclusivamente seu próprio registro em `user_tutorial_progress`. As policies comparam `auth.uid()` a `user_id` em `SELECT`, `INSERT` e nos dois lados de `UPDATE`. Não há grant ou policy de exclusão, acesso anônimo ou edição administrativa do progresso de terceiros.
+
+## Administração de tutoriais
+
+`tutorials.manage` permite acessar as rotas e APIs administrativas, criar e salvar rascunhos, testar sem progresso e publicar snapshots. Admin e Master recebem a permissão inicialmente; a matriz existente pode concedê-la ou removê-la conforme suas próprias regras, enquanto Master conserva acesso superior. As tabelas de rascunho e passos exigem essa capacidade. A leitura de versões atuais por usuários comuns exige tutorial publicado e vínculo com o papel definido como público.
+
+| Operação | Master | Admin padrão | Outros perfis |
+|---|---:|---:|---:|
+| Executar tutorial publicado do próprio público | Sim | Sim | Sim |
+| Gerenciar/testar/publicar | Sim | Sim | Somente se receber `tutorials.manage` |
+| Alterar versão publicada | Não | Não | Não |
+
 O histórico `alteracoes_robo` permite leitura com `robots.read`, respeitando `private.can_access_cliente`, e inserção com `robots.update`. Não existem grants ou policies de update/delete para usuários autenticados, garantindo que o histórico anterior não seja alterado pela aplicação.
 
 As policies consultam `roles`, `permissions`, `user_roles` e `role_permissions` por funções no schema privado. `user_metadata` não participa da autorização. Todas as tabelas públicas da aplicação têm RLS habilitada, e `anon` não recebe acesso. O papel Master é um vínculo RBAC real, nunca uma condição confiada apenas ao email enviado pela interface.
