@@ -386,8 +386,8 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
       .eq("robo_id", robotId).is("deleted_at", null).maybeSingle(),
   ]);
   const isAdmin = [...new Set(userRoles?.flatMap((item) => roleCodes(item.roles)) ?? [])].includes("admin");
-  const isAuthorizedOwner = user.email?.trim().toLocaleLowerCase("pt-BR") === "marcos.vinicius@loylegal.com";
-  if (!isAdmin || !isAuthorizedOwner) {
+  const isMaster = [...new Set(userRoles?.flatMap((item) => roleCodes(item.roles)) ?? [])].includes("master");
+  if (!isAdmin || !isMaster) {
     return NextResponse.json({ error: "Somente o usuário autorizado pode excluir esta documentação." }, { status: 403 });
   }
   if (!documentation) return NextResponse.json({ error: "Documentação não encontrada." }, { status: 404 });

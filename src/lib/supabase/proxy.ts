@@ -60,8 +60,8 @@ export async function updateSession(request: NextRequest) {
       return relation && typeof relation === "object" && "codigo" in relation ? [relation.codigo] : [];
     }));
     const allowed = request.nextUrl.pathname.startsWith("/configuracoes")
-      ? roleCodes.has("admin")
-      : roleCodes.has("admin") || roleCodes.has("operador") || roleCodes.has("cliente");
+      ? roleCodes.has("admin") || roleCodes.has("master")
+      : roleCodes.has("admin") || roleCodes.has("master") || roleCodes.has("operador") || roleCodes.has("cliente") || roleCodes.has("suporte");
     if (!allowed) {
       const dashboardUrl = request.nextUrl.clone();
       dashboardUrl.pathname = "/dashboard";

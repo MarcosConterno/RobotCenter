@@ -26,7 +26,8 @@ export default async function RobotDocumentationEditorPage({ params }: { params:
       .select("id,nome,court_name,sistema,updated_at,clientes(nome)")
       .eq("id", id).is("deleted_at", null).maybeSingle(),
   ]);
-  const isAdmin = [...new Set(userRoles?.flatMap((item) => roleCodes(item.roles)) ?? [])].includes("admin");
+  const roleSet = [...new Set(userRoles?.flatMap((item) => roleCodes(item.roles)) ?? [])];
+  const isAdmin = roleSet.includes("admin") || roleSet.includes("master");
   if (!isAdmin || !robot) return <Denied message="Robô não encontrado ou acesso negado." />;
 
   const { data: initialized, error: initializeError } = await supabase
@@ -105,7 +106,7 @@ export default async function RobotDocumentationEditorPage({ params }: { params:
     metadata: { updatedAt: draft?.updated_at ?? robot.updated_at, schemaVersion: 1, currentVersion: currentVersion?.version ?? null },
   };
 
-  const canDeleteDocumentation = user.email?.trim().toLocaleLowerCase("pt-BR") === "marcos.vinicius@loylegal.com";
+  const canDeleteDocumentation = roleSet.includes("master");
   return <AppShell title="Documentação Robot Center"><RobotDocumentationEditor initialSchema={schema} canDeleteDocumentation={canDeleteDocumentation} /></AppShell>;
 }
 

@@ -272,13 +272,17 @@ A persistência inicial está definida pelas migrations em `supabase/migrations`
 
 `profiles.cliente_id` é uma FK opcional para `clientes`, com `on delete restrict` e índice próprio. O valor é obrigatório por regra de negócio quando o profile recebe o papel Cliente e pode permanecer nulo ou ser preenchido para Admin, Operador e Suporte.
 
+O papel `master` é um vínculo adicional em `user_roles`, não uma coluna especial em `profiles`. Ele é inicializado exclusivamente para `marcos.vinicius@loylegal.com`, que conserva também `admin`. A permissão `access_control.read` distingue o painel reservado de mapeamento. Policies específicas bloqueiam novas atribuições ou remoções de Master pela aplicação e impedem alterar a role reservada ou sua concessão em `role_permissions`.
+
+A matriz editável continua normalizada em `role_permissions`, sem novas colunas. A RPC `update_role_permission_matrix(jsonb)` recebe somente diferenças confirmadas pela interface e as aplica transacionalmente com `SECURITY INVOKER`. Policies permitem edição irrestrita ao Master e limitam Admin aos papéis Operador, Cliente e Suporte, excluindo o recurso `access_control`.
+
 Os tipos do schema ficam em `src/types/database.types.ts`. Após aplicar as migrations no Supabase Cloud, esse arquivo deve ser regenerado pela CLI para refletir o schema remoto como fonte final.
 
 ## Atualização de capacidade e papel Suporte
 
 A migration `20260807221053_add_support_role_and_robot_capacity_permission.sql` adiciona o papel `suporte`, a permissão `robots.capacity.update` e a RPC `public.update_robot_capacity(uuid, integer, integer)`. A função revoga execução de `PUBLIC` e `anon`, exige sessão autenticada e permissão específica e atualiza exclusivamente `robos.ideal` e `robos.max`.
 
-Operador deixa de possuir manutenção completa de robôs e recebe somente atualização de capacidade. Cliente e Operador não acessam Configurações. Suporte recebe as leituras necessárias para montar a Dashboard, enquanto a camada de rotas o restringe à Dashboard.
+Operador deixa de possuir manutenção completa de robôs e recebe somente atualização de capacidade. Cliente e Operador não acessam Configurações. Suporte recebe as leituras necessárias para Dashboard, Robôs e Fluxos; a camada de rotas permite essas consultas e continua bloqueando Configurações e qualquer manutenção.
 
 ## Cor centralizada do Cliente
 
@@ -304,6 +308,7 @@ Blocos agora podem pertencer a uma regra (`requirement_id`) ou seção (`section
 
 - `robot_center_documentations`: raiz 1:1 com `robos`, status, auditoria e exclusão lógica; não contém o arquivo externo nem conteúdo editorial.
 - A unicidade de `robot_center_documentations` por robô considera somente registros com `deleted_at is null`, permitindo uma nova documentação após exclusão lógica sem sobrescrever o histórico anterior.
+- A RPC `initialize_robot_center_documentation` resolve conflitos pelo índice parcial `robot_center_documentations_robo_active_key`, usando o predicado `deleted_at is null`. Ela reutiliza a documentação ativa quando existente ou cria uma nova após exclusão lógica, sem depender da constraint global removida.
 - `robot_center_documentation_drafts`: rascunho 1:1 com a raiz. Nesta etapa armazena somente a revisão e auditoria.
 - `robot_center_documentation_versions`: futuras versões publicadas, únicas por documentação e número. Um trigger bloqueia `UPDATE` e `DELETE`.
 

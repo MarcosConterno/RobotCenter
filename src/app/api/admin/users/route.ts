@@ -32,7 +32,7 @@ const deleteUserSchema = z.object({ id: z.string().uuid() });
 function roleName(roleRelation: unknown) {
   if (Array.isArray(roleRelation)) {
     return roleRelation.some(
-      (role) => typeof role === "object" && role !== null && "codigo" in role && role.codigo === "admin",
+      (role) => typeof role === "object" && role !== null && "codigo" in role && (role.codigo === "admin" || role.codigo === "master"),
     );
   }
 
@@ -40,8 +40,14 @@ function roleName(roleRelation: unknown) {
     typeof roleRelation === "object"
       && roleRelation !== null
       && "codigo" in roleRelation
-      && roleRelation.codigo === "admin",
+      && (roleRelation.codigo === "admin" || roleRelation.codigo === "master"),
   );
+}
+
+function roleCodes(roleRelation: unknown): string[] {
+  if (Array.isArray(roleRelation)) return roleRelation.flatMap(roleCodes);
+  if (roleRelation && typeof roleRelation === "object" && "codigo" in roleRelation && typeof roleRelation.codigo === "string") return [roleRelation.codigo];
+  return [];
 }
 
 async function requireAdmin() {
@@ -55,7 +61,8 @@ async function requireAdmin() {
     .eq("user_id", user.id);
   const isAdmin = !rolesError && userRoles?.some((item) => roleName(item.roles));
   if (!isAdmin) return { error: "Somente administradores podem gerenciar usuários.", status: 403 } as const;
-  return { user } as const;
+  const isMaster = userRoles?.some((item) => roleCodes(item.roles).includes("master")) ?? false;
+  return { user, isMaster } as const;
 }
 
 export async function GET() {
@@ -85,9 +92,10 @@ export async function GET() {
   );
   const users = (profiles ?? []).map((profile) => {
     const assignments = profile.user_roles as unknown as Array<{ roles: { codigo?: string } | Array<{ codigo?: string }> | null }>;
-    const code = assignments?.flatMap((assignment) => Array.isArray(assignment.roles) ? assignment.roles : [assignment.roles]).find(Boolean)?.codigo;
+    const codes = assignments?.flatMap((assignment) => Array.isArray(assignment.roles) ? assignment.roles : [assignment.roles]).filter(Boolean).flatMap(roleCodes) ?? [];
+    const code = codes.find((item) => TIPOS_USUARIO.some((type) => type.toLowerCase() === item));
     const tipo = TIPOS_USUARIO.find((item) => item.toLowerCase() === code) ?? "Operador";
-    return { id: profile.id, login: profile.login, email: emailById.get(profile.id) ?? "", tipo, clienteId: profile.cliente_id };
+    return { id: profile.id, login: profile.login, email: emailById.get(profile.id) ?? "", tipo, clienteId: profile.cliente_id, isMaster: codes.includes("master") };
   });
 
   return NextResponse.json({ users, currentUserId: access.user.id }, { headers: { "Cache-Control": "no-store" } });
@@ -179,6 +187,13 @@ export async function PATCH(request: Request) {
 
   const admin = createAdminClient();
   const { id, login, email, tipo, clientId = null } = parsed.data;
+  const { data: masterRole } = await admin.from("roles").select("id").eq("codigo", "master").maybeSingle();
+  const { count: targetMasterRoles } = masterRole
+    ? await admin.from("user_roles").select("user_id", { count: "exact", head: true }).eq("user_id", id).eq("role_id", masterRole.id)
+    : { count: 0 };
+  const targetIsMaster = Boolean(targetMasterRoles);
+  if (targetIsMaster && !access.isMaster) return NextResponse.json({ error: "Somente Master pode alterar o usuário Master." }, { status: 403 });
+  if (targetIsMaster && tipo !== "Admin") return NextResponse.json({ error: "O usuário Master deve manter também o perfil Admin." }, { status: 400 });
   const { data: role, error: roleError } = await admin.from("roles").select("id").eq("codigo", tipo.toLowerCase()).eq("ativo", true).single();
   if (roleError || !role) return NextResponse.json({ error: "Papel de usuário não encontrado." }, { status: 400 });
 
@@ -199,10 +214,16 @@ export async function PATCH(request: Request) {
   let addRoleError: unknown = null;
   if (tipo === "Cliente") {
     ({ error: profileError } = await admin.from("profiles").update({ login, cliente_id: clientId }).eq("id", id).is("deleted_at", null));
-    if (!profileError) ({ error: removeRoleError } = await admin.from("user_roles").delete().eq("user_id", id));
+    if (!profileError) {
+      let removeQuery = admin.from("user_roles").delete().eq("user_id", id);
+      if (masterRole) removeQuery = removeQuery.neq("role_id", masterRole.id);
+      ({ error: removeRoleError } = await removeQuery);
+    }
     if (!profileError && !removeRoleError) ({ error: addRoleError } = await admin.from("user_roles").insert({ user_id: id, role_id: role.id }));
   } else {
-    ({ error: removeRoleError } = await admin.from("user_roles").delete().eq("user_id", id));
+    let removeQuery = admin.from("user_roles").delete().eq("user_id", id);
+    if (masterRole) removeQuery = removeQuery.neq("role_id", masterRole.id);
+    ({ error: removeRoleError } = await removeQuery);
     if (!removeRoleError) ({ error: addRoleError } = await admin.from("user_roles").insert({ user_id: id, role_id: role.id }));
     if (!removeRoleError && !addRoleError) ({ error: profileError } = await admin.from("profiles").update({ login, cliente_id: clientId }).eq("id", id).is("deleted_at", null));
   }
@@ -221,6 +242,12 @@ export async function DELETE(request: Request) {
   if (parsed.data.id === access.user.id) return NextResponse.json({ error: "Você não pode excluir o próprio usuário." }, { status: 400 });
 
   const admin = createAdminClient();
+  const { data: masterRole } = await admin.from("roles").select("id").eq("codigo", "master").maybeSingle();
+  if (masterRole) {
+    const { count } = await admin.from("user_roles").select("user_id", { count: "exact", head: true })
+      .eq("user_id", parsed.data.id).eq("role_id", masterRole.id);
+    if (count) return NextResponse.json({ error: "O usuário Master não pode ser excluído." }, { status: 403 });
+  }
   const now = new Date().toISOString();
   const { error: profileError } = await admin.from("profiles").update({ ativo: false, deleted_at: now, deleted_by: access.user.id }).eq("id", parsed.data.id).is("deleted_at", null);
   if (profileError) return NextResponse.json({ error: "Não foi possível excluir o perfil." }, { status: 400 });

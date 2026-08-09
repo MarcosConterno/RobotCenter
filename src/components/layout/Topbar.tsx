@@ -56,14 +56,14 @@ export default function Topbar({ title, bare = false }: TopbarProps) {
         supabase
           .from("user_roles")
           .select("roles(nome)")
-          .eq("user_id", user.id)
-          .limit(1),
+          .eq("user_id", user.id),
       ]);
 
       if (!active) return;
 
       setDisplayName(profile?.login || user.email || "Usuário");
-      setRoleName(getRoleName(userRoles?.[0]?.roles) || "Usuário");
+      const names = (userRoles ?? []).map((item) => getRoleName(item.roles)).filter(Boolean);
+      setRoleName(names.includes("Master") ? "Master" : names[0] || "Usuário");
     }
 
     void loadAuthenticatedUser();

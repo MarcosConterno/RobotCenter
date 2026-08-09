@@ -1186,6 +1186,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      update_role_permission_matrix: {
+        Args: { change_set: Json }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

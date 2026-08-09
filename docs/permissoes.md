@@ -26,13 +26,14 @@ Nenhuma policy deve ser criada antes dessas decisões, pois apenas usar o papel 
 
 As migrations implementam autorização por tabelas RBAC e RLS deny-by-default:
 
-- **Admin**: gerencia clientes, profiles, papéis, permissões, robôs, regras e publicações conforme os grants disponíveis. Pode editar e arquivar usuários e clientes, sem excluir fisicamente seus históricos.
+- **Master**: papel complementar e superior ao Admin, atribuído exclusivamente a `marcos.vinicius@loylegal.com`. Consulta e edita toda a matriz de permissões e executa ações excepcionais explicitamente protegidas, mantendo também o papel Admin por compatibilidade.
+- **Admin**: gerencia clientes, profiles, robôs, regras e publicações conforme os grants disponíveis. Pode editar e arquivar usuários e clientes, sem excluir fisicamente seus históricos. No painel de permissões, altera somente Operador, Cliente e Suporte.
 - O vínculo entre usuário e Cliente é alterado somente pelo endpoint `/api/admin/users`, após validação server-side do papel Admin. A operação usa o cliente administrativo apenas depois dessa validação; papéis não administrativos recebem `403` e não podem escolher outro `cliente_id` por payload.
 - O primeiro administrador é inicializado de forma idempotente para `marcos.vinicius@loylegal.com`; os demais vínculos são gerenciados pela tela administrativa.
 - A importação em lote de robôs e o download do modelo são exclusivos do papel Admin. A interface reutiliza a autorização da sessão autenticada, carregada centralmente, evitando validações repetidas a cada ação; operações persistentes continuam protegidas no servidor e pelas policies RLS.
 - **Operador**: consulta robôs e detalhes e altera somente `ideal` e `max` pela permissão `robots.capacity.update`; não acessa Configurações nem a manutenção completa de robôs.
 - **Cliente**: lê somente seu próprio cliente, seus robôs, regras e publicações; não acessa Configurações e não possui escrita.
-- **Suporte**: acessa somente as Dashboards, incluindo a identificação do Cliente na tabela consolidada. Recebe as leituras mínimas necessárias para compor os indicadores, sem acesso às páginas de Robôs ou Configurações.
+- **Suporte**: acessa Dashboard, listagem/detalhes de Robôs e Fluxos em modo de visualização. Recebe somente as leituras necessárias e não acessa Configurações nem ações de manutenção.
 
 Admin e Operador atualizam capacidade pela RPC `public.update_robot_capacity`. A função valida sessão e permissão específica e não permite alterar outras colunas do robô.
 
@@ -42,7 +43,7 @@ O tipo da regra (`documentacao` ou `fora_documentacao`) não altera o escopo de 
 
 O histórico `alteracoes_robo` permite leitura com `robots.read`, respeitando `private.can_access_cliente`, e inserção com `robots.update`. Não existem grants ou policies de update/delete para usuários autenticados, garantindo que o histórico anterior não seja alterado pela aplicação.
 
-As policies consultam `roles`, `permissions`, `user_roles` e `role_permissions` por funções no schema privado. `user_metadata` não participa da autorização. Todas as tabelas públicas da aplicação têm RLS habilitada, e `anon` não recebe acesso.
+As policies consultam `roles`, `permissions`, `user_roles` e `role_permissions` por funções no schema privado. `user_metadata` não participa da autorização. Todas as tabelas públicas da aplicação têm RLS habilitada, e `anon` não recebe acesso. O papel Master é um vínculo RBAC real, nunca uma condição confiada apenas ao email enviado pela interface.
 - Todo usuário autenticado pode alterar exclusivamente a própria senha pelo menu da conta. A operação usa a sessão atual do Supabase Auth e não concede acesso administrativo a outros usuários.
 - O histórico do Dashboard respeita `publicacoes_select`; somente papéis com `publications.create` podem inserir registros por **Salvar e publicar**.
 - O bucket privado `robot-manuals` permite leitura somente a quem possui `robots.read` e acesso ao cliente do robô. Upload e substituição exigem `robots.update`; não existe acesso anônimo.
@@ -70,7 +71,7 @@ O nome do criador é resolvido por `get_flow_creator_name`. A função privilegi
 
 ## Documentação Robot Center
 
-Somente Admin pode criar e editar. A exclusão lógica possui uma restrição adicional de identidade: apenas `marcos.vinicius@loylegal.com` pode executá-la. Essa regra é validada na interface, na rota autenticada e na policy RLS de atualização.
+Somente Admin pode criar e editar. A exclusão lógica exige adicionalmente o papel Master. Essa regra é validada na interface, na rota autenticada e na policy RLS de atualização.
 
 O endpoint e a rota do editor exigem papel `admin`. As tabelas de seções e blocos usam RLS herdada do rascunho, documento, robô e cliente. As RPCs de inicialização, reordenação e arquivamento repetem a validação de Admin e do escopo do robô; ocultar o botão nunca é a única barreira.
 
@@ -82,6 +83,20 @@ Versões publicadas permanecem no mesmo bucket privado, sob `<robo_id>/versions/
 |---|---:|---:|---:|---:|
 | `robot_center_documentation.read` | Sim | Conforme `robots.read` | Próprio cliente | Conforme `robots.read` |
 | `robot_center_documentation.manage` | Sim | Não | Não | Não |
+
+## Painel administrativo de permissões
+
+O painel **Configurações → Permissões** agrupa o catálogo de `permissions` pelo campo `recurso` e mostra quais registros ativos de `roles` estão relacionados por `role_permissions`. A descrição funcional é o título e o código técnico aparece como informação secundária. A API `/api/admin/permissions` repete a validação de Admin/Master no servidor e não confia na visibilidade da aba.
+
+| Área de Configurações | Master | Admin | Operador | Cliente | Suporte |
+|---|---:|---:|---:|---:|---:|
+| Usuários | Sim | Sim | Não | Não | Não |
+| Clientes | Sim | Sim | Não | Não | Não |
+| Mapa de permissões | Edita tudo | Edita perfis subordinados | Não | Não | Não |
+
+A permissão `access_control.read` é concedida apenas ao Master. As policies de `user_roles` bloqueiam qualquer nova atribuição ou remoção do papel `master` pela aplicação; o único vínculo é criado de forma rastreável pela migration para `marcos.vinicius@loylegal.com`. Policies adicionais protegem a própria role e o vínculo da permissão reservada. O endpoint de usuários também impede que um Admin comum altere ou arquive o usuário Master.
+
+A RPC transacional `update_role_permission_matrix(jsonb)` executa as inclusões e remoções em `role_permissions` com `SECURITY INVOKER`, portanto mantém a RLS da sessão. Master altera qualquer papel/recurso. Admin não altera os papéis `admin`/`master` nem o recurso `access_control`. Falha em qualquer item desfaz a operação completa.
 
 - A rota de administração valida sessão e papel Admin no servidor.
 - A raiz documental exige permissão de leitura e acesso ao cliente do Robô. Fora do Admin, somente registros com status `published` ficam visíveis.

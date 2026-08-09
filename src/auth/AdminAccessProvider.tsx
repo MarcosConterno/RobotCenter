@@ -6,6 +6,7 @@ type AccessStatus = "loading" | "ready";
 
 interface AdminAccessContextValue {
   isAdmin: boolean;
+  isMaster: boolean;
   isOperator: boolean;
   isClient: boolean;
   isSupport: boolean;
@@ -37,7 +38,7 @@ export function AdminAccessProvider({ children }: { children: ReactNode }) {
     let active = true;
     void fetch("/api/admin/access", { cache: "no-store" })
       .then(async (response) => {
-        const payload = await response.json() as { roles?: string[]; clientId?: string | null; displayName?: string; error?: string };
+        const payload = await response.json() as { roles?: string[]; isMaster?: boolean; clientId?: string | null; displayName?: string; error?: string };
         if (!active) return;
         setRoles(response.ok && Array.isArray(payload.roles) ? payload.roles : []);
         setClientId(response.ok ? payload.clientId ?? null : null);
@@ -54,19 +55,21 @@ export function AdminAccessProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(() => {
-    const isAdmin = roles.includes("admin");
+    const isMaster = roles.includes("master");
+    const isAdmin = roles.includes("admin") || isMaster;
     const isOperator = roles.includes("operador");
     const isClient = roles.includes("cliente");
     const isSupport = roles.includes("suporte");
     return {
       isAdmin,
+      isMaster,
       isOperator,
       isClient,
       isSupport,
       canManageRobots: isAdmin,
       canUpdateCapacity: isAdmin || isOperator,
       canAccessSettings: isAdmin,
-      canAccessRobots: isAdmin || isOperator || isClient,
+      canAccessRobots: isAdmin || isOperator || isClient || isSupport,
       canAccessFlows: isAdmin || isOperator || isClient || isSupport,
       canEditFlows: isAdmin || isClient,
       canCreateFlows: isAdmin,

@@ -92,7 +92,7 @@
 - Pacotes com o mesmo nome normalizado compartilham a mesma cor visual; editar uma cor a propaga para todos os robôs correspondentes.
 - Admin e Operador podem alterar diretamente na Dashboard somente `ideal` e `max`; a persistência ocorre após clicar em “Aplicar alteração”.
 - Operador e Cliente consultam os detalhes dos robôs, mas não criam, editam, excluem, importam ou publicam robôs.
-- Suporte acessa somente as Dashboards.
+- Suporte acessa Dashboard, listagem e detalhes de Robôs e Fluxos, sempre em modo de visualização e sem ações de cadastro, edição, exclusão, importação ou publicação.
 - Cadastros com soft delete não aparecem nas consultas funcionais comuns.
 - Profile com papel Cliente deve estar ativo e vinculado a um cliente ativo.
 - Senhas são processadas exclusivamente pelo Supabase Auth.
@@ -158,8 +158,9 @@
 14. Uma tentativa com falha é reprocessada no mesmo número de versão.
 15. Versões publicadas e suas imagens são imutáveis; alterações posteriores afetam apenas o rascunho.
 16. A conclusão da publicação da Documentação Robot Center registra uma atualização do robô em `publicacoes`, tornando o evento visível na dashboard conforme o acesso ao cliente.
-17. A exclusão da Documentação Robot Center é permitida exclusivamente ao usuário autenticado `marcos.vinicius@loylegal.com`, exige perfil Admin e utiliza exclusão lógica; versões e arquivos históricos não são removidos fisicamente.
+17. A exclusão da Documentação Robot Center é permitida exclusivamente ao papel Master, exige também o papel Admin por compatibilidade e utiliza exclusão lógica; versões e arquivos históricos não são removidos fisicamente.
 18. Excluir a Documentação Robot Center não altera nem remove a Documentação Upada do robô.
+19. Ao abrir o editor, o inicializador reutiliza somente a documentação interna ativa; documentos logicamente excluídos permanecem históricos e não bloqueiam a criação de um novo rascunho.
 11. Versões anteriores abrem exclusivamente em modo de visualização.
 12. Alterações não salvas impedem a publicação até que o estado normalizado seja persistido.
 13. Alterar URL, payload ou `client_id` não amplia acesso; a autorização é validada no PostgreSQL.
@@ -195,3 +196,15 @@
 21. O bloco de imagem somente é criado após upload confirmado; substituição mantém posição, legenda, alinhamento e tamanho.
 22. Legenda acompanha logicamente a imagem durante reordenação e exclusão.
 23. Arquivo referenciado por versão publicada não é removido fisicamente ao sair do rascunho.
+
+## Administração e controle de acesso
+
+1. O papel Master é superior e complementar ao Admin; não substitui o papel Admin nas autorizações existentes.
+2. Somente `marcos.vinicius@loylegal.com` recebe o papel Master na inicialização controlada.
+3. Master e Admin visualizam o painel administrativo que mapeia permissões por recurso e os perfis que as possuem.
+4. Master pode editar qualquer vínculo entre papel e permissão.
+5. Admin pode editar somente vínculos de Operador, Cliente e Suporte; não pode alterar permissões de Admin, Master nem do recurso `access_control`.
+6. Um Admin comum não pode editar, arquivar nem remover o vínculo Master de um usuário.
+7. A atribuição ou remoção do papel Master e a alteração da permissão `access_control.read` são protegidas no banco, não apenas na interface.
+8. O usuário Master deve conservar um papel administrativo base para permanecer compatível com as rotas, APIs e policies existentes.
+9. Alterações da matriz somente são persistidas após confirmação em **Salvar alterações** e são aplicadas na mesma transação.

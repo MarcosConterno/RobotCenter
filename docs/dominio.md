@@ -48,7 +48,9 @@ O perfil de usuário pode possuir vínculo opcional com um Cliente por `profiles
 
 Identidade cadastrada para futuro acesso à aplicação. Possui login e tipo. A senha existe somente no dado transitório do formulário e não pertence à entidade persistível de perfil.
 
-O tipo **Suporte** representa consulta operacional restrita às Dashboards e não recebe permissões de escrita. Operador mantém consulta aos detalhes e atualização exclusiva da capacidade `ideal`/`max`; Admin permanece responsável pelo cadastro completo.
+O tipo **Suporte** representa consulta operacional sem permissões de escrita. Pode acessar Dashboard, listagem e detalhes dos Robôs e Fluxos em modo de visualização. Operador mantém consulta aos detalhes e atualização exclusiva da capacidade `ideal`/`max`; Admin permanece responsável pelo cadastro completo.
+
+O papel **Master** é complementar ao papel Admin e representa a administração superior do controle de acesso. Ele é atribuído exclusivamente ao usuário `marcos.vinicius@loylegal.com`, que permanece também como Admin por compatibilidade com as autorizações existentes. O Master pode consultar e editar toda a matriz de permissões e executar ações excepcionais protegidas. Administradores comuns podem editar somente liberações de Operador, Cliente e Suporte; não alteram Admin, Master nem Controle de Acesso.
 
 ### Cliente
 
@@ -111,7 +113,7 @@ O Robô pode possuir um PDF externo opcional, denominado Documentação Upada. N
 
 A Documentação Robot Center é independente da Documentação Upada. Cada Robô pode possuir no máximo uma documentação interna, com um rascunho corrente e futuras versões publicadas imutáveis. O editor estruturado altera as regras reais do robô e mantém seções, textos complementares e notas exclusivamente no rascunho.
 
-A exclusão da Documentação Robot Center é lógica, não altera a Documentação Upada e preserva snapshots e arquivos históricos. Após a exclusão lógica, o robô pode receber uma nova documentação interna ativa.
+A exclusão da Documentação Robot Center é lógica, exclusiva do papel Master, não altera a Documentação Upada e preserva snapshots e arquivos históricos. Após a exclusão lógica, o robô pode receber uma nova documentação interna ativa.
 
 São válidos os estados: somente Documentação Upada, somente Documentação Robot Center, ambas ou nenhuma. As RFs permanecem em `regras_robo` como fonte de verdade e não são duplicadas no módulo.
 

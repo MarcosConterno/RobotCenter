@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, Pencil, Plus, Save, Trash2, Users, X } from "lucide-react";
+import { Building2, KeyRound, Pencil, Plus, Save, ShieldCheck, Trash2, Users, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import AppShell from "@/components/layout/AppShell";
@@ -10,7 +10,10 @@ import { CORES_BADGE_ROBO, TIPOS_USUARIO, type CorBadgeRobo, type TipoUsuario, t
 import { PALETAS_BADGE_ROBO } from "@/domain/badge-colors";
 import { dadosCadastroClienteSchema, dadosCadastroUsuarioSchema, primeiraMensagemErro } from "@/domain/validation";
 
-type CadastroAtivo = "usuarios" | "clientes";
+type CadastroAtivo = "usuarios" | "clientes" | "permissoes";
+
+interface PermissionRole { id: string; codigo: string; nome: string; descricao: string | null }
+interface PermissionItem { id: string; codigo: string; recurso: string; acao: string; descricao: string | null; roles: string[] }
 
 export default function ConfiguracoesPage() {
   const {
@@ -19,7 +22,7 @@ export default function ConfiguracoesPage() {
     atualizarCliente,
     excluirCliente,
   } = useAppData();
-  const { isAdmin: adminAutorizado, status: statusAutorizacao, error: erroAutorizacao } = useAdminAccess();
+  const { isAdmin: adminAutorizado, isMaster, status: statusAutorizacao, error: erroAutorizacao } = useAdminAccess();
   const carregandoAutorizacao = statusAutorizacao === "loading";
   const [cadastroAtivo, setCadastroAtivo] = useState<CadastroAtivo>("usuarios");
   const [login, setLogin] = useState("");
@@ -50,6 +53,10 @@ export default function ConfiguracoesPage() {
   const [clienteEditandoTenant, setClienteEditandoTenant] = useState("");
   const [clienteEditandoCor, setClienteEditandoCor] = useState<CorBadgeRobo>("azul");
   const [acaoEmAndamento, setAcaoEmAndamento] = useState<string | number | null>(null);
+  const [permissionRoles, setPermissionRoles] = useState<PermissionRole[]>([]);
+  const [permissions, setPermissions] = useState<PermissionItem[]>([]);
+  const [loadingPermissions, setLoadingPermissions] = useState(false);
+  const [permissionsError, setPermissionsError] = useState("");
 
   const carregarUsuarios = useCallback(async () => {
     setCarregandoUsuarios(true);
@@ -79,6 +86,21 @@ export default function ConfiguracoesPage() {
   useEffect(() => {
     if (adminAutorizado) void carregarUsuarios();
   }, [adminAutorizado, carregarUsuarios]);
+
+  useEffect(() => {
+    if (!adminAutorizado || cadastroAtivo !== "permissoes" || permissions.length) return;
+    setLoadingPermissions(true);
+    setPermissionsError("");
+    void fetch("/api/admin/permissions", { cache: "no-store" })
+      .then(async (response) => {
+        const payload = await response.json() as { roles?: PermissionRole[]; permissions?: PermissionItem[]; error?: string };
+        if (!response.ok) throw new Error(payload.error ?? "Não foi possível carregar as permissões.");
+        setPermissionRoles(payload.roles ?? []);
+        setPermissions(payload.permissions ?? []);
+      })
+      .catch((error) => setPermissionsError(error instanceof Error ? error.message : "Não foi possível carregar as permissões."))
+      .finally(() => setLoadingPermissions(false));
+  }, [adminAutorizado, cadastroAtivo, permissions.length]);
 
   async function cadastrarUsuario(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -272,10 +294,11 @@ export default function ConfiguracoesPage() {
   return (
     <AppShell title="Configurações">
       <div className="settings-page" style={pageStyle}>
-        <div>
-          <h1 style={titleStyle}>Cadastros</h1>
-          <p style={subtitleStyle}>Gerencie usuários e clientes do Robot Center.</p>
-        </div>
+        <header style={pageHeaderStyle}>
+          <span style={pageEyebrowStyle}>CONFIGURAÇÕES</span>
+          <h1 style={titleStyle}>Administração do sistema</h1>
+          <p style={subtitleStyle}>Gerencie usuários, clientes e permissões de acesso do Robot Center.</p>
+        </header>
 
         <div style={tabsStyle} role="tablist" aria-label="Tipos de cadastro">
           <button
@@ -298,6 +321,16 @@ export default function ConfiguracoesPage() {
             <Building2 size={17} />
             Clientes
           </button>
+          {adminAutorizado && <button
+            type="button"
+            role="tab"
+            aria-selected={cadastroAtivo === "permissoes"}
+            onClick={() => setCadastroAtivo("permissoes")}
+            style={{ ...tabStyle, ...(cadastroAtivo === "permissoes" ? activeTabStyle : {}) }}
+          >
+            <ShieldCheck size={17} />
+            Permissões
+          </button>}
         </div>
 
         {cadastroAtivo === "usuarios" ? (
@@ -418,9 +451,9 @@ export default function ConfiguracoesPage() {
                       </>
                     ) : (
                       <>
-                        <span style={userTypeStyle}>{usuario.tipo}</span>
-                        {adminAutorizado && <IconButton label={`Editar ${usuario.login}`} onClick={() => iniciarEdicaoUsuario(usuario)}><Pencil size={16} /></IconButton>}
-                        {adminAutorizado && <IconButton label={`Excluir ${usuario.login}`} danger onClick={() => void removerUsuario(usuario)} disabled={String(usuario.id) === usuarioAtualId || acaoEmAndamento === usuario.id}><Trash2 size={16} /></IconButton>}
+                        <span style={userTypeStyle}>{isMaster && usuario.isMaster ? "Master" : usuario.tipo}</span>
+                        {adminAutorizado && (!usuario.isMaster || isMaster) && <IconButton label={`Editar ${usuario.login}`} onClick={() => iniciarEdicaoUsuario(usuario)}><Pencil size={16} /></IconButton>}
+                        {adminAutorizado && !usuario.isMaster && <IconButton label={`Excluir ${usuario.login}`} danger onClick={() => void removerUsuario(usuario)} disabled={String(usuario.id) === usuarioAtualId || acaoEmAndamento === usuario.id}><Trash2 size={16} /></IconButton>}
                       </>
                     )}
                   </div>
@@ -430,7 +463,7 @@ export default function ConfiguracoesPage() {
               {sucessoUsuario && <p role="status" style={formSuccessStyle}>{sucessoUsuario}</p>}
             </CadastroLista>
           </section>
-        ) : (
+        ) : cadastroAtivo === "clientes" ? (
           <section style={sectionStyle} aria-label="Cadastro de clientes">
             <div style={sectionHeadingStyle}>
               <div>
@@ -513,10 +546,138 @@ export default function ConfiguracoesPage() {
               {erroCliente && <p role="alert" style={formErrorStyle}>{erroCliente}</p>}
             </CadastroLista>
           </section>
+        ) : (
+          <PermissionsPanel
+            roles={permissionRoles}
+            permissions={permissions}
+            loading={loadingPermissions}
+            error={permissionsError}
+            isMaster={isMaster}
+            onSaved={setPermissions}
+          />
         )}
       </div>
     </AppShell>
   );
+}
+
+function PermissionsPanel({ roles, permissions, loading, error, isMaster, onSaved }: {
+  roles: PermissionRole[];
+  permissions: PermissionItem[];
+  loading: boolean;
+  error: string;
+  isMaster: boolean;
+  onSaved: (permissions: PermissionItem[]) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [draft, setDraft] = useState<Record<string, string[]>>({});
+
+  useEffect(() => {
+    setDraft(Object.fromEntries(permissions.map((permission) => [permission.id, [...permission.roles]])));
+  }, [permissions]);
+
+  const groups = permissions.reduce<Record<string, PermissionItem[]>>((result, permission) => {
+    (result[permission.recurso] ??= []).push(permission);
+    return result;
+  }, {});
+  const canEdit = (permission: PermissionItem, role: PermissionRole) => isMaster
+    || (permission.recurso !== "access_control" && role.codigo !== "master" && role.codigo !== "admin");
+  const toggleRole = (permissionId: string, roleCode: string) => setDraft((current) => {
+    const selected = new Set(current[permissionId] ?? []);
+    if (selected.has(roleCode)) selected.delete(roleCode); else selected.add(roleCode);
+    return { ...current, [permissionId]: [...selected] };
+  });
+  const cancelEditing = () => {
+    setDraft(Object.fromEntries(permissions.map((permission) => [permission.id, [...permission.roles]])));
+    setEditing(false);
+    setSaveError("");
+  };
+  const savePermissions = async () => {
+    const changes = permissions.flatMap((permission) => roles.flatMap((role) => {
+      if (!canEdit(permission, role)) return [];
+      const before = permission.roles.includes(role.codigo);
+      const enabled = (draft[permission.id] ?? []).includes(role.codigo);
+      return before === enabled ? [] : [{ permissionId: permission.id, roleId: role.id, enabled }];
+    }));
+    if (!changes.length) {
+      setEditing(false);
+      return;
+    }
+
+    setSaving(true);
+    setSaveError("");
+    try {
+      const response = await fetch("/api/admin/permissions", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ changes }),
+      });
+      const payload = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(payload.error ?? "Não foi possível salvar as permissões.");
+      const updated = permissions.map((permission) => ({ ...permission, roles: [...(draft[permission.id] ?? [])] }));
+      onSaved(updated);
+      setEditing(false);
+    } catch (saveFailure) {
+      setSaveError(saveFailure instanceof Error ? saveFailure.message : "Não foi possível salvar as permissões.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return <section style={sectionStyle} aria-label="Painel de permissões">
+    <div style={sectionHeadingStyle}>
+      <div><h2 style={sectionTitleStyle}>{isMaster ? "Painel do administrador Master" : "Painel do administrador"}</h2><p style={sectionSubtitleStyle}>Mapa completo das liberações por área e dos perfis autorizados.</p></div>
+      <div style={permissionHeaderActionsStyle}>
+        <span style={isMaster ? masterBadgeStyle : adminBadgeStyle}><ShieldCheck size={14} /> {isMaster ? "Acesso Master" : "Acesso Admin"}</span>
+        {editing ? <>
+          <button type="button" style={secondaryActionStyle} onClick={cancelEditing} disabled={saving}><X size={14} /> Cancelar</button>
+          <button type="button" style={primaryActionStyle} onClick={() => void savePermissions()} disabled={saving}><Save size={14} /> {saving ? "Salvando..." : "Salvar alterações"}</button>
+        </> : <button type="button" style={secondaryActionStyle} onClick={() => { setEditing(true); setSaveError(""); }}><Pencil size={14} /> Editar permissões</button>}
+      </div>
+    </div>
+    {loading && <p style={accessNoticeStyle}>Carregando mapa de permissões...</p>}
+    {error && <p role="alert" style={formErrorStyle}>{error}</p>}
+    {saveError && <p role="alert" style={formErrorStyle}>{saveError}</p>}
+    {!loading && !error && <>
+      <div style={roleSummaryStyle}>
+        {roles.map((role) => <div key={role.id} style={roleCardStyle} title={role.descricao ?? undefined}>
+          <span style={roleCardIconStyle}><ShieldCheck size={12} /></span>
+          <div style={roleCardContentStyle}><strong style={roleCardTitleStyle}>{role.nome}</strong><span style={roleCardDescriptionStyle}>{role.descricao}</span></div>
+        </div>)}
+      </div>
+      <div style={permissionGroupsStyle}>
+        {Object.entries(groups).map(([resource, items]) => <article key={resource} style={permissionGroupStyle}>
+          <header style={permissionGroupHeaderStyle}><KeyRound size={15} /><strong>{resourceLabel(resource)}</strong></header>
+          <div>
+            {items.map((permission) => <div key={permission.id} style={permissionRowStyle}>
+              <div style={permissionIdentityStyle}><strong>{permission.descricao || permission.acao}</strong><span>{permission.codigo}</span></div>
+              <div style={permissionRolesStyle}>{editing
+                ? roles.map((role) => <label key={role.id} style={{ ...permissionRoleOptionStyle, ...((draft[permission.id] ?? []).includes(role.codigo) ? selectedPermissionRoleStyle : {}), ...(!canEdit(permission, role) ? disabledPermissionRoleStyle : {}) }} title={!canEdit(permission, role) ? "Esta liberação exige acesso Master." : undefined}>
+                    <input type="checkbox" checked={(draft[permission.id] ?? []).includes(role.codigo)} disabled={!canEdit(permission, role) || saving} onChange={() => toggleRole(permission.id, role.codigo)} style={permissionCheckboxStyle} />
+                    {role.nome}
+                  </label>)
+                : roles.map((role) => {
+                    const allowed = permission.roles.includes(role.codigo);
+                    return <span key={role.id} style={allowed ? rolePillStyle : unselectedRolePillStyle} aria-label={`${role.nome}: ${allowed ? "permitido" : "não permitido"}`}>{role.nome}</span>;
+                  })}
+              </div>
+            </div>)}
+          </div>
+        </article>)}
+      </div>
+    </>}
+  </section>;
+}
+
+function resourceLabel(resource: string) {
+  const labels: Record<string, string> = {
+    access_control: "Controle de acesso", clients: "Clientes", dashboard: "Dashboard", flows: "Fluxos",
+    publications: "Publicações", robot_center_documentation: "Documentação Robot Center", robots: "Robôs",
+    settings: "Configurações", users: "Usuários",
+  };
+  return labels[resource] ?? resource.replaceAll("_", " ");
 }
 
 function ColorField({ label, value, onChange, compact = false }: { label: string; value: CorBadgeRobo; onChange: (value: CorBadgeRobo) => void; compact?: boolean }) {
@@ -605,23 +766,52 @@ function CadastroLista({
 const pageStyle: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
-  gap: 24,
+  gap: 20,
   width: "100%",
-  maxWidth: 1120,
+  maxWidth: 1480,
+  margin: "0 auto",
 };
 
+const pageHeaderStyle: React.CSSProperties = { display: "grid", gap: 0 };
+const pageEyebrowStyle: React.CSSProperties = { color: "var(--accent)", fontSize: 10, fontWeight: 800, letterSpacing: "1.3px" };
+
 const titleStyle: React.CSSProperties = {
-  margin: 0,
+  margin: "6px 0 0",
   color: "var(--text-strong)",
-  fontSize: 30,
+  fontSize: 28,
+  lineHeight: 1.15,
   fontWeight: 700,
 };
 
 const subtitleStyle: React.CSSProperties = {
-  margin: "6px 0 0",
+  margin: "5px 0 0",
   color: "var(--muted)",
   fontSize: 14,
 };
+
+const masterBadgeStyle: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 10px", border: "1px solid color-mix(in srgb, var(--accent) 42%, var(--border))", borderRadius: 999, color: "var(--accent)", background: "var(--accent-soft)", fontSize: 11, fontWeight: 750 };
+const adminBadgeStyle: React.CSSProperties = { ...masterBadgeStyle, color: "var(--text-2)", background: "var(--surface)", borderColor: "var(--border)" };
+const permissionHeaderActionsStyle: React.CSSProperties = { display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", gap: 8 };
+const secondaryActionStyle: React.CSSProperties = { display: "inline-flex", minHeight: 34, alignItems: "center", justifyContent: "center", gap: 7, padding: "0 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)", fontSize: 11, fontWeight: 700, cursor: "pointer" };
+const primaryActionStyle: React.CSSProperties = { ...secondaryActionStyle, borderColor: "var(--accent)", background: "var(--accent)", color: "var(--on-accent)" };
+const roleSummaryStyle: React.CSSProperties = { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 7, padding: "11px 18px", borderBottom: "1px solid var(--separator)", background: "color-mix(in srgb, var(--surface) 38%, transparent)" };
+const roleCardStyle: React.CSSProperties = { display: "flex", minWidth: 0, maxWidth: 225, alignItems: "center", gap: 7, padding: "7px 9px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--card)", color: "var(--text-2)" };
+const roleCardIconStyle: React.CSSProperties = { display: "inline-grid", width: 24, height: 24, placeItems: "center", flex: "0 0 auto", borderRadius: 6, color: "var(--muted)", background: "var(--surface)", border: "1px solid var(--border)" };
+const roleCardContentStyle: React.CSSProperties = { display: "grid", minWidth: 0, gap: 1 };
+const roleCardTitleStyle: React.CSSProperties = { color: "var(--text-strong)", fontSize: 10.5, lineHeight: 1.2 };
+const roleCardDescriptionStyle: React.CSSProperties = { overflow: "hidden", color: "var(--muted)", fontSize: 9, lineHeight: 1.2, textOverflow: "ellipsis", whiteSpace: "nowrap" };
+const permissionGroupsStyle: React.CSSProperties = { display: "grid", gap: 12, padding: 18 };
+const permissionGroupStyle: React.CSSProperties = { overflow: "hidden", border: "1px solid var(--border)", borderRadius: 10, background: "var(--card)" };
+const permissionGroupHeaderStyle: React.CSSProperties = { display: "flex", alignItems: "center", gap: 9, padding: "11px 13px", color: "var(--accent)", background: "var(--surface)", borderBottom: "1px solid var(--separator)" };
+const permissionRowStyle: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", alignItems: "center", gap: 14, padding: "11px 13px", borderBottom: "1px solid var(--separator)" };
+const permissionIdentityStyle: React.CSSProperties = { display: "grid", gap: 4 };
+const permissionRolesStyle: React.CSSProperties = { display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: 5 };
+const permissionRoleOptionStyle: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 8px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text-2)", fontSize: 10, fontWeight: 700, cursor: "pointer" };
+const selectedPermissionRoleStyle: React.CSSProperties = { color: "var(--accent)", borderColor: "color-mix(in srgb, var(--accent) 55%, var(--border))", background: "var(--accent-soft)" };
+const disabledPermissionRoleStyle: React.CSSProperties = { cursor: "not-allowed", opacity: 0.48 };
+const permissionCheckboxStyle: React.CSSProperties = { width: 14, height: 14, margin: 0, accentColor: "var(--accent)" };
+const rolePillStyle: React.CSSProperties = { padding: "4px 7px", borderRadius: 999, color: "var(--accent)", background: "var(--accent-soft)", border: "1px solid color-mix(in srgb, var(--accent) 38%, var(--border))", fontSize: 10, fontWeight: 700 };
+const unselectedRolePillStyle: React.CSSProperties = { ...rolePillStyle, color: "var(--muted)", background: "var(--surface)", borderColor: "var(--border)", opacity: 0.7 };
 
 const tabsStyle: React.CSSProperties = {
   display: "flex",
@@ -662,6 +852,11 @@ const sectionStyle: React.CSSProperties = {
 };
 
 const sectionHeadingStyle: React.CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 14,
   padding: "20px 22px",
   borderBottom: "1px solid var(--separator)",
 };

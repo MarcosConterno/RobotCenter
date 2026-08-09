@@ -165,6 +165,7 @@ export interface Usuario {
   email?: string;
   tipo: TipoUsuario;
   clienteId?: string | null;
+  isMaster?: boolean;
 }
 
 export interface DadosCadastroUsuario {
