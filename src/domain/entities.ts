@@ -80,6 +80,9 @@ export interface DadosNovoFluxo {
 }
 
 export interface RegraRobo {
+  id?: string;
+  parentId?: string | null;
+  ordem?: number;
   descricao: string;
 }
 
@@ -87,6 +90,15 @@ export interface AlteracaoRobo {
   id: string;
   descricao: string;
   realizadaEm: string;
+}
+
+export interface RobotCenterDocumentationSummary {
+  id: string;
+  status: "draft" | "published" | "archived";
+  updatedAt: string;
+  currentVersion: number | null;
+  docxPath?: string | null;
+  pdfPath?: string | null;
 }
 
 export interface Robo {
@@ -112,13 +124,14 @@ export interface Robo {
   gatilhoParaRoboId?: string | null;
   uploadedDocumentationPath?: string | null;
   uploadedDocumentationName?: string | null;
+  robotCenterDocumentation?: RobotCenterDocumentationSummary | null;
   ultimaPublicacaoEm: string;
   alteracoes: AlteracaoRobo[];
   regras: RegraRobo[];
   regrasForaDocumentacao: RegraRobo[];
 }
 
-export type DadosFormularioRobo = Omit<Robo, "id" | "ultimaPublicacaoEm" | "alteracoes" | "clienteCor"> & {
+export type DadosFormularioRobo = Omit<Robo, "id" | "ultimaPublicacaoEm" | "alteracoes" | "clienteCor" | "robotCenterDocumentation"> & {
   alteracoesRealizadas: RegraRobo[];
   uploadedDocumentationFile?: File | null;
 };

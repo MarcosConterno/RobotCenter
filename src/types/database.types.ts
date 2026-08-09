@@ -471,6 +471,7 @@ export type Database = {
           descricao: string
           id: string
           ordem: number
+          parent_id: string | null
           robo_id: string
           tipo: string
           updated_at: string
@@ -484,6 +485,7 @@ export type Database = {
           descricao: string
           id?: string
           ordem: number
+          parent_id?: string | null
           robo_id: string
           tipo?: string
           updated_at?: string
@@ -497,6 +499,7 @@ export type Database = {
           descricao?: string
           id?: string
           ordem?: number
+          parent_id?: string | null
           robo_id?: string
           tipo?: string
           updated_at?: string
@@ -518,6 +521,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "regras_robo_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "regras_robo"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "regras_robo_robo_id_fkey"
             columns: ["robo_id"]
             isOneToOne: false
@@ -529,6 +539,89 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      robot_center_documentation_blocks: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          draft_id: string
+          id: string
+          metadata: Json
+          ordem: number
+          related_block_id: string | null
+          requirement_id: string | null
+          section_id: string | null
+          type: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          draft_id: string
+          id?: string
+          metadata?: Json
+          ordem: number
+          related_block_id?: string | null
+          requirement_id?: string | null
+          section_id?: string | null
+          type: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          draft_id?: string
+          id?: string
+          metadata?: Json
+          ordem?: number
+          related_block_id?: string | null
+          requirement_id?: string | null
+          section_id?: string | null
+          type?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "robot_center_documentation_blocks_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "robot_center_documentation_drafts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "robot_center_documentation_blocks_related_block_id_fkey"
+            columns: ["related_block_id"]
+            isOneToOne: false
+            referencedRelation: "robot_center_documentation_blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "robot_center_documentation_blocks_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "regras_robo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "robot_center_documentation_blocks_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "robot_center_documentation_sections"
             referencedColumns: ["id"]
           },
         ]
@@ -571,26 +664,112 @@ export type Database = {
           },
         ]
       }
+      robot_center_documentation_sections: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          draft_id: string
+          id: string
+          ordem: number
+          section_key: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          draft_id: string
+          id?: string
+          ordem: number
+          section_key: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          draft_id?: string
+          id?: string
+          ordem?: number
+          section_key?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "robot_center_documentation_sections_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "robot_center_documentation_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      robot_center_documentation_templates: {
+        Row: { active: boolean; created_at: string; created_by: string | null; id: string; name: string; storage_path: string; updated_at: string; updated_by: string | null; version: number }
+        Insert: { active?: boolean; created_at?: string; created_by?: string | null; id?: string; name: string; storage_path: string; updated_at?: string; updated_by?: string | null; version: number }
+        Update: { active?: boolean; created_at?: string; created_by?: string | null; id?: string; name?: string; storage_path?: string; updated_at?: string; updated_by?: string | null; version?: number }
+        Relationships: []
+      }
       robot_center_documentation_versions: {
         Row: {
           created_at: string
           created_by: string
           documentation_id: string
+          docx_path: string | null
+          error_message: string | null
+          generation_token: string | null
           id: string
+          pdf_path: string | null
+          published_at: string | null
+          snapshot: Json
+          started_at: string
+          status: string
+          template_id: string | null
+          template_version: number | null
+          updated_at: string
+          updated_by: string | null
           version: number
         }
         Insert: {
           created_at?: string
           created_by: string
           documentation_id: string
+          docx_path?: string | null
+          error_message?: string | null
+          generation_token?: string | null
           id?: string
+          pdf_path?: string | null
+          published_at?: string | null
+          snapshot?: Json
+          started_at?: string
+          status?: string
+          template_id?: string | null
+          template_version?: number | null
+          updated_at?: string
+          updated_by?: string | null
           version: number
         }
         Update: {
           created_at?: string
           created_by?: string
           documentation_id?: string
+          docx_path?: string | null
+          error_message?: string | null
+          generation_token?: string | null
           id?: string
+          pdf_path?: string | null
+          published_at?: string | null
+          snapshot?: Json
+          started_at?: string
+          status?: string
+          template_id?: string | null
+          template_version?: number | null
+          updated_at?: string
+          updated_by?: string | null
           version?: number
         }
         Relationships: [
@@ -617,6 +796,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           id: string
+          current_version_id: string | null
           robo_id: string
           status: string
           updated_at: string
@@ -628,6 +808,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           id?: string
+          current_version_id?: string | null
           robo_id: string
           status?: string
           updated_at?: string
@@ -639,6 +820,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           id?: string
+          current_version_id?: string | null
           robo_id?: string
           status?: string
           updated_at?: string
@@ -948,6 +1130,53 @@ export type Database = {
       publish_flow: {
         Args: { target_flow_id: string; target_snapshot: Json }
         Returns: number
+      }
+      archive_robot_requirement: {
+        Args: { target_requirement_id: string; target_robot_id: string }
+        Returns: undefined
+      }
+      append_robot_documentation_image_block: {
+        Args: {
+          target_block_id: string
+          target_draft_id: string
+          target_metadata: Json
+          target_requirement_id: string
+          target_robot_id: string
+        }
+        Returns: Json
+      }
+      begin_robot_center_documentation_publication: {
+        Args: { target_generation_token: string; target_robot_id: string }
+        Returns: { version_id: string; version_number: number; documentation_id: string; draft_id: string; template_id: string; template_version: number; template_storage_path: string; reused: boolean }[]
+      }
+      complete_robot_center_documentation_publication: {
+        Args: { target_docx_path: string; target_generation_token: string; target_pdf_path: string; target_snapshot: Json; target_version_id: string }
+        Returns: undefined
+      }
+      fail_robot_center_documentation_publication: {
+        Args: { target_error_message: string; target_generation_token: string; target_version_id: string }
+        Returns: undefined
+      }
+      initialize_robot_center_documentation: {
+        Args: { target_robot_id: string }
+        Returns: { documentation_id: string; draft_id: string }[]
+      }
+      reorder_robot_requirements: {
+        Args: {
+          ordered_ids: string[]
+          target_parent_id: string | null
+          target_robot_id: string
+          target_type: string
+        }
+        Returns: undefined
+      }
+      reorder_robot_documentation_blocks: {
+        Args: {
+          ordered_ids: string[]
+          target_requirement_id: string
+          target_robot_id: string
+        }
+        Returns: undefined
       }
       update_robot_capacity: {
         Args: {

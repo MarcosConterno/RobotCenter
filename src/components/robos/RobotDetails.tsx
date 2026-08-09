@@ -2,301 +2,296 @@
 
 import {
   Bot,
+  BadgeCheck,
+  Boxes,
+  Building2,
+  CalendarDays,
+  CirclePower,
+  Cpu,
   Download,
+  ExternalLink,
   FileText,
   GitBranch,
+  History,
   Layers3,
-  ListChecks,
   Package,
   Pencil,
   Server,
-  User,
+  Upload,
+  UserRound,
   Workflow,
   Zap,
-  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
+
 import { useAdminAccess } from "@/auth/AdminAccessProvider";
 import { formatarData } from "@/domain/formatters";
-import type { Cliente, Robo } from "@/domain/entities";
+import type { Cliente, RegraRobo, Robo } from "@/domain/entities";
 import { createClient } from "@/lib/supabase/client";
 
+import styles from "./RobotDetails.module.css";
+
+type MainTab = "general" | "documentation" | "redmine";
+type DocumentationTab = "functional" | "outside" | "files";
+const EMPTY_CLIENTES: Cliente[] = [];
+const EMPTY_ROBOS: Robo[] = [];
+const REQUIREMENT_CODE_PATTERN = /^\s*\[?((?:RF|RNF|RFD)\d+(?:\.\d+)*)\]?\s*/i;
+const REQUIREMENT_PREFIX_PATTERN = /^\s*\[?(?:RF|RNF|RFD)\d+(?:\.\d+)*\]?\s*/i;
+
 interface RobotDetailsProps {
-  robot: Robo | null;
+  robot: Robo;
   clientes?: Cliente[];
   robos?: Robo[];
-  onEdit?: (robot: Robo) => void;
 }
 
-export default function RobotDetails({ robot, clientes = [], robos = [], onEdit }: RobotDetailsProps) {
+export default function RobotDetails({ robot, clientes = EMPTY_CLIENTES, robos = EMPTY_ROBOS }: RobotDetailsProps) {
   const { isAdmin } = useAdminAccess();
-  const [rulesTab, setRulesTab] = useState<"documentacao" | "fora-documentacao">("documentacao");
-  const [manualUrl, setManualUrl] = useState<string | null>(null);
-  const [manualLoading, setManualLoading] = useState(false);
-  const [manualError, setManualError] = useState("");
-  if (!robot) {
-    return (
-      <div style={emptyStyle}>
-        Selecione um robô para visualizar os detalhes.
-      </div>
-    );
-  }
+  const [activeTab, setActiveTab] = useState<MainTab>("general");
+  const [documentationTab, setDocumentationTab] = useState<DocumentationTab>("functional");
+  const [uploadedDocumentationBusy, setUploadedDocumentationBusy] = useState<"view" | "download" | null>(null);
+  const [uploadedDocumentationError, setUploadedDocumentationError] = useState("");
 
-  const regras = robot.regras ?? [];
-  const regrasForaDocumentacao = robot.regrasForaDocumentacao ?? [];
-  const regrasVisiveis = rulesTab === "documentacao" ? regras : regrasForaDocumentacao;
   const cliente = clientes.find((item) => item.id === robot.clienteId);
   const gatilhoDe = robos.find((item) => item.id === robot.gatilhoDeRoboId);
   const gatilhoPara = robos.find((item) => item.id === robot.gatilhoParaRoboId);
+  const robotCenterDocumentation = robot.robotCenterDocumentation;
+  const publishedRobotCenterDocumentation = robotCenterDocumentation?.status === "published"
+    ? robotCenterDocumentation
+    : null;
+  const environmentClass = robot.ambiente === "Produção"
+    ? styles.productionEnvironment
+    : robot.ambiente === "Teste"
+      ? styles.testEnvironment
+      : styles.developmentEnvironment;
 
-  async function abrirManual() {
-    if (!robot?.uploadedDocumentationPath) return;
-    setManualLoading(true);
-    setManualError("");
-    const { data, error } = await createClient().storage.from("robot-manuals").createSignedUrl(robot.uploadedDocumentationPath, 900);
-    setManualLoading(false);
+  async function openUploadedDocumentation(download: boolean) {
+    if (!robot.uploadedDocumentationPath) return;
+    setUploadedDocumentationBusy(download ? "download" : "view");
+    setUploadedDocumentationError("");
+    const { data, error } = await createClient().storage
+      .from("robot-manuals")
+      .createSignedUrl(
+        robot.uploadedDocumentationPath,
+        900,
+        download ? { download: robot.uploadedDocumentationName ?? "documentacao-upada.pdf" } : undefined,
+      );
+    setUploadedDocumentationBusy(null);
     if (error) {
-      setManualError("Não foi possível abrir o manual.");
+      setUploadedDocumentationError("Não foi possível acessar a Documentação Upada.");
       return;
     }
-    setManualUrl(data.signedUrl);
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  }
+
+  async function openRobotCenterArtifact(kind: "pdf" | "docx", download: boolean) {
+    const path = kind === "pdf" ? publishedRobotCenterDocumentation?.pdfPath : publishedRobotCenterDocumentation?.docxPath;
+    if (!path) return;
+    const extension = kind === "pdf" ? "pdf" : "docx";
+    const { data, error } = await createClient().storage.from("robot-documentation")
+      .createSignedUrl(path, 900, download ? { download: `${robot.nome}-documentacao.${extension}` } : undefined);
+    if (error) return setUploadedDocumentationError("Não foi possível acessar a Documentação Robot Center.");
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   }
 
   return (
-    <article style={containerStyle}>
-      <header style={headerStyle}>
-        <div style={identityStyle}>
-          <div style={avatarStyle}>
-            <Bot color="#A78BFA" size={28} />
-          </div>
-          <div style={{ minWidth: 0 }}>
-            <div style={eyebrowStyle}>ROBÔ INTEGRADOR</div>
-            <div style={titleRowStyle}><h2 style={titleStyle}>{robot.nome}</h2></div>
-            <div style={badgesStyle}>
-              <span style={systemBadgeStyle}>{robot.sistema}</span>
-              <span
-                style={{
-                  ...statusBadgeStyle,
-                  color: robot.ativo ? "var(--success)" : "var(--text-2)",
-                  background: robot.ativo
-                    ? "rgba(34, 197, 94, 0.12)"
-                    : "rgba(148, 163, 184, 0.12)",
-                }}
-              >
-                <span
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: "50%",
-                    background: robot.ativo ? "var(--success)" : "var(--muted)",
-                  }}
-                />
-                {robot.ativo ? "Ativo" : "Inativo"}
-              </span>
-            </div>
+    <div className={styles.pageContent}>
+      <header className={styles.robotHeader}>
+        <div className={styles.identity}>
+          <span className={styles.robotIcon}><Bot size={23} /></span>
+          <div>
+            <span className={styles.eyebrow}>ROBÔ INTEGRADOR</span>
+            <h1>{robot.nome}</h1>
+            <p>{robot.courtName}</p>
           </div>
         </div>
-
-        <div style={headerActionsStyle}>
-          {onEdit && (
-            <button type="button" onClick={() => onEdit(robot)} style={editButtonStyle}>
-              <Pencil size={15} /> Editar
-            </button>
-          )}
+        <div className={styles.headerMeta}>
+          <span className={environmentClass}>{robot.ambiente}</span>
+          <StatusPill active={robot.ativo} />
+          <span><Package size={12} /> {robot.pacote}</span>
+          <span><GitBranch size={12} /> {robot.versao}</span>
+          <span><Server size={12} /> {robot.fila}</span>
+          <span><Layers3 size={12} /> {robot.stack}</span>
         </div>
+        {isAdmin && (
+          <Link href={`/robos/${robot.id}/editar`} className={`${styles.primaryAction} ${styles.headerAction}`}>
+            <Pencil size={14} /> Editar robô
+          </Link>
+        )}
       </header>
 
-      <section style={descriptionStyle}>
-        <div style={sectionLabelStyle}>SOBRE</div>
-        <p style={descriptionTextStyle}>{robot.descricao}</p>
-      </section>
+      <nav className={styles.mainTabs} role="tablist" aria-label="Seções do robô">
+        <TabButton active={activeTab === "general"} onClick={() => setActiveTab("general")}>Detalhes Gerais</TabButton>
+        <TabButton active={activeTab === "documentation"} onClick={() => setActiveTab("documentation")}>Documentação</TabButton>
+        <TabButton active={activeTab === "redmine"} onClick={() => setActiveTab("redmine")}>Redmine</TabButton>
+      </nav>
 
-      <div style={detailsBlockStyle}>
-        <DetailSection title="Informações técnicas">
-          <div style={technicalGridStyle}>
-            <DetailRow icon={<User size={17} />} label="Cliente" value={cliente?.nome ?? "Cliente não encontrado"} />
-            <DetailRow icon={<GitBranch size={17} />} label="Sistema" value={robot.sistema} />
-            <DetailRow icon={<Bot size={17} />} label="Robô" value={robot.nome} />
-            <DetailRow icon={<FileText size={17} />} label="CourtName" value={robot.courtName} />
-            <DetailRow icon={<Server size={17} />} label="Fila" value={robot.fila} />
-            <DetailRow icon={<Layers3 size={17} />} label="Stack" value={robot.stack} />
-            <DetailRow icon={<Bot size={17} />} label="Ideal" value={robot.ideal} />
-            <DetailRow icon={<Bot size={17} />} label="Max" value={robot.max} />
-            <DetailRow icon={<Package size={17} />} label="Pacote" value={robot.pacote} />
-            <DetailRow icon={<Bot size={17} />} label="Versão" value={robot.versao} />
-            <DetailRow icon={<Zap size={17} />} label="Disparo" value={robot.disparo === "Gatilho" ? "Por Gatilho" : robot.disparo ?? "Manual"} />
-            <DetailRow icon={<Workflow size={17} />} label="Gatilho De" value={gatilhoDe?.nome ?? "Nenhum"} />
-            <DetailRow icon={<Workflow size={17} />} label="Gatilho Para" value={gatilhoPara?.nome ?? "Nenhum"} />
-          </div>
-        </DetailSection>
-      </div>
+      {activeTab === "general" && (
+        <div className={styles.tabPanel}>
+          <Section title="Descrição">
+            <p className={styles.longText}>{robot.descricao || "Nenhuma descrição cadastrada."}</p>
+          </Section>
 
-      <div style={followingBlockStyle}>
-        <DetailSection title="Documentação">
-          <div style={documentationGridStyle}>
-            <div style={documentationCardStyle}>
-              <div style={documentationCardHeaderStyle}><FileText size={17} /><strong>Documentação Upada</strong></div>
-              <p style={documentationDescriptionStyle}>Arquivo externo anexado manualmente ao robô.</p>
-              {robot.uploadedDocumentationPath ? (
-                <button type="button" onClick={abrirManual} disabled={manualLoading} style={manualButtonStyle}>
-                  <FileText size={14} /> {manualLoading ? "Abrindo..." : robot.uploadedDocumentationName ?? "Documentação.pdf"}
-                </button>
-              ) : <span style={documentationEmptyStyle}>Nenhum arquivo enviado.</span>}
+          <Section title="Informações do Robô">
+            <div className={styles.fieldsGrid}>
+              <Field icon={<Bot size={16} />} label="Nome" value={robot.nome} />
+              <Field icon={<Cpu size={16} />} label="Nome técnico" value={robot.courtName} />
+              <Field icon={<GitBranch size={16} />} label="Sistema" value={robot.sistema} />
+              <Field icon={<Building2 size={16} />} label="Cliente" value={cliente?.nome ?? "Não informado"} />
+              <Field icon={<Boxes size={16} />} label="Ambiente" value={robot.ambiente} />
+              <Field icon={<CirclePower size={16} />} label="Status" value={robot.ativo ? "Ativo" : "Inativo"} />
+              <Field icon={<Package size={16} />} label="Pacote" value={robot.pacote} />
+              <Field icon={<Layers3 size={16} />} label="Stack" value={robot.stack} />
+              <Field icon={<GitBranch size={16} />} label="Versão" value={robot.versao} />
+              <Field icon={<Server size={16} />} label="Fila" value={robot.fila} />
+              <Field icon={<Zap size={16} />} label="Disparo" value={robot.disparo === "Gatilho" ? "Por Gatilho" : robot.disparo ?? "Manual"} />
+              <Field icon={<UserRound size={16} />} label="Responsável" value={robot.responsavel} />
+              <Field icon={<Workflow size={16} />} label="Gatilho de" value={gatilhoDe?.nome ?? "Nenhum"} />
+              <Field icon={<Workflow size={16} />} label="Gatilho para" value={gatilhoPara?.nome ?? "Nenhum"} />
+              <Field icon={<Bot size={16} />} label="Ideal" value={robot.ideal} />
+              <Field icon={<Bot size={16} />} label="Máximo" value={robot.max} />
             </div>
-            <div style={documentationCardStyle}>
-              <div style={documentationCardHeaderStyle}><Bot size={17} /><strong>Documentação Robot Center</strong></div>
-              <p style={documentationDescriptionStyle}>Documentação interna estruturada, independente do arquivo externo.</p>
-              {isAdmin
-                ? <Link href={`/robos/${robot.id}/documentacao-robot-center`} style={documentationLinkStyle}>Acessar estrutura</Link>
-                : <span style={documentationEmptyStyle}>Edição disponível somente para Admin.</span>}
-            </div>
-          </div>
-          {manualError && <span style={manualErrorStyle}>{manualError}</span>}
-        </DetailSection>
-      </div>
+          </Section>
 
-      <div style={followingBlockStyle}>
-        <DetailSection title="Alterações realizadas">
-          <div style={changesListStyle}>
-            {robot.alteracoes.length === 0 && <div style={noRulesStyle}>Nenhuma alteração registrada.</div>}
-            {robot.alteracoes.map((alteracao) => (
-              <div key={alteracao.id} style={changeItemStyle}>
-                <FileText size={16} style={{ color: "#8B5CF6", flexShrink: 0 }} />
-                <span>
-                  <span style={changeDateStyle}>{formatarData(alteracao.realizadaEm)}</span>
-                  <span style={changeTextStyle}>{alteracao.descricao}</span>
-                </span>
+          <Section title="Histórico de alterações">
+            {robot.alteracoes.length ? (
+              <div className={styles.changeList}>
+                {robot.alteracoes.map((alteracao) => (
+                  <div key={alteracao.id} className={styles.changeItem}>
+                    <History size={15} />
+                    <div><time>{formatarData(alteracao.realizadaEm)}</time><p>{alteracao.descricao}</p></div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </DetailSection>
-      </div>
-
-      <div style={rulesSectionStyle}>
-        <DetailSection title="Regras do robô">
-          <div role="tablist" aria-label="Tipos de regras" style={detailTabsStyle}>
-            <button type="button" role="tab" aria-selected={rulesTab === "documentacao"} onClick={() => setRulesTab("documentacao")} style={{ ...detailTabStyle, ...(rulesTab === "documentacao" ? activeDetailTabStyle : {}) }}>
-              Documento técnico
-            </button>
-            <button type="button" role="tab" aria-selected={rulesTab === "fora-documentacao"} onClick={() => setRulesTab("fora-documentacao")} style={{ ...detailTabStyle, ...(rulesTab === "fora-documentacao" ? activeDetailTabStyle : {}) }}>
-              Fora da documentação
-            </button>
-          </div>
-          <div style={rulesStyle}>
-            {regrasVisiveis.length === 0 && <div style={noRulesStyle}>Nenhuma regra cadastrada nesta categoria.</div>}
-            {regrasVisiveis.map((regra, index) => (
-              <div key={`${regra.descricao}-${index}`} style={detailRuleStyle}>
-                <ListChecks size={16} style={{ color: "#8B5CF6", flexShrink: 0 }} />
-                <span style={detailRuleCodeStyle}>{`${rulesTab === "documentacao" ? "RF" : "RFD"}${String(index + 1).padStart(3, "0")}`}</span>
-                <span style={detailRuleTextStyle}>{regra.descricao}</span>
-              </div>
-            ))}
-          </div>
-        </DetailSection>
-      </div>
-
-      {manualUrl && (
-        <div role="dialog" aria-modal="true" aria-label={`Documentação Upada de ${robot.nome}`} style={manualBackdropStyle} onMouseDown={() => setManualUrl(null)}>
-          <div style={manualModalStyle} onMouseDown={(event) => event.stopPropagation()}>
-            <header style={manualModalHeaderStyle}>
-              <div>
-                <strong style={manualModalTitleStyle}>{robot.uploadedDocumentationName ?? "Documentação Upada"}</strong>
-                <span style={manualModalSubtitleStyle}>{robot.nome}</span>
-              </div>
-              <div style={manualModalActionsStyle}>
-                <a href={manualUrl} download={robot.uploadedDocumentationName ?? "documentacao-upada.pdf"} style={manualDownloadStyle}><Download size={16} /> Baixar</a>
-                <button type="button" aria-label="Fechar documentação" onClick={() => setManualUrl(null)} style={manualCloseStyle}><X size={18} /></button>
-              </div>
-            </header>
-            <iframe title={`Documentação Upada de ${robot.nome}`} src={manualUrl} style={manualFrameStyle} />
-          </div>
+            ) : <EmptyText>Nenhuma alteração registrada.</EmptyText>}
+          </Section>
         </div>
       )}
-    </article>
-  );
-}
 
-function DetailSection({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section style={sectionStyle}>
-      <div style={sectionTitleStyle}>{title}</div>
-      <div>{children}</div>
-    </section>
-  );
-}
+      {activeTab === "documentation" && (
+        <div className={styles.tabPanel}>
+          <nav className={styles.secondaryTabs} role="tablist" aria-label="Conteúdo da documentação">
+            <TabButton active={documentationTab === "functional"} onClick={() => setDocumentationTab("functional")}>Requisitos Funcionais</TabButton>
+            <TabButton active={documentationTab === "outside"} onClick={() => setDocumentationTab("outside")}>Regras Fora da Documentação</TabButton>
+            <TabButton active={documentationTab === "files"} onClick={() => setDocumentationTab("files")}>Arquivos</TabButton>
+          </nav>
 
-function DetailRow({ icon, label, value }: { icon: ReactNode; label: string; value: ReactNode }) {
-  return (
-    <div style={rowStyle}>
-      <span style={rowIconStyle}>{icon}</span>
-      <span style={rowLabelStyle}>{label}</span>
-      <span style={rowValueStyle}>{value}</span>
+          {documentationTab === "functional" ? (
+            <RequirementSection title="Requisitos Funcionais" prefix="RF" rules={robot.regras} />
+          ) : documentationTab === "outside" ? (
+            <RequirementSection title="Regras Fora da Documentação" prefix="RFD" rules={robot.regrasForaDocumentacao} description="Regras cadastradas separadamente da documentação técnica." />
+          ) : (
+            <div className={styles.fileGrid}>
+              <Section title="Documentação Upada" description="Arquivo externo anexado manualmente ao robô.">
+                {robot.uploadedDocumentationPath ? (
+                  <div className={styles.fileContent}>
+                    <div className={styles.fileIdentity}><FileText size={20} /><div><strong>{robot.uploadedDocumentationName ?? "Documentação.pdf"}</strong><span>PDF externo</span></div></div>
+                    <div className={styles.actions}>
+                      <button type="button" onClick={() => void openUploadedDocumentation(false)} disabled={uploadedDocumentationBusy !== null}><ExternalLink size={14} /> {uploadedDocumentationBusy === "view" ? "Abrindo..." : "Visualizar"}</button>
+                      <button type="button" onClick={() => void openUploadedDocumentation(true)} disabled={uploadedDocumentationBusy !== null}><Download size={14} /> {uploadedDocumentationBusy === "download" ? "Preparando..." : "Baixar"}</button>
+                      {isAdmin && <Link href={`/robos/${robot.id}/editar`}><Upload size={14} /> Substituir</Link>}
+                    </div>
+                    {uploadedDocumentationError && <p className={styles.errorText}>{uploadedDocumentationError}</p>}
+                  </div>
+                ) : <EmptyText>Nenhum arquivo externo anexado.</EmptyText>}
+              </Section>
+
+              <Section
+                title="Documentação Robot Center"
+                description="Documento estruturado, editado e versionado pelo Robot Center."
+                headerMeta={publishedRobotCenterDocumentation ? (
+                  <div className={styles.sectionHeaderMeta} aria-label="Informações da documentação publicada">
+                    <span><FileText size={12} /> v1.{publishedRobotCenterDocumentation.currentVersion - 1}</span>
+                    <span><BadgeCheck size={12} /> Publicado</span>
+                    <span><CalendarDays size={12} /> {formatarData(publishedRobotCenterDocumentation.updatedAt)}</span>
+                  </div>
+                ) : undefined}
+              >
+                {publishedRobotCenterDocumentation ? (
+                  <div className={styles.fileContent}>
+                    <div className={styles.fileIdentity}>
+                      <FileText size={20} />
+                      <div>
+                        <strong>{robot.nome}</strong>
+                        <span>PDF e DOCX oficiais</span>
+                      </div>
+                    </div>
+                    <div className={styles.actions}>
+                      {publishedRobotCenterDocumentation.pdfPath && <button type="button" onClick={() => void openRobotCenterArtifact("pdf", false)}><ExternalLink size={14} /> Visualizar PDF</button>}
+                      {publishedRobotCenterDocumentation.pdfPath && <button type="button" onClick={() => void openRobotCenterArtifact("pdf", true)}><Download size={14} /> Baixar PDF</button>}
+                      {publishedRobotCenterDocumentation.docxPath && <button type="button" onClick={() => void openRobotCenterArtifact("docx", true)}><Download size={14} /> Baixar DOCX</button>}
+                      {isAdmin && <Link href={`/robos/${robot.id}/documentacao-robot-center/editar`} prefetch={false}><Pencil size={14} /> Editar</Link>}
+                      {isAdmin && <Link href={`/robos/${robot.id}/documentacao-robot-center`}><History size={14} /> Histórico</Link>}
+                    </div>
+                  </div>
+                ) : (
+                  <div className={styles.emptyAction}>
+                    <EmptyText>Nenhuma documentação Robot Center publicada.</EmptyText>
+                    {isAdmin && <Link href={`/robos/${robot.id}/documentacao-robot-center/editar`} prefetch={false} className={styles.primaryAction}>{robotCenterDocumentation ? "Continuar preparação" : "Criar documentação"}</Link>}
+                  </div>
+                )}
+              </Section>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === "redmine" && (
+        <div className={styles.tabPanel}>
+          <Section title="Integração Redmine" description="Esta área será utilizada para exibir informações relacionadas ao robô no Redmine.">
+            <div className={styles.redmineEmpty}>
+              <span className={styles.robotIcon}><ExternalLink size={20} /></span>
+              <strong>Nenhum dado do Redmine conectado ainda.</strong>
+              <p>A integração será configurada futuramente.</p>
+            </div>
+          </Section>
+        </div>
+      )}
     </div>
   );
 }
 
-const containerStyle = {
-  background: "var(--card)",
-  border: "1px solid var(--border)",
-  borderRadius: 16,
-  overflow: "hidden",
-  boxShadow: "var(--shadow)",
-} as const;
+function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
+  return <button type="button" role="tab" className={active ? styles.activeTab : ""} aria-selected={active} onClick={onClick}>{children}</button>;
+}
 
-const detailTabsStyle = { display: "flex", gap: 4, marginBottom: 12, padding: 4, borderRadius: 8, background: "var(--surface)" } as const;
-const detailsBlockStyle = { padding: "20px 26px 0" } as const;
-const followingBlockStyle = { padding: "16px 26px 0" } as const;
-const documentationGridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, padding: 14 } as const;
-const documentationCardStyle = { minWidth: 0, padding: 14, border: "1px solid var(--separator)", borderRadius: 10, background: "var(--surface)" } as const;
-const documentationCardHeaderStyle = { display: "flex", alignItems: "center", gap: 8, color: "var(--accent)", fontSize: 12.5 } as const;
-const documentationDescriptionStyle = { minHeight: 34, margin: "8px 0 12px", color: "var(--muted)", fontSize: 11.5, lineHeight: 1.45 } as const;
-const documentationEmptyStyle = { color: "var(--muted)", fontSize: 11 } as const;
-const documentationLinkStyle = { display: "inline-flex", alignItems: "center", minHeight: 30, padding: "0 10px", border: "1px solid var(--border)", borderRadius: 8, color: "var(--accent)", background: "var(--card)", fontSize: 11, fontWeight: 700, textDecoration: "none" } as const;
-const rulesSectionStyle = { padding: "16px 26px 26px" } as const;
-const technicalGridStyle = { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" } as const;
-const detailTabStyle = { flex: 1, padding: "7px 8px", border: "none", borderRadius: 6, background: "transparent", color: "var(--muted)", cursor: "pointer", fontSize: 11, fontWeight: 700 } as const;
-const activeDetailTabStyle = { background: "var(--card)", color: "var(--accent)" } as const;
+function Section({ title, description, headerMeta, children }: { title: string; description?: string; headerMeta?: ReactNode; children: ReactNode }) {
+  return (
+    <section className={styles.section}>
+      <header className={styles.sectionHeader}>
+        <div>
+          <h2>{title}</h2>
+          {description && <p>{description}</p>}
+        </div>
+        {headerMeta}
+      </header>
+      <div className={styles.sectionBody}>{children}</div>
+    </section>
+  );
+}
 
-const emptyStyle = { ...containerStyle, minHeight: 240, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)" } as const;
-const headerStyle = { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20, padding: "24px 26px", background: "var(--surface)", borderBottom: "1px solid var(--separator)" } as const;
-const identityStyle = { display: "flex", alignItems: "center", gap: 16, minWidth: 0 } as const;
-const avatarStyle = { width: 54, height: 54, flexShrink: 0, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--accent-soft)", border: "1px solid var(--accent)" } as const;
-const eyebrowStyle = { color: "var(--muted)", fontSize: 10, fontWeight: 800, letterSpacing: 1.4, marginBottom: 4 } as const;
-const titleStyle = { color: "var(--text-strong)", margin: 0, fontSize: 24, lineHeight: 1.2 } as const;
-const titleRowStyle = { display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10 } as const;
-const manualButtonStyle = { maxWidth: 260, height: 30, display: "inline-flex", alignItems: "center", gap: 6, overflow: "hidden", border: "1px solid var(--border)", borderRadius: 8, padding: "0 9px", color: "var(--accent)", background: "var(--card)", fontSize: 11, fontWeight: 600, textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: "pointer" } as const;
-const manualErrorStyle = { display: "block", marginTop: 5, color: "var(--danger)", fontSize: 10.5 } as const;
-const manualBackdropStyle = { position: "fixed", zIndex: 250, inset: 0, display: "grid", placeItems: "center", padding: 24, background: "rgba(3, 10, 20, .72)", backdropFilter: "blur(4px)" } as const;
-const manualModalStyle = { width: "min(1080px, 96vw)", height: "min(820px, 92vh)", display: "grid", gridTemplateRows: "58px minmax(0, 1fr)", overflow: "hidden", border: "1px solid var(--border)", borderRadius: 14, background: "var(--card)", boxShadow: "0 28px 90px rgba(0,0,0,.35)" } as const;
-const manualModalHeaderStyle = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "0 16px 0 20px", borderBottom: "1px solid var(--separator)" } as const;
-const manualModalTitleStyle = { display: "block", color: "var(--text-strong)", fontSize: 13 } as const;
-const manualModalSubtitleStyle = { display: "block", marginTop: 2, color: "var(--muted)", fontSize: 10.5 } as const;
-const manualModalActionsStyle = { display: "flex", alignItems: "center", gap: 8 } as const;
-const manualDownloadStyle = { height: 34, display: "inline-flex", alignItems: "center", gap: 6, padding: "0 10px", border: "1px solid var(--border)", borderRadius: 8, color: "var(--accent)", background: "var(--surface)", fontSize: 11, fontWeight: 700, textDecoration: "none" } as const;
-const manualCloseStyle = { width: 34, height: 34, display: "inline-flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-2)", background: "var(--surface)", cursor: "pointer" } as const;
-const manualFrameStyle = { width: "100%", height: "100%", border: 0, background: "#fff" } as const;
-const badgesStyle = { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 9 } as const;
-const systemBadgeStyle = { color: "var(--text-2)", fontSize: 12, padding: "4px 9px", borderRadius: 999, background: "var(--surface)" } as const;
-const statusBadgeStyle = { display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, padding: "4px 9px", borderRadius: 999, fontWeight: 600 } as const;
-const editButtonStyle = { display: "flex", alignItems: "center", gap: 7, flexShrink: 0, padding: "8px 14px", borderRadius: 12, border: "none", background: "var(--accent)", color: "var(--on-accent)", cursor: "pointer", fontWeight: 700, fontSize: 13, boxShadow: "0 8px 22px rgba(10,132,255,.2)" } as const;
-const headerActionsStyle = { display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: 8 } as const;
-const descriptionStyle = { padding: "20px 26px", borderBottom: "1px solid var(--separator)" } as const;
-const sectionLabelStyle = { color: "var(--muted)", fontSize: 10, fontWeight: 800, letterSpacing: 1.3, marginBottom: 8 } as const;
-const descriptionTextStyle = { color: "var(--text)", lineHeight: 1.6, fontSize: 14, margin: 0 } as const;
-const sectionsGridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, padding: "20px 26px 26px" } as const;
-const sectionStyle = { background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" } as const;
-const sectionTitleStyle = { color: "var(--text-strong)", fontSize: 13, fontWeight: 700, padding: "12px 14px", borderBottom: "1px solid var(--separator)" } as const;
-const rowStyle = { display: "grid", gridTemplateColumns: "24px minmax(105px, .8fr) minmax(0, 1.2fr)", alignItems: "center", gap: 8, minHeight: 44, padding: "7px 14px", borderBottom: "1px solid var(--separator)" } as const;
-const rowIconStyle = { display: "flex", color: "var(--accent)" } as const;
-const rowLabelStyle = { color: "var(--muted)", fontSize: 12 } as const;
-const rowValueStyle = { color: "var(--text-strong)", fontSize: 13, fontWeight: 600, textAlign: "right", overflowWrap: "anywhere" } as const;
-const changesListStyle = { display: "grid", maxHeight: 430, overflowY: "auto" } as const;
-const changeItemStyle = { display: "flex", alignItems: "flex-start", gap: 10, padding: 14, borderBottom: "1px solid var(--separator)" } as const;
-const changeDateStyle = { display: "block", color: "var(--muted)", fontSize: 10.5, marginBottom: 4 } as const;
-const changeTextStyle = { display: "block", color: "var(--text)", fontSize: 12.5, lineHeight: 1.5 } as const;
-const rulesStyle = { display: "grid" } as const;
-const noRulesStyle = { padding: 14, color: "var(--muted)", fontSize: 12 } as const;
-const detailRuleStyle = { display: "grid", gridTemplateColumns: "20px 48px minmax(0, 1fr)", alignItems: "start", gap: 7, padding: "10px 14px", borderBottom: "1px solid var(--separator)" } as const;
-const detailRuleCodeStyle = { color: "#A78BFA", fontSize: 11, fontWeight: 800, fontFamily: "monospace", paddingTop: 2 } as const;
-const detailRuleTextStyle = { color: "var(--text)", fontSize: 12.5, lineHeight: 1.45 } as const;
+function Field({ icon, label, value }: { icon?: ReactNode; label: string; value: ReactNode }) {
+  return <div className={icon ? `${styles.field} ${styles.fieldWithIcon}` : styles.field}>{icon ? <span className={styles.fieldIcon}>{icon}</span> : null}<span className={styles.fieldLabel}>{label}</span><strong>{value === "" || value == null ? "Não informado" : value}</strong></div>;
+}
+
+function StatusPill({ active }: { active: boolean }) {
+  return <span className={active ? styles.activeStatus : styles.inactiveStatus}>{active ? "Ativo" : "Inativo"}</span>;
+}
+
+function EmptyText({ children }: { children: ReactNode }) {
+  return <p className={styles.emptyText}>{children}</p>;
+}
+
+function RequirementSection({ title, prefix, rules, description }: { title: string; prefix: "RF" | "RNF" | "RFD"; rules: RegraRobo[]; description?: string }) {
+  return (
+    <Section title={title} description={description}>
+      {rules.length ? <div className={styles.requirementList}>{rules.map((rule, index) => {
+        const explicitCode = rule.descricao.match(REQUIREMENT_CODE_PATTERN)?.[1]?.toUpperCase();
+        const code = explicitCode ?? `${prefix}${String(index + 1).padStart(3, "0")}`;
+        const descriptionText = explicitCode ? rule.descricao.replace(REQUIREMENT_PREFIX_PATTERN, "") : rule.descricao;
+        const isChild = code.includes(".");
+        return <article key={`${code}-${index}`} className={isChild ? styles.childRequirement : styles.requirement}><strong>{code}</strong><p>{descriptionText}</p></article>;
+      })}</div> : <EmptyText>Nenhum requisito cadastrado.</EmptyText>}
+    </Section>
+  );
+}

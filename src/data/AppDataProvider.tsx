@@ -11,6 +11,7 @@ import {
   type DadosImportacaoRobo,
   type Publicacao,
   type Robo,
+  type RobotCenterDocumentationSummary,
   type Usuario,
 } from "@/domain/entities";
 import { createClient } from "@/lib/supabase/client";
@@ -65,6 +66,7 @@ function harmonizarCoresCompartilhadas(robos: Robo[], clientes: Cliente[]) {
 
 interface AppDataContextValue {
   robos: Robo[];
+  carregandoRobos: boolean;
   publicacoes: Publicacao[];
   usuarios: Usuario[];
   clientes: Cliente[];
@@ -84,6 +86,7 @@ const AppDataContext = createContext<AppDataContextValue | null>(null);
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
   const [robos, setRobos] = useState<Robo[]>([]);
+  const [carregandoRobos, setCarregandoRobos] = useState(true);
   const [publicacoesLocais, setPublicacoesLocais] = useState<Publicacao[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -93,10 +96,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     void Promise.all([
       supabase.from("clientes").select("id,nome,tenant,cor").is("deleted_at", null).order("nome"),
       supabase.from("robos").select("*").is("deleted_at", null).order("nome"),
-      supabase.from("regras_robo").select("robo_id,descricao,ordem,tipo").is("deleted_at", null).order("ordem"),
+      supabase.from("regras_robo").select("id,robo_id,parent_id,descricao,ordem,tipo").is("deleted_at", null).order("ordem"),
       supabase.from("alteracoes_robo").select("id,robo_id,descricao,realizada_em").order("realizada_em", { ascending: false }),
       supabase.from("publicacoes").select("id,robo_id,categoria,descricao,publicada_em").order("publicada_em", { ascending: false }),
-    ]).then(([clientesResult, robosResult, regrasResult, alteracoesResult, publicacoesResult]) => {
+      supabase.from("robot_center_documentations").select("id,robo_id,status,updated_at").is("deleted_at", null),
+      supabase.from("robot_center_documentation_versions").select("documentation_id,version,docx_path,pdf_path,status")
+        .eq("status", "published").order("version", { ascending: false }),
+    ]).then(([clientesResult, robosResult, regrasResult, alteracoesResult, publicacoesResult, documentationsResult, documentationVersionsResult]) => {
       const clientesCarregados: Cliente[] = (clientesResult.data ?? []).map((cliente) => ({
         ...cliente,
         cor: cliente.cor as Cliente["cor"],
@@ -113,6 +119,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       const regras = regrasResult.data ?? [];
       const alteracoes = alteracoesResult.data ?? [];
       const publicacoes = publicacoesResult.data ?? [];
+      const documentations = documentationsResult.data ?? [];
+      const documentationVersions = documentationVersionsResult.data ?? [];
       const robosCarregados: Robo[] = robosResult.data.map((item) => ({
         id: item.id,
         clienteId: item.cliente_id,
@@ -136,13 +144,25 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         gatilhoParaRoboId: item.gatilho_para_robo_id,
         uploadedDocumentationPath: item.manual_path,
         uploadedDocumentationName: item.manual_nome,
+        robotCenterDocumentation: (() => {
+          const documentation = documentations.find((entry) => entry.robo_id === item.id);
+          if (!documentation) return null;
+          return {
+            id: documentation.id,
+            status: documentation.status as RobotCenterDocumentationSummary["status"],
+            updatedAt: documentation.updated_at,
+            currentVersion: documentationVersions.find((version) => version.documentation_id === documentation.id)?.version ?? null,
+            docxPath: documentationVersions.find((version) => version.documentation_id === documentation.id)?.docx_path ?? null,
+            pdfPath: documentationVersions.find((version) => version.documentation_id === documentation.id)?.pdf_path ?? null,
+          };
+        })(),
         ultimaPublicacaoEm: publicacoes.find((publicacao) => publicacao.robo_id === item.id)?.publicada_em ?? item.updated_at,
         alteracoes: alteracoes.filter((alteracao) => alteracao.robo_id === item.id).map((alteracao) => ({ id: alteracao.id, descricao: alteracao.descricao, realizadaEm: alteracao.realizada_em })),
-        regras: regras.filter((regra) => regra.robo_id === item.id && regra.tipo === "documentacao").map(({ descricao }) => ({ descricao })),
-        regrasForaDocumentacao: regras.filter((regra) => regra.robo_id === item.id && regra.tipo === "fora_documentacao").map(({ descricao }) => ({ descricao })),
+        regras: regras.filter((regra) => regra.robo_id === item.id && regra.tipo === "documentacao").map((regra) => ({ id: regra.id, parentId: regra.parent_id, ordem: regra.ordem, descricao: regra.descricao })),
+        regrasForaDocumentacao: regras.filter((regra) => regra.robo_id === item.id && regra.tipo === "fora_documentacao").map((regra) => ({ id: regra.id, parentId: regra.parent_id, ordem: regra.ordem, descricao: regra.descricao })),
       }));
       setRobos(harmonizarCoresCompartilhadas(robosCarregados, clientesCarregados));
-    });
+    }).finally(() => setCarregandoRobos(false));
   }, []);
 
   async function cadastrarRobo(dados: DadosFormularioRobo) {
@@ -475,6 +495,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const value: AppDataContextValue = {
     robos,
+    carregandoRobos,
     publicacoes,
     usuarios,
     clientes,

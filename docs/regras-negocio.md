@@ -151,6 +151,13 @@
 8. Uma Edge conecta apenas Nodes pertencentes ao mesmo Fluxo e não pode conectar um Node a ele mesmo.
 9. Posição de Nodes e viewport são persistidos; propriedades de conexão ficam em `flow_edges`.
 10. Publicar incrementa a versão, altera o status para `publicado` e cria snapshot imutável na mesma transação.
+
+11. A primeira publicação da Documentação Robot Center é `v1.0`; cada publicação concluída incrementa o sufixo menor (`v1.1`, `v1.2`).
+12. Uma documentação só se torna publicada depois que DOCX e PDF forem gravados com sucesso.
+13. Publicações simultâneas da mesma documentação são bloqueadas e o token de geração torna duplos envios idempotentes.
+14. Uma tentativa com falha é reprocessada no mesmo número de versão.
+15. Versões publicadas e suas imagens são imutáveis; alterações posteriores afetam apenas o rascunho.
+16. A conclusão da publicação da Documentação Robot Center registra uma atualização do robô em `publicacoes`, tornando o evento visível na dashboard conforme o acesso ao cliente.
 11. Versões anteriores abrem exclusivamente em modo de visualização.
 12. Alterações não salvas impedem a publicação até que o estado normalizado seja persistido.
 13. Alterar URL, payload ou `client_id` não amplia acesso; a autorização é validada no PostgreSQL.
@@ -171,3 +178,18 @@
 6. Versões publicadas são imutáveis: `UPDATE` e `DELETE` são rejeitados no banco.
 7. As futuras documentações reutilizarão as RFs ordenadas de `regras_robo`; não existe cópia de RF no módulo.
 8. Nesta etapa não há editor, publicação, geração DOCX/PDF nem upload de imagens internas.
+9. O detalhe completo do Robô é exibido em `/robos/{id}` e não em modal.
+10. O card exibe o ícone de documentação apenas quando existe Documentação Upada ou Documentação Robot Center com status `published`.
+11. Regras de `tipo = documentacao` são apresentadas como requisitos funcionais; regras de `tipo = fora_documentacao` ocupam a seção equivalente de requisitos não funcionais, sem duplicação no banco.
+12. A aba Redmine é somente uma estrutura visual vazia e não realiza chamadas externas.
+13. Cadastro e edição usam páginas próprias em `/robos/novo` e `/robos/{id}/editar`; o drawer não é usado para formulários completos.
+14. Requisitos Funcionais e Regras Fora da Documentação possuem navegação separada, mas continuam usando os tipos existentes de `regras_robo`.
+15. O editor é exclusivo de Admin e valida no servidor e no banco se cada regra pertence ao robô informado.
+16. Reordenação é transacional; a numeração é recalculada pela posição entre regras irmãs.
+17. Sub-regras pertencem ao mesmo robô e categoria da regra pai e aceitam um nível de hierarquia.
+18. Excluir pelo editor arquiva logicamente a regra real e suas sub-regras após confirmação explícita.
+19. Seções, textos e notas pertencem ao rascunho e não modificam a Documentação Upada nem o motor DOCX/PDF.
+20. Imagens aceitam PNG, JPEG e WEBP com no máximo 10 MB e são armazenadas em bucket privado.
+21. O bloco de imagem somente é criado após upload confirmado; substituição mantém posição, legenda, alinhamento e tamanho.
+22. Legenda acompanha logicamente a imagem durante reordenação e exclusão.
+23. Arquivo referenciado por versão publicada não é removido fisicamente ao sair do rascunho.

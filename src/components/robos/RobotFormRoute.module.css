@@ -1,0 +1,13 @@
+.routeContent { display: grid; gap: 18px; width: 100%; max-width: 1180px; margin: 0 auto; }
+.breadcrumb { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; color: var(--muted); font-size: 10.5px; }
+.breadcrumb a { display: inline-flex; align-items: center; gap: 5px; color: var(--accent); text-decoration: none; }
+.breadcrumb strong { color: var(--text-2); }
+.header { display: flex; align-items: center; gap: 13px; padding: 2px 0 4px; }
+.icon { width: 42px; height: 42px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 11px; color: var(--accent); background: var(--accent-soft); }
+.header span { color: var(--accent); font-size: 9px; font-weight: 800; letter-spacing: .12em; }
+.header h1 { margin: 4px 0 0; color: var(--text-strong); font-size: clamp(21px, 2.5vw, 28px); line-height: 1.15; }
+.header p { margin: 5px 0 0; color: var(--muted); font-size: 11.5px; }
+.message { margin: 24px; padding: 18px; border: 1px solid var(--border); border-radius: 12px; color: var(--muted); background: var(--card); }
+.error { color: var(--danger); }
+
+@media (max-width: 640px) { .routeContent { gap: 14px; } .header { align-items: flex-start; } }

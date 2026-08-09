@@ -70,13 +70,20 @@ O nome do criador é resolvido por `get_flow_creator_name`. A função privilegi
 
 ## Documentação Robot Center
 
+O endpoint e a rota do editor exigem papel `admin`. As tabelas de seções e blocos usam RLS herdada do rascunho, documento, robô e cliente. As RPCs de inicialização, reordenação e arquivamento repetem a validação de Admin e do escopo do robô; ocultar o botão nunca é a única barreira.
+
+O bucket `robot-documentation` é privado. Leitura, inserção, substituição e remoção no caminho de rascunho exigem Admin, `robot_center_documentation.manage` e acesso ao cliente do robô identificado no primeiro segmento da pasta. Versões publicadas terão caminhos e política de leitura próprios na etapa de publicação.
+
+Versões publicadas permanecem no mesmo bucket privado, sob `<robo_id>/versions/`. Usuários com `robot_center_documentation.read` e acesso ao cliente do robô podem obter URL assinada; somente Admin com `robot_center_documentation.manage` grava artefatos. O bucket `robot-documentation-templates` é privado e acessível apenas a Admin. Publicar e alterar estados de geração também exigem Admin no backend e nas policies/RPCs.
+
 | Permissão | Admin | Operador | Cliente | Suporte |
 |---|---:|---:|---:|---:|
-| `robot_center_documentation.read` | Sim | Não nesta etapa | Não nesta etapa | Não nesta etapa |
+| `robot_center_documentation.read` | Sim | Conforme `robots.read` | Próprio cliente | Conforme `robots.read` |
 | `robot_center_documentation.manage` | Sim | Não | Não | Não |
 
 - A rota de administração valida sessão e papel Admin no servidor.
-- A raiz documental exige permissão de leitura e acesso ao cliente do Robô.
+- A raiz documental exige permissão de leitura e acesso ao cliente do Robô. Fora do Admin, somente registros com status `published` ficam visíveis.
 - O rascunho exige papel Admin e permissão de gerenciamento.
 - Versões permitem leitura autorizada e inserção somente por Admin; trigger impede atualização ou exclusão.
 - A futura visualização publicada utilizará `read`, separada de `manage`, sem ampliar automaticamente o acesso ao rascunho.
+- A migration `20260808224500_allow_published_robot_documentation_view.sql` replica `read` somente para papéis que já possuem `robots.read`; ela não concede acesso adicional a Robôs.

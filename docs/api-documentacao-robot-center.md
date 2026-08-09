@@ -16,3 +16,7 @@ As consultas usam a sessão do usuário e permanecem sujeitas a RLS. Nenhum `cli
 ## Evolução prevista
 
 A futura API deverá separar visualização publicada (`robot_center_documentation.read`) de rascunho/publicação (`robot_center_documentation.manage`). As RFs serão consultadas de `regras_robo` por `robo_id` e `ordem`, sem duplicação.
+
+## Página de detalhes
+
+`/robos/[id]` consulta os Robôs já autorizados pela RLS e utiliza somente metadados visíveis da Documentação Robot Center. Usuários sem `manage` não recebem rascunhos; a presença documental do card é derivada de `uploadedDocumentationPath` ou de documentação interna com status `published`.

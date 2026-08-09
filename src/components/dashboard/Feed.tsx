@@ -76,6 +76,12 @@ function parsePublicationDescription(description: string) {
     }
   });
 
+  const normalizedDescription = description.toLocaleLowerCase("pt-BR");
+  const isRobotCenterDocumentationPublication = normalizedDescription.includes("documentação técnica publicada");
+  if (isRobotCenterDocumentationPublication && !ruleChanges.some((change) => change.type === "Documentação")) {
+    ruleChanges.push({ type: "Documentação", description: "Documentação Robot Center atualizada." });
+  }
+
   return {
     ruleChanges,
     description: regularChanges.join(" • ") || (ruleChanges.length ? "Regras funcionais atualizadas." : description),
@@ -115,7 +121,9 @@ export default function Feed({ publicacoes, robos, onViewRobot }: FeedProps) {
           const parsedDescription = parsePublicationDescription(publicacao.descricao);
           const normalizedDescription = publicacao.descricao.toLocaleLowerCase("pt-BR");
           const packageChanged = normalizedDescription.includes("pacote");
-          const versionChanged = normalizedDescription.includes("versão") || normalizedDescription.includes("versao");
+          const isDocumentationPublication = normalizedDescription.includes("documentação técnica publicada");
+          const versionChanged = !isDocumentationPublication
+            && (normalizedDescription.includes("versão") || normalizedDescription.includes("versao"));
           const environmentClass = robo.ambiente === "Produção" ? "is-production" : robo.ambiente === "Teste" ? "is-test" : "is-development";
 
           return (

@@ -109,9 +109,19 @@ O Robô pode possuir um PDF externo opcional, denominado Documentação Upada. N
 
 ## Documentação Robot Center
 
-A Documentação Robot Center é independente da Documentação Upada. Cada Robô pode possuir no máximo uma documentação interna, com um rascunho corrente e futuras versões publicadas imutáveis. Nesta etapa existem apenas a raiz documental, o rascunho sem blocos editoriais e o registro mínimo de versões; editor, geração e publicação serão adicionados posteriormente.
+A Documentação Robot Center é independente da Documentação Upada. Cada Robô pode possuir no máximo uma documentação interna, com um rascunho corrente e futuras versões publicadas imutáveis. O editor estruturado altera as regras reais do robô e mantém seções, textos complementares e notas exclusivamente no rascunho.
 
 São válidos os estados: somente Documentação Upada, somente Documentação Robot Center, ambas ou nenhuma. As RFs permanecem em `regras_robo` como fonte de verdade e não são duplicadas no módulo.
+
+Os códigos RF/RNF são calculados por categoria, pai e ordem. O UUID da regra é a identidade estável usada pelos blocos documentais e por snapshots futuros.
+
+Imagens, prints e legendas pertencem apenas ao rascunho documental. Upload, colagem e substituição não alteram a regra real. O preview utiliza URL assinada temporária; alinhamento e tamanho são dados do `DocumentSchema` destinados à futura geração oficial.
+
+Ao publicar, o Robot Center cria um snapshot completo e imutável dos dados do robô, seções, RFs/RNFs, códigos calculados, blocos e imagens. O DOCX é produzido sobre uma cópia do template oficial; o PDF deriva obrigatoriamente desse DOCX por conversão temporária no ConvertAPI e é então preservado no Storage privado. O rascunho continua editável e nunca altera uma versão anterior.
+
+O detalhe do Robô possui rota própria `/robos/{id}` e organiza os dados existentes em Detalhes Gerais, Documentação e Redmine. A área Documentação apresenta requisitos e arquivos separadamente. Redmine permanece apenas como ponto de extensão visual, sem integração ou dados fictícios.
+
+Criação e edição também possuem páginas próprias (`/robos/novo` e `/robos/{id}/editar`) e reutilizam o mesmo formulário e as mesmas operações de persistência anteriormente apresentadas no drawer.
 
 ## Disparo e fluxo
 

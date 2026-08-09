@@ -1,5 +1,6 @@
 import {
   Cpu,
+  FileCheck2,
   GitBranch,
   Layers3,
   Package,
@@ -25,6 +26,11 @@ export default function RobotCard({
   selected = false,
   onClick,
 }: RobotCardProps) {
+  const hasDocumentation = Boolean(
+    robot.uploadedDocumentationPath
+    || robot.robotCenterDocumentation?.status === "published",
+  );
+
   return (
     <div
       onClick={onClick}
@@ -87,6 +93,11 @@ export default function RobotCard({
         </div>
 
         <div style={statusGroupStyle} aria-label="Ambiente e status do robô">
+          {hasDocumentation && (
+            <span title="Documentação disponível" aria-label="Documentação disponível" style={documentationIconStyle}>
+              <FileCheck2 size={13} />
+            </span>
+          )}
           <span
             style={{
               ...environmentBadgeStyle,
@@ -156,6 +167,7 @@ export default function RobotCard({
           </span>
         </div>
       </div>
+      <span style={detailsHintStyle}>Detalhes</span>
     </div>
   );
 }
@@ -166,6 +178,26 @@ const statusGroupStyle: CSSProperties = {
   justifyContent: "flex-end",
   flexWrap: "wrap",
   gap: 6,
+};
+const documentationIconStyle: CSSProperties = {
+  width: 24,
+  height: 24,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexShrink: 0,
+  color: "var(--muted)",
+  border: "1px solid var(--separator)",
+  borderRadius: 7,
+  background: "var(--surface)",
+};
+const detailsHintStyle: CSSProperties = {
+  display: "block",
+  marginTop: 9,
+  color: "var(--accent)",
+  fontSize: 10.5,
+  fontWeight: 700,
+  textAlign: "right",
 };
 
 const environmentBadgeStyle: CSSProperties = {

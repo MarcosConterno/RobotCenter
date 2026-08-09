@@ -296,9 +296,23 @@ O componente **Atualizações recentes** lê `public.publicacoes`, ordenada por 
 
 ## Base da Documentação Robot Center
 
+O editor mantém `regras_robo` como fonte de verdade. `parent_id` referencia uma regra raiz do mesmo robô e tipo e permite um nível de sub-regra; `ordem` é posicional entre irmãos. Códigos como `RF003.001` são derivados e nunca identificadores.
+
+`robot_center_documentation_sections` armazena as seis seções fixas do rascunho. `robot_center_documentation_blocks` armazena conteúdo complementar vinculado ao UUID real da regra e está preparado para `text`, `note`, `image`, `caption` e `page_break`; a primeira interface edita `text` e `note`.
+
+Blocos agora podem pertencer a uma regra (`requirement_id`) ou seção (`section_id`), nunca às duas. Imagens mantêm arquivo, MIME, nome original, bytes, dimensões, alinhamento e preset de tamanho em `metadata`. Legendas são blocos `caption` ligados à imagem por `related_block_id`. Os arquivos ficam no bucket privado `robot-documentation`, no caminho `<robo_id>/draft/images/<uuid>.<ext>`.
+
 - `robot_center_documentations`: raiz 1:1 com `robos`, status, auditoria e exclusão lógica; não contém o arquivo externo nem conteúdo editorial.
 - `robot_center_documentation_drafts`: rascunho 1:1 com a raiz. Nesta etapa armazena somente a revisão e auditoria.
 - `robot_center_documentation_versions`: futuras versões publicadas, únicas por documentação e número. Um trigger bloqueia `UPDATE` e `DELETE`.
+
+### Publicação da Documentação Robot Center
+
+`robot_center_documentation_templates` registra o template DOCX mestre ativo, armazenado no bucket privado `robot-documentation-templates`. A publicação reserva uma linha em `robot_center_documentation_versions` com estado `generating`, número sequencial e token idempotente. Após gerar os artefatos, a linha recebe `snapshot`, `docx_path`, `pdf_path`, template utilizado e `published_at`; versões `published` não aceitam atualização nem exclusão. Falhas ficam em `failed` e são reprocessadas no mesmo número.
+
+Os arquivos publicados ficam no bucket privado `robot-documentation`, em `<robo_id>/versions/v1.x/`. Imagens do rascunho são copiadas para a pasta da versão antes da geração, portanto substituições futuras no rascunho não alteram snapshots publicados. `robot_center_documentations.current_version_id` referencia a versão publicada atual.
+
+Ao concluir uma versão, a mesma transação insere uma linha em `publicacoes` com categoria `Atualização do Robô`. Assim, a dashboard reutiliza seu feed existente sem duplicar entidade nem introduzir uma categoria incompatível.
 
 ```text
 robos
@@ -311,6 +325,8 @@ robos (1) ── regras_robo (0..N, fonte de verdade das RFs)
 ```
 
 A migration `20260808223000_prepare_robot_center_documentation.sql` é somente aditiva. Snapshot, artefatos DOCX/PDF e blocos editoriais serão modelados nas etapas que implementarem essas funcionalidades.
+
+A migration `20260808224500_allow_published_robot_documentation_view.sql` separa a leitura publicada da edição: papéis que já possuem `robots.read` recebem `robot_center_documentation.read`, mas as policies retornam apenas documentos `published`. Admin com `manage` continua autorizado a consultar a preparação e o rascunho.
 
 ## Disparo e relacionamentos entre robôs
 
