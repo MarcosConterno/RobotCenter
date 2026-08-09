@@ -154,7 +154,7 @@ export default function RobotsOverviewTable({ robos, clientes, onViewRobot, canE
   }
 
   return (
-    <section className="dashboard-robots-table">
+    <section className="dashboard-robots-table" data-tour="dashboard-robots-table">
       <header className="dashboard-robots-table__header">
         <div className="dashboard-robots-table__heading">
           <span className="dashboard-robots-table__icon" aria-hidden="true">

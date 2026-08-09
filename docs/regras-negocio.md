@@ -206,11 +206,12 @@
 2. Somente `marcos.vinicius@loylegal.com` recebe o papel Master na inicialização controlada.
 3. Master e Admin visualizam o painel administrativo que mapeia permissões por recurso e os perfis que as possuem.
 4. Master pode editar qualquer vínculo entre papel e permissão.
-5. Admin pode editar somente vínculos de Operador, Cliente e Suporte; não pode alterar permissões de Admin, Master nem do recurso `access_control`.
-6. Um Admin comum não pode editar, arquivar nem remover o vínculo Master de um usuário.
-7. A atribuição ou remoção do papel Master e a alteração da permissão `access_control.read` são protegidas no banco, não apenas na interface.
-8. O usuário Master deve conservar um papel administrativo base para permanecer compatível com as rotas, APIs e policies existentes.
-9. Alterações da matriz somente são persistidas após confirmação em **Salvar alterações** e são aplicadas na mesma transação.
+5. Admin pode editar somente vínculos de Operador, Dev, Cliente e Suporte; não pode alterar permissões de Admin, Master nem do recurso `access_control`.
+6. Dev inicia com as permissões do Operador, mas possui matriz independente para evolução futura.
+7. Um Admin comum não pode editar, arquivar nem remover o vínculo Master de um usuário.
+8. A atribuição ou remoção do papel Master e a alteração da permissão `access_control.read` são protegidas no banco, não apenas na interface.
+9. O usuário Master deve conservar um papel administrativo base para permanecer compatível com as rotas, APIs e policies existentes.
+10. Alterações da matriz somente são persistidas após confirmação em **Salvar alterações** e são aplicadas na mesma transação.
 
 ## Tutorial e onboarding
 

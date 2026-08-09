@@ -44,11 +44,13 @@ Evento histórico relacionado a um Robô por `roboId`. Possui categoria, descri�
 
 ### Usuário
 
-O perfil de usuário pode possuir vínculo opcional com um Cliente por `profiles.cliente_id`. Para o papel Cliente, o vínculo é obrigatório; para Admin, Operador e Suporte, é opcional. O vínculo determina o escopo de dados do usuário Cliente e não pode ser inferido pelo email ou pelo papel isoladamente.
+O perfil de usuário pode possuir vínculo opcional com um Cliente por `profiles.cliente_id`. Para o papel Cliente, o vínculo é obrigatório; para Admin, Operador, Dev e Suporte, é opcional. O vínculo determina o escopo de dados do usuário Cliente e não pode ser inferido pelo email ou pelo papel isoladamente.
 
 Identidade cadastrada para futuro acesso à aplicação. Possui login e tipo. A senha existe somente no dado transitório do formulário e não pertence à entidade persistível de perfil.
 
 O tipo **Suporte** representa consulta operacional sem permissões de escrita. Pode acessar Dashboard, listagem e detalhes dos Robôs e Fluxos em modo de visualização. Operador mantém consulta aos detalhes e atualização exclusiva da capacidade `ideal`/`max`; Admin permanece responsável pelo cadastro completo.
+
+O tipo **Dev** nasce com a mesma matriz de permissões e o mesmo escopo de dados do Operador. Ele é um papel independente e editável, preparado para receber capacidades específicas posteriormente sem alterar o perfil Operador.
 
 O papel **Master** é complementar ao papel Admin e representa a administração superior do controle de acesso. Ele é atribuído exclusivamente ao usuário `marcos.vinicius@loylegal.com`, que permanece também como Admin por compatibilidade com as autorizações existentes. O Master pode consultar e editar toda a matriz de permissões e executar ações excepcionais protegidas. Administradores comuns podem editar somente liberações de Operador, Cliente e Suporte; não alteram Admin, Master nem Controle de Acesso.
 

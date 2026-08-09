@@ -15,7 +15,7 @@ export async function GET() {
     admin.from("tutorials").select("id,tutorial_key,nome,audience_role_id,current_version_id").eq("status", "published").in("audience_role_id", access.roleIds).not("current_version_id", "is", null).order("updated_at", { ascending: false }),
   ]);
   const roleById = new Map((roles ?? []).map((role) => [role.id, role.codigo]));
-  const priority = ["master", "admin", "cliente", "operador", "suporte"];
+  const priority = ["master", "admin", "cliente", "operador", "dev", "suporte"];
   const tutorial = [...(tutorials ?? [])].sort((a, b) => priority.indexOf(roleById.get(a.audience_role_id) ?? "") - priority.indexOf(roleById.get(b.audience_role_id) ?? ""))[0];
   if (!tutorial?.current_version_id) return NextResponse.json({ tutorial: null });
   const { data: version } = await admin.from("tutorial_versions").select("version,snapshot").eq("id", tutorial.current_version_id).single();

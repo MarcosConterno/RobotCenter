@@ -84,6 +84,8 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   const launchStep = useCallback(async (index: number, direction: 1 | -1) => {
     const currentSteps = stepsRef.current; const step = currentSteps[index];
     if (!step) { if (direction > 0) await completeTutorial(); return; }
+    if (step.targets.includes('[data-tour="dashboard-recent-updates"]')) document.querySelector<HTMLButtonElement>('[data-tour="dashboard-overview-tab"]')?.click();
+    if (step.targets.includes('[data-tour="dashboard-robots-table"]')) document.querySelector<HTMLButtonElement>('[data-tour="dashboard-robots-tab"]')?.click();
     const target = await waitForTarget(step.targets); if (!target) { await navigateRef.current(index + direction, direction); return; }
     if (!testModeRef.current) await persist("in_progress", index);
     driverRef.current?.destroy();

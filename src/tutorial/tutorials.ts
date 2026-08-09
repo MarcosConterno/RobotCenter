@@ -3,9 +3,18 @@ import type { TutorialCapabilities, TutorialStepDefinition } from "./types";
 const dashboardStep: TutorialStepDefinition = {
   id: "dashboard-overview",
   route: "/dashboard",
-  targets: ['[data-tour="dashboard-overview"]'],
-  title: "Dashboard",
-  description: "Acompanhe os totais e as atualizações mais recentes das automações.",
+  targets: ['[data-tour="dashboard-recent-updates"]'],
+  title: "Atualizações recentes",
+  description: "Acompanhe neste painel as alterações mais recentes das automações.",
+  side: "bottom",
+};
+
+const dashboardTableStep: TutorialStepDefinition = {
+  id: "dashboard-robots-table",
+  route: "/dashboard",
+  targets: ['[data-tour="dashboard-robots-table"]'],
+  title: "Tabela de robôs",
+  description: "Consulte nesta visualização os dados consolidados dos robôs.",
   side: "bottom",
 };
 
@@ -65,7 +74,7 @@ const adminSteps: TutorialStepDefinition[] = [
 ];
 
 export function resolveTutorialSteps(capabilities: TutorialCapabilities) {
-  const steps: TutorialStepDefinition[] = [dashboardStep];
+  const steps: TutorialStepDefinition[] = [dashboardStep, dashboardTableStep];
   if (capabilities.canAccessRobots) steps.push(...robotSteps);
   if (capabilities.canAccessFlows) steps.push(flowStep);
   if (capabilities.canAccessSettings) steps.push(...adminSteps);

@@ -18,7 +18,8 @@ export const TOUR_PAGE_CATALOG: TourPageOption[] = [
     label: "Dashboard",
     route: "/dashboard",
     targets: [
-      { key: "dashboard-overview", label: "Visão geral da Dashboard", selector: '[data-tour="dashboard-overview"]' },
+      { key: "dashboard-overview", label: "Atualizações recentes", selector: '[data-tour="dashboard-recent-updates"]' },
+      { key: "dashboard-robots-tab", label: "Visualização da tabela de robôs", selector: '[data-tour="dashboard-robots-table"]' },
       { key: "sidebar-dashboard", label: "Menu Dashboard", selector: '[data-tour="sidebar-dashboard"]' },
     ],
   },

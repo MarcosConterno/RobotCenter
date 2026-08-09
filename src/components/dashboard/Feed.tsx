@@ -101,7 +101,7 @@ export default function Feed({ publicacoes, robos, onViewRobot }: FeedProps) {
   const visibleItems = showCompleteHistory ? items : items.slice(0, RECENT_UPDATES_LIMIT);
 
   return (
-    <section className="updates-feed">
+    <section className="updates-feed" data-tour="dashboard-recent-updates">
       <header className="updates-feed__header">
         <div>
           <h2>Atualizações recentes</h2>

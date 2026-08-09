@@ -275,6 +275,7 @@ button {
 .tutorial-admin-heading h1, .tutorial-editor-heading h1 { margin: 7px 0 0; color: var(--text-strong); font-size: 28px; }
 .tutorial-admin-heading p, .tutorial-editor-heading p { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
 .tutorial-admin-heading > div:last-child, .tutorial-editor-heading > div:last-child { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.tutorial-admin-heading > button, .tutorial-editor-heading > div:last-child { align-self: flex-start; margin-top: 48px; }
 .tutorial-primary-button, .tutorial-secondary-button { display: inline-flex; min-height: 36px; align-items: center; justify-content: center; gap: 7px; border: 1px solid var(--border); border-radius: 8px; padding: 0 12px; font-size: 11px; font-weight: 750; }
 .tutorial-primary-button { border-color: var(--accent); color: var(--on-accent); background: var(--accent); }
 .tutorial-primary-button:hover { background: var(--accent-hover); }
@@ -284,6 +285,9 @@ button {
 .tutorial-create-panel { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(170px, .5fr) auto auto; gap: 10px; align-items: end; margin-bottom: 16px; border: 1px solid var(--border); border-radius: 11px; padding: 14px; background: var(--card); }
 .tutorial-create-panel label, .tutorial-editor-meta label, .tutorial-step-fields label { display: grid; gap: 6px; color: var(--muted); font-size: 10px; font-weight: 700; }
 .tutorial-create-panel input, .tutorial-create-panel select, .tutorial-editor-meta input, .tutorial-editor-meta select, .tutorial-step-fields input, .tutorial-step-fields select, .tutorial-step-fields textarea { width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 7px; padding: 0 10px; outline: none; color: var(--text); background: var(--surface); font: inherit; font-size: 11.5px; }
+.tutorial-create-panel select option, .tutorial-editor-meta select option, .tutorial-step-fields select option { color: var(--text); background: var(--card); }
+[data-theme="dark"] .tutorial-create-panel select, [data-theme="dark"] .tutorial-editor-meta select, [data-theme="dark"] .tutorial-step-fields select { color-scheme: dark; }
+[data-theme="light"] .tutorial-create-panel select, [data-theme="light"] .tutorial-editor-meta select, [data-theme="light"] .tutorial-step-fields select { color-scheme: light; }
 .tutorial-create-panel input, .tutorial-create-panel select, .tutorial-editor-meta input, .tutorial-editor-meta select, .tutorial-step-fields input, .tutorial-step-fields select { height: 36px; }
 .tutorial-step-fields textarea { min-height: 58px; padding-block: 8px; resize: vertical; }
 .tutorial-create-panel input:focus, .tutorial-create-panel select:focus, .tutorial-editor-meta input:focus, .tutorial-editor-meta select:focus, .tutorial-step-fields input:focus, .tutorial-step-fields select:focus, .tutorial-step-fields textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
@@ -335,10 +339,23 @@ button {
 .tutorial-history > div { display: grid; grid-template-columns: 70px 1fr auto; gap: 12px; padding: 10px 14px; border-top: 1px solid var(--separator); color: var(--text-2); font-size: 10.5px; }
 .tutorial-history > div:first-of-type { border-top: 0; }
 .tutorial-history time { color: var(--muted); }
+.tutorial-publish-backdrop { position: fixed; inset: 0; z-index: 10020; display: grid; place-items: center; padding: 20px; background: rgba(2, 6, 23, .68); backdrop-filter: blur(4px); }
+.tutorial-publish-dialog { width: min(440px, 100%); overflow: hidden; border: 1px solid var(--border); border-radius: 14px; color: var(--text); background: var(--card); box-shadow: 0 24px 70px rgba(0, 0, 0, .36); }
+.tutorial-publish-dialog > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; border-bottom: 1px solid var(--separator); padding: 18px 20px 15px; }
+.tutorial-publish-dialog > header span { color: var(--accent); font-size: 9px; font-weight: 850; letter-spacing: 1.1px; }
+.tutorial-publish-dialog h2 { margin: 5px 0 0; color: var(--text-strong); font-size: 19px; }
+.tutorial-publish-dialog > header button { display: inline-flex; width: 32px; height: 32px; flex: 0 0 32px; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); background: var(--surface); }
+.tutorial-publish-dialog > p { margin: 0; padding: 16px 20px 12px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.tutorial-publish-dialog dl { display: grid; gap: 1px; margin: 0 20px 18px; overflow: hidden; border: 1px solid var(--border); border-radius: 9px; background: var(--separator); }
+.tutorial-publish-dialog dl > div { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 10px 12px; background: var(--surface); }
+.tutorial-publish-dialog dt { color: var(--muted); font-size: 11px; }
+.tutorial-publish-dialog dd { margin: 0; color: var(--text-strong); font-size: 11.5px; font-weight: 750; text-align: right; }
+.tutorial-publish-dialog > footer { display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--separator); padding: 13px 20px; background: var(--surface); }
 
 @media (max-width: 900px) {
   .tutorial-admin-heading, .tutorial-editor-heading { flex-direction: column; }
   .tutorial-admin-heading > div:last-child, .tutorial-editor-heading > div:last-child { justify-content: flex-start; }
+  .tutorial-admin-heading > button, .tutorial-editor-heading > div:last-child { margin-top: 0; }
   .tutorial-create-panel, .tutorial-editor-meta { grid-template-columns: 1fr 1fr; }
   .tutorial-list-card { grid-template-columns: 38px 1fr; }
   .tutorial-list-facts, .tutorial-list-actions { grid-column: 2; justify-content: flex-start; }

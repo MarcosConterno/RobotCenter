@@ -1,5 +1,5 @@
 export const AMBIENTES_ROBO = ["Produção", "Teste", "Desenvolvimento"] as const;
-export const TIPOS_USUARIO = ["Admin", "Operador", "Cliente", "Suporte"] as const;
+export const TIPOS_USUARIO = ["Admin", "Operador", "Dev", "Cliente", "Suporte"] as const;
 export const CORES_BADGE_ROBO = ["azul", "violeta", "verde", "ambar", "rosa", "ciano"] as const;
 export const CATEGORIAS_PUBLICACAO = [
   "Novo Robô",
