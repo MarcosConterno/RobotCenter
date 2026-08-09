@@ -39,6 +39,8 @@ Admin e Operador atualizam capacidade pela RPC `public.update_robot_capacity`. A
 
 A coluna `clientes.cor` segue as policies existentes de `clientes`: somente Admin pode cadastrá-la ou alterá-la; Operador, Cliente e Suporte apenas recebem a cor nas leituras já autorizadas. A mudança não amplia o escopo de nenhuma policy RLS.
 
+O endpoint `/api/admin/client-metrics` exige sessão com papel Admin ou Master antes de calcular os totais de Robôs, Fluxos e documentos por Cliente. As consultas agregadas são executadas somente no servidor; nenhuma credencial administrativa é enviada ao navegador.
+
 O tipo da regra (`documentacao` ou `fora_documentacao`) não altera o escopo de acesso. As duas categorias herdam as mesmas policies de `regras_robo`: leitura exige `robots.read` e escrita/reordenação exige `robots.update`, sempre respeitando o cliente vinculado ao robô.
 
 O histórico `alteracoes_robo` permite leitura com `robots.read`, respeitando `private.can_access_cliente`, e inserção com `robots.update`. Não existem grants ou policies de update/delete para usuários autenticados, garantindo que o histórico anterior não seja alterado pela aplicação.

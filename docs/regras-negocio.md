@@ -79,6 +79,9 @@
 - Um administrador não pode arquivar o próprio usuário autenticado.
 - A exclusão de usuários e clientes é lógica, preservando histórico e auditoria.
 - Um cliente com robôs ou usuários ativos vinculados não pode ser arquivado.
+- O resumo administrativo do Cliente contabiliza somente Robôs não excluídos, todos os Fluxos persistidos e Documentações Robot Center não excluídas.
+- A métrica Documentos soma uma unidade por Documentação Upada existente e uma unidade por Documentação Robot Center ativa; versões publicadas não são contadas separadamente.
+- A data de atualização do resumo é a maior `updated_at` encontrada entre Cliente, Robôs, Fluxos e Documentações Robot Center relacionados.
 - Ambiente aceita somente Produção, Teste ou Desenvolvimento.
 - Regras de robô possuem ordem única entre regras ativas do mesmo robô e tipo.
 - Regras existentes anteriores à categorização pertencem ao tipo `documentacao`.

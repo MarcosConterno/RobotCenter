@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, KeyRound, Pencil, Plus, Save, ShieldCheck, Trash2, Users, X } from "lucide-react";
+import { Bot, Building2, Clock3, FileText, GitFork, KeyRound, Pencil, Plus, Save, ShieldCheck, Trash2, Users, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import AppShell from "@/components/layout/AppShell";
@@ -14,6 +14,7 @@ type CadastroAtivo = "usuarios" | "clientes" | "permissoes";
 
 interface PermissionRole { id: string; codigo: string; nome: string; descricao: string | null }
 interface PermissionItem { id: string; codigo: string; recurso: string; acao: string; descricao: string | null; roles: string[] }
+interface ClientMetric { clientId: string; robots: number; flows: number; documents: number; updatedAt: string }
 
 export default function ConfiguracoesPage() {
   const {
@@ -57,6 +58,26 @@ export default function ConfiguracoesPage() {
   const [permissions, setPermissions] = useState<PermissionItem[]>([]);
   const [loadingPermissions, setLoadingPermissions] = useState(false);
   const [permissionsError, setPermissionsError] = useState("");
+  const [clientMetrics, setClientMetrics] = useState<Record<string, ClientMetric>>({});
+  const [loadingClientMetrics, setLoadingClientMetrics] = useState(false);
+  const [clientMetricsLoaded, setClientMetricsLoaded] = useState(false);
+  const [clientMetricsError, setClientMetricsError] = useState("");
+
+  const carregarMetricasClientes = useCallback(async () => {
+    setLoadingClientMetrics(true);
+    setClientMetricsError("");
+    try {
+      const response = await fetch("/api/admin/client-metrics", { cache: "no-store" });
+      const payload = await response.json() as { metrics?: ClientMetric[]; error?: string };
+      if (!response.ok) throw new Error(payload.error ?? "Não foi possível carregar os indicadores dos clientes.");
+      setClientMetrics(Object.fromEntries((payload.metrics ?? []).map((metric) => [metric.clientId, metric])));
+    } catch (metricError) {
+      setClientMetricsError(metricError instanceof Error ? metricError.message : "Não foi possível carregar os indicadores dos clientes.");
+    } finally {
+      setLoadingClientMetrics(false);
+      setClientMetricsLoaded(true);
+    }
+  }, []);
 
   const carregarUsuarios = useCallback(async () => {
     setCarregandoUsuarios(true);
@@ -86,6 +107,10 @@ export default function ConfiguracoesPage() {
   useEffect(() => {
     if (adminAutorizado) void carregarUsuarios();
   }, [adminAutorizado, carregarUsuarios]);
+
+  useEffect(() => {
+    if (adminAutorizado && cadastroAtivo === "clientes" && !clientMetricsLoaded && !loadingClientMetrics) void carregarMetricasClientes();
+  }, [adminAutorizado, cadastroAtivo, carregarMetricasClientes, clientMetricsLoaded, loadingClientMetrics]);
 
   useEffect(() => {
     if (!adminAutorizado || cadastroAtivo !== "permissoes" || permissions.length) return;
@@ -255,6 +280,7 @@ export default function ConfiguracoesPage() {
 
     try {
       await atualizarCliente(clienteId, result.data);
+      await carregarMetricasClientes();
       setClienteEditandoId(null);
       setErroCliente("");
     } catch {
@@ -282,6 +308,7 @@ export default function ConfiguracoesPage() {
 
     try {
       await adicionarCliente(result.data);
+      await carregarMetricasClientes();
       setNomeCliente("");
       setTenant("");
     setCorCliente(CORES_BADGE_ROBO[(clientes.length + 1) % CORES_BADGE_ROBO.length]);
@@ -510,9 +537,10 @@ export default function ConfiguracoesPage() {
               titulo="Clientes cadastrados"
               vazio="Nenhum cliente cadastrado."
               quantidade={clientes.length}
+              quantidadeLabel={`${clientes.length} ${clientes.length === 1 ? "cliente" : "clientes"}`}
             >
               {clientes.map((cliente) => (
-                <div key={cliente.id} style={listItemStyle}>
+                <div key={cliente.id} className={clienteEditandoId === cliente.id ? undefined : "settings-client-row"} style={clienteEditandoId === cliente.id ? listItemStyle : undefined}>
                   {clienteEditandoId === cliente.id ? (
                     <div style={editGridStyle}>
                       <input aria-label="Nome do cliente" value={clienteEditandoNome} onChange={(event) => setClienteEditandoNome(event.target.value)} style={compactInputStyle} />
@@ -520,11 +548,17 @@ export default function ConfiguracoesPage() {
                       <ColorField label="Cor" value={clienteEditandoCor} onChange={setClienteEditandoCor} compact />
                     </div>
                   ) : (
-                    <div style={itemContentStyle}>
-                      <span style={itemNameStyle}>{cliente.nome}</span>
+                    <>
+                    <div className="settings-client-identity">
+                      <span className="settings-client-avatar" style={{ color: PALETAS_BADGE_ROBO[cliente.cor].texto, background: PALETAS_BADGE_ROBO[cliente.cor].fundo, borderColor: PALETAS_BADGE_ROBO[cliente.cor].borda }}>{cliente.nome.trim().charAt(0).toUpperCase() || "C"}</span>
+                      <div className="settings-client-copy"><strong>{cliente.nome}</strong><span>{cliente.tenant}</span></div>
                       <span style={{ ...clientColorBadgeStyle, color: PALETAS_BADGE_ROBO[cliente.cor].texto, background: PALETAS_BADGE_ROBO[cliente.cor].fundo, borderColor: PALETAS_BADGE_ROBO[cliente.cor].borda }}>Cor do cliente</span>
-                      <span style={tenantStyle}>{cliente.tenant}</span>
                     </div>
+                    <ClientMetricCell icon={<Bot size={17} />} value={clientMetrics[cliente.id]?.robots ?? 0} label="Robôs" tone="blue" loading={loadingClientMetrics} />
+                    <ClientMetricCell icon={<GitFork size={17} />} value={clientMetrics[cliente.id]?.flows ?? 0} label="Fluxos" tone="purple" loading={loadingClientMetrics} />
+                    <ClientMetricCell icon={<FileText size={17} />} value={clientMetrics[cliente.id]?.documents ?? 0} label="Documentos" tone="green" loading={loadingClientMetrics} />
+                    <div className="settings-client-updated"><Clock3 size={13} /><span>Atualizado em<strong>{formatClientMetricDate(clientMetrics[cliente.id]?.updatedAt)}</strong></span></div>
+                    </>
                   )}
                   {adminAutorizado && (
                     <div style={itemActionsStyle}>
@@ -543,6 +577,7 @@ export default function ConfiguracoesPage() {
                   )}
                 </div>
               ))}
+              {clientMetricsError && <p role="alert" style={formErrorStyle}>{clientMetricsError}</p>}
               {erroCliente && <p role="alert" style={formErrorStyle}>{erroCliente}</p>}
             </CadastroLista>
           </section>
@@ -741,22 +776,38 @@ function IconButton({
   );
 }
 
+function ClientMetricCell({ icon, value, label, tone, loading }: { icon: React.ReactNode; value: number; label: string; tone: "blue" | "purple" | "green"; loading: boolean }) {
+  return <div className={`settings-client-metric is-${tone}`}>
+    <span>{icon}</span>
+    <div><strong>{loading ? "—" : value}</strong><small>{label}</small></div>
+  </div>;
+}
+
+function formatClientMetricDate(value?: string) {
+  if (!value) return "Não informado";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Não informado";
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(date);
+}
+
 function CadastroLista({
   titulo,
   vazio,
   quantidade,
+  quantidadeLabel,
   children,
 }: {
   titulo: string;
   vazio: string;
   quantidade: number;
+  quantidadeLabel?: string;
   children: React.ReactNode;
 }) {
   return (
     <div style={listSectionStyle}>
       <div style={listHeaderStyle}>
         <h3 style={listTitleStyle}>{titulo}</h3>
-        <span style={countStyle}>{quantidade}</span>
+        <span style={countStyle}>{quantidadeLabel ?? quantidade}</span>
       </div>
       {quantidade === 0 ? <p style={emptyStyle}>{vazio}</p> : <div style={listStyle}>{children}</div>}
     </div>
@@ -949,6 +1000,7 @@ const countStyle: React.CSSProperties = {
   height: 24,
   alignItems: "center",
   justifyContent: "center",
+  padding: "0 8px",
   borderRadius: 999,
   background: "var(--accent-soft)",
   color: "var(--accent)",

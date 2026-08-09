@@ -56,6 +56,8 @@ O papel **Master** é complementar ao papel Admin e representa a administração
 
 Organização cadastrada com nome, tenant e cor visual. É independente de Sistema e Pacote. Seu arquivamento é lógico e só é permitido quando não existem usuários ou robôs ativos vinculados.
 
+Na administração, cada Cliente possui um resumo operacional derivado: quantidade de Robôs ativos, Fluxos e Documentos vinculados. Documentos somam separadamente a Documentação Upada e a Documentação Robot Center ativa, permitindo até dois documentos por Robô. A última atualização corresponde à data mais recente entre Cliente, seus Robôs, Fluxos e documentações internas.
+
 ## Entidades e contratos
 
 | Entidade | Interface | Relacionamentos implementados |
