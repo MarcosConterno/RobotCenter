@@ -45,8 +45,19 @@ function resizeCoverArt(paragraph) {
   return paragraphAlignment(paragraph, "center")
     .replace(/<wp14:sizeRelH(?:\s[^>]*)?>[\s\S]*?<\/wp14:sizeRelH>/g, "")
     .replace(/<wp14:sizeRelV(?:\s[^>]*)?>[\s\S]*?<\/wp14:sizeRelV>/g, "")
+    // Equivale a deixar "Fixar taxa de proporção" desmarcado no Word.
+    // Sem isso, alguns conversores preservam o aspecto quadrado/original e
+    // ignoram a altura absoluta aprovada para a arte da capa.
+    .replace(/\bnoChangeAspect="(?:0|1|true|false)"/g, 'noChangeAspect="0"')
+    .replace(/\bpreferRelativeResize="(?:0|1|true|false)"/g, 'preferRelativeResize="0"')
     .replace(/<wp:extent\b[^>]*(?:\/>|>[\s\S]*?<\/wp:extent>)/, `<wp:extent cx="${COVER_WIDTH_EMU}" cy="${COVER_HEIGHT_EMU}"/>`)
     .replace(/<a:ext\b[^>]*(?:\/>|>[\s\S]*?<\/a:ext>)/g, `<a:ext cx="${COVER_WIDTH_EMU}" cy="${COVER_HEIGHT_EMU}"/>`);
+}
+function paragraphStrike(paragraph) {
+  if (/<w:rPr(?:\s[^>]*)?>/.test(paragraph)) {
+    return paragraph.replace(/<w:rPr(?:\s[^>]*)?>/, (tag) => `${tag}<w:strike/>`);
+  }
+  return paragraph.replace(/<w:r(?:\s[^>]*)?>/, (tag) => `${tag}<w:rPr><w:strike/></w:rPr>`);
 }
 
 async function generateOfficialDocx({ template, snapshot, images }) {
@@ -79,23 +90,64 @@ async function generateOfficialDocx({ template, snapshot, images }) {
     xml = xml.replace(coverArtParagraph, resizeCoverArt(coverArtParagraph));
   }
 
-  const sectionPatterns = {
-    objective: /Objetivo/i,
-    reference_materials: /Materiais de Refer[eê]ncia/i,
-    overview: /Vis[aã]o Geral/i,
-    limitations: /Limita[cç][oõ]es e Restri[cç][oõ]es/i,
-    scope: /Escopo do Sistema/i,
-  };
-  for (const [key, pattern] of Object.entries(sectionPatterns)) {
-    const content = snapshot.sections.find((section) => section.key === key)?.content?.trim();
-    if (!content) continue;
-    const current = [...xml.matchAll(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g)].map((match) => match[0]);
-    const headingIndex = current.findIndex((p) => pattern.test(paragraphText(p)));
-    const body = current.slice(headingIndex + 1).find((p) => {
-      const value = paragraphText(p).trim();
-      return value && !/^\d+(?:\.\d+)*\s/.test(value) && !/^\[(?:RF|RNF)\d{3}/.test(value);
-    });
-    if (headingIndex >= 0 && body) xml = xml.replace(body, replaceParagraphText(body, content));
+  const sectionPatterns = [
+    ["objective", /Objetivo/i],
+    ["reference_materials", /Materiais de Refer[eê]ncia/i],
+    ["overview", /Vis[aã]o Geral/i],
+    ["limitations", /Limita[cç][oõ]es e Restri[cç][oõ]es/i],
+    ["scope", /Escopo do Sistema/i],
+  ];
+  const templateParagraphs = [...xml.matchAll(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g)].map((match) => match[0]);
+  const fallbackBody = templateParagraphs.find((paragraph) => {
+    const value = paragraphText(paragraph).trim();
+    return value && !/^\d+(?:\.\d+)*\.?\s/.test(value) && !/<w:drawing\b/.test(paragraph);
+  });
+  const fallbackBullet = templateParagraphs.find((paragraph) => /<w:numPr\b/.test(paragraph)) ?? fallbackBody;
+
+  const sectionRanges = sectionPatterns.map(([key, pattern]) => {
+    const headingIndex = templateParagraphs.findIndex((paragraph) => pattern.test(paragraphText(paragraph)));
+    if (headingIndex < 0) return null;
+    const headingNumber = paragraphText(templateParagraphs[headingIndex]).trim().match(/^(\d+(?:\.\d+)*)/i)?.[1];
+    const headingLevel = headingNumber?.split(".").length ?? 1;
+    let nextHeadingIndex = templateParagraphs.length;
+    for (let index = headingIndex + 1; index < templateParagraphs.length; index += 1) {
+      const value = paragraphText(templateParagraphs[index]).trim();
+      if (/^\[(?:RF|RNF)\d{3}/.test(value)) { nextHeadingIndex = index; break; }
+      const number = value.match(/^(\d+(?:\.\d+)*)\.?\s+\S/)?.[1];
+      if (!number) continue;
+      const level = number.split(".").length;
+      if (key !== "reference_materials" || level <= headingLevel) { nextHeadingIndex = index; break; }
+    }
+    return { key, headingIndex, nextHeadingIndex };
+  }).filter(Boolean).sort((a, b) => b.headingIndex - a.headingIndex);
+
+  for (const { key, headingIndex, nextHeadingIndex } of sectionRanges) {
+    const content = snapshot.sections.find((section) => section.key === key)?.content?.trim() ?? "";
+    const originals = templateParagraphs.slice(headingIndex + 1, nextHeadingIndex);
+    const paragraphTemplate = originals.find((paragraph) => paragraphText(paragraph).trim() && !/<w:drawing\b/.test(paragraph)) ?? fallbackBody;
+    if (!paragraphTemplate) throw new Error(`Parágrafo-base da seção ${key} não localizado.`);
+    const lines = content.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+    let generated = "";
+    if (key === "overview") {
+      const listTemplate = originals.find((paragraph) => /<w:numPr\b/.test(paragraph)) ?? fallbackBullet ?? paragraphTemplate;
+      generated = lines.map((line) => freshParagraphIds(replaceParagraphText(listTemplate, /<w:numPr\b/.test(listTemplate) ? line : `• ${line}`))).join("");
+    } else if (key === "limitations") {
+      generated = lines.map((line) => {
+        const checked = /^\[x\]\s*/i.test(line);
+        const item = line.replace(/^\[(?:x| )\]\s*/i, "");
+        const paragraph = freshParagraphIds(replaceParagraphText(paragraphTemplate, `${checked ? "☒" : "☐"} ${item}`));
+        return checked ? paragraphStrike(paragraph) : paragraph;
+      }).join("");
+    } else {
+      generated = lines.map((line) => freshParagraphIds(replaceParagraphText(paragraphTemplate, line))).join("");
+    }
+
+    if (originals.length) {
+      const originalRange = originals.join("");
+      xml = xml.replace(originalRange, generated);
+    } else {
+      xml = xml.replace(templateParagraphs[headingIndex], `${templateParagraphs[headingIndex]}${generated}`);
+    }
   }
 
   const currentParagraphs = [...xml.matchAll(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g)].map((match) => match[0]);
@@ -165,9 +217,11 @@ async function generateOfficialDocx({ template, snapshot, images }) {
   };
 
   for (const requirement of snapshot.requirements) await appendRequirement(requirement);
-  dynamic.push(freshParagraphIds(errorsHeading));
   const errors = snapshot.sections.find((section) => section.key === "execution_errors")?.content?.trim();
-  if (errors) dynamic.push(freshParagraphIds(replaceParagraphText(bodyTemplate, errors)));
+  if (errors) {
+    dynamic.push(freshParagraphIds(errorsHeading));
+    dynamic.push(freshParagraphIds(replaceParagraphText(bodyTemplate, errors)));
+  }
   dynamic.push(freshParagraphIds(rnfHeading));
   for (const requirement of snapshot.nonFunctionalRequirements) await appendRequirement(requirement);
 
@@ -185,6 +239,9 @@ async function generateOfficialDocx({ template, snapshot, images }) {
   const finalCover = resizeCoverArt(finalCoverParagraph);
   const expectedExtent = `<wp:extent cx="${COVER_WIDTH_EMU}" cy="${COVER_HEIGHT_EMU}"/>`;
   if (!finalCover.includes(expectedExtent)) throw new Error("Não foi possível aplicar o tamanho aprovado à arte da capa.");
+  if (/\bnoChangeAspect="(?:1|true)"/.test(finalCover)) {
+    throw new Error("Não foi possível remover a trava de proporção da arte da capa.");
+  }
   xml = xml.replace(finalCoverParagraph, finalCover);
   for (const [marker, extent] of desiredExtents) {
     const paragraphPattern = new RegExp(`<w:p(?:\\s[^>]*)?>[\\s\\S]*?<wp:docPr[^>]*name="${marker}"[^>]*\\/>[\\s\\S]*?<\\/w:p>`);

@@ -108,6 +108,14 @@ export default function RobotDocumentationEditor({ initialSchema }: { initialSch
   }, [markSaveState, persist]);
 
   useEffect(() => {
+    const referenceSection = initialSchema.sections.find((section) => section.key === "reference_materials");
+    if (!referenceSection || referenceSection.content.trim()) return;
+    const defaultContent = "URL: \nLogin: \nSenha: ";
+    setSections((current) => current.map((section) => section.id === referenceSection.id ? { ...section, content: defaultContent } : section));
+    schedule(`section:${referenceSection.id}`, { action: "save-section", sectionId: referenceSection.id, content: defaultContent });
+  }, [initialSchema.sections, schedule]);
+
+  useEffect(() => {
     const activeTimers = timers.current;
     const beforeUnload = (event: BeforeUnloadEvent) => {
       if (saveStateRef.current === "saved") return;
@@ -453,7 +461,7 @@ function DocumentationPreview({ schema, sections, requirements, blocks, onClose 
     <div className={styles.previewPanel}>
       <div className={styles.previewHeader}><div><span>PRÉ-VISUALIZAÇÃO</span><h2>{schema.robot.name}</h2><p>{schema.robot.system}</p></div><button type="button" onClick={onClose}>Fechar</button></div>
       <div className={styles.previewContent}>
-        {[...sections].sort((a, b) => a.order - b.order).map((section) => section.content.trim() && <section key={section.id}><h3>{DOCUMENT_SECTION_LABELS[section.key]}</h3><p>{section.content}</p></section>)}
+        {[...sections].sort((a, b) => a.order - b.order).map((section) => section.content.trim() && <section key={section.id}><h3>{DOCUMENT_SECTION_LABELS[section.key]}</h3><SectionPreviewContent section={section} /></section>)}
         {(["documentacao", "fora_documentacao"] as RequirementCategory[]).map((category) => <section key={category}>
           <h3>{category === "documentacao" ? "Requisitos Funcionais" : "Requisitos Não Funcionais"}</h3>
           {ordered(category).map((requirement) => <article key={requirement.id} className={styles.previewRequirement}>
@@ -489,7 +497,83 @@ function RequirementTree({ title, category, requirements, selection, onSelect, o
   </div>;
 }
 
+function SectionPreviewContent({ section }: { section: DocumentationSection }) {
+  const lines = section.content.split("\n").map((line) => line.trim()).filter(Boolean);
+  if (section.key === "overview") {
+    return <ul>{lines.map((line, index) => <li key={index}>{line}</li>)}</ul>;
+  }
+  if (section.key === "limitations") {
+    return <ul>{lines.map((line, index) => {
+      const checked = /^\[x\]\s*/i.test(line);
+      const text = line.replace(/^\[(?:x| )\]\s*/i, "");
+      return <li key={index}>{checked ? <del>☒ {text}</del> : <>☐ {text}</>}</li>;
+    })}</ul>;
+  }
+  return <p>{section.content}</p>;
+}
+
 function SectionEditor({ section, onChange }: { section: DocumentationSection; onChange: (content: string) => void }) {
+  if (section.key === "reference_materials") {
+    const lines = section.content.split("\n");
+    const readValue = (label: string) => lines.find((line) => line.toLocaleLowerCase("pt-BR").startsWith(`${label.toLocaleLowerCase("pt-BR")}:`))?.slice(label.length + 1).trim() ?? "";
+    const values = {
+      url: readValue("URL") || lines.find((line) => /^https?:\/\//i.test(line.trim()))?.trim() || "",
+      login: readValue("Login"),
+      password: readValue("Senha"),
+    };
+    const save = (next: typeof values) => onChange(`URL: ${next.url}\nLogin: ${next.login}\nSenha: ${next.password}`);
+    return <div className={styles.editorCard}>
+      <div className={styles.contentEyebrow}>SEÇÃO DO DOCUMENTO</div>
+      <h2>{DOCUMENT_SECTION_LABELS[section.key]}</h2>
+      <p>Dados de acesso utilizados como referência técnica do robô.</p>
+      <div className={styles.referenceFields}>
+        <label><span>URL</span><input type="url" value={values.url} onChange={(event) => save({ ...values, url: event.target.value })} placeholder="https://sistema.exemplo.com" /></label>
+        <label><span>Login</span><input value={values.login} onChange={(event) => save({ ...values, login: event.target.value })} placeholder="Login de acesso" /></label>
+        <label><span>Senha</span><input value={values.password} onChange={(event) => save({ ...values, password: event.target.value })} placeholder="Senha de acesso" /></label>
+      </div>
+    </div>;
+  }
+
+  if (section.key === "overview") {
+    const items = section.content ? section.content.split("\n") : [""];
+    const updateItem = (index: number, value: string) => onChange(items.map((item, itemIndex) => itemIndex === index ? value : item).join("\n"));
+    const removeItem = (index: number) => onChange(items.filter((_, itemIndex) => itemIndex !== index).join("\n"));
+    return <div className={styles.editorCard}>
+      <div className={styles.contentEyebrow}>SEÇÃO DO DOCUMENTO</div>
+      <h2>{DOCUMENT_SECTION_LABELS[section.key]}</h2>
+      <p>Cada linha será apresentada como um item da lista no documento.</p>
+      <div className={styles.structuredList}>
+        {items.map((item, index) => <div className={styles.structuredItem} key={index}>
+          <span className={styles.listMarker} aria-hidden="true">•</span>
+          <input value={item} onChange={(event) => updateItem(index, event.target.value)} placeholder="Novo item da visão geral" />
+          <button type="button" onClick={() => removeItem(index)} title="Remover item"><Trash2 size={14} /></button>
+        </div>)}
+      </div>
+      <button type="button" className={styles.addStructuredItem} onClick={() => onChange([...items, ""].join("\n"))}><Plus size={14} /> Adicionar item</button>
+    </div>;
+  }
+
+  if (section.key === "limitations") {
+    const items = section.content ? section.content.split("\n").map((line) => ({
+      checked: /^\s*\[x\]\s*/i.test(line),
+      text: line.replace(/^\s*\[(?:x| )\]\s*/i, ""),
+    })) : [{ checked: false, text: "" }];
+    const saveItems = (next: typeof items) => onChange(next.map((item) => `[${item.checked ? "x" : " "}] ${item.text}`).join("\n"));
+    return <div className={styles.editorCard}>
+      <div className={styles.contentEyebrow}>SEÇÃO DO DOCUMENTO</div>
+      <h2>{DOCUMENT_SECTION_LABELS[section.key]}</h2>
+      <p>Marque uma restrição para sinalizá-la como atendida e riscá-la no documento.</p>
+      <div className={styles.structuredList}>
+        {items.map((item, index) => <div className={`${styles.structuredItem} ${item.checked ? styles.checkedItem : ""}`} key={index}>
+          <input type="checkbox" checked={item.checked} onChange={(event) => saveItems(items.map((current, itemIndex) => itemIndex === index ? { ...current, checked: event.target.checked } : current))} />
+          <input value={item.text} onChange={(event) => saveItems(items.map((current, itemIndex) => itemIndex === index ? { ...current, text: event.target.value } : current))} placeholder="Nova limitação ou restrição" />
+          <button type="button" onClick={() => saveItems(items.filter((_, itemIndex) => itemIndex !== index))} title="Remover item"><Trash2 size={14} /></button>
+        </div>)}
+      </div>
+      <button type="button" className={styles.addStructuredItem} onClick={() => saveItems([...items, { checked: false, text: "" }])}><Plus size={14} /> Adicionar restrição</button>
+    </div>;
+  }
+
   return <div className={styles.editorCard}>
     <div className={styles.contentEyebrow}>SEÇÃO DO DOCUMENTO</div>
     <h2>{DOCUMENT_SECTION_LABELS[section.key]}</h2>
