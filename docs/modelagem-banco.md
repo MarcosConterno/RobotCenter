@@ -244,7 +244,7 @@ erDiagram
 
 ### `flow_edges`
 
-`id`, `flow_id`, `source_node_id`, `target_node_id`, `type`, `label`, `condition`, `queue`, `description`, `label_width`, `label_height`, auditoria e timestamps. `queue` registra opcionalmente a fila vinculada à conexão, sem transformá-la em Node. `label_width` e `label_height` preservam o tamanho manual da etiqueta da conexão. Chaves estrangeiras compostas garantem que origem e destino pertençam ao mesmo Fluxo.
+`id`, `flow_id`, `source_node_id`, `target_node_id`, `source_handle`, `target_handle`, `type`, `label`, `condition`, `queue`, `description`, `label_width`, `label_height`, `label_offset_x`, `label_offset_y`, auditoria e timestamps. `queue` registra opcionalmente a fila vinculada à conexão, sem transformá-la em Node. Dimensões e offsets preservam o tamanho e a posição manual da etiqueta. Os handles opcionais preservam o ponto lateral escolhido; valores nulos representam os pontos principais inferior e superior. Chaves estrangeiras compostas garantem que origem e destino pertençam ao mesmo Fluxo.
 
 ### `flow_versions`
 
@@ -370,6 +370,12 @@ A planilha usa `robos.id` como chave de atualização e não cria unicidade arti
 ## Tarefas pessoais
 
 `personal_tasks` armazena a organização diária de cada usuário. `user_id` referencia `profiles.id`; `due_date`, `priority`, `status`, `created_at` e `completed_at` suportam os filtros e o resumo da página. Os índices `(user_id, due_date, created_at)` e `(user_id, status, due_date)` atendem às consultas pessoais sem varredura entre usuários. Um trigger preserva proprietário e criação, atualiza `updated_at` e mantém `completed_at` coerente com o status.
+
+Na interface, essa entidade é denominada exclusivamente **ToDo**. `origin_meeting_id` e `origin_note_id` são referências opcionais e mutuamente exclusivas. O trigger valida que a origem pertence ao mesmo `user_id` do ToDo.
+
+`personal_meetings` registra nome, data, horário, participantes, resumo e anotações livres. O índice `(user_id, meeting_date, meeting_time)` atende filtros cronológicos pessoais.
+
+`personal_notes` registra título e conteúdo livre. O índice `(user_id, updated_at desc)` atende listagem e busca pessoal ordenada pela edição mais recente.
 
 `personal_page_preferences` mantém uma linha por usuário e controla a exibição da tabela de robôs. `personal_page_flows` é a relação N:N entre usuário e os fluxos escolhidos como atalhos, com FKs para `profiles` e `flows`. A exclusão de um fluxo remove somente seus atalhos por cascata; não altera outras preferências nem tarefas.
 ## Arquivamento de Cliente pelo Master

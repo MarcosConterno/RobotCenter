@@ -14,6 +14,18 @@ export type Database = {
   }
   public: {
     Tables: {
+      personal_meetings: {
+        Row: { created_at: string; id: string; meeting_date: string; meeting_time: string; name: string; notes: string; participants: string | null; summary: string | null; updated_at: string; user_id: string }
+        Insert: { created_at?: string; id?: string; meeting_date: string; meeting_time: string; name: string; notes?: string; participants?: string | null; summary?: string | null; updated_at?: string; user_id: string }
+        Update: { created_at?: string; id?: string; meeting_date?: string; meeting_time?: string; name?: string; notes?: string; participants?: string | null; summary?: string | null; updated_at?: string; user_id?: string }
+        Relationships: [{ foreignKeyName: "personal_meetings_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] }]
+      }
+      personal_notes: {
+        Row: { content: string; created_at: string; id: string; title: string; updated_at: string; user_id: string }
+        Insert: { content?: string; created_at?: string; id?: string; title: string; updated_at?: string; user_id: string }
+        Update: { content?: string; created_at?: string; id?: string; title?: string; updated_at?: string; user_id?: string }
+        Relationships: [{ foreignKeyName: "personal_notes_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] }]
+      }
       personal_page_flows: {
         Row: { created_at: string; flow_id: string; user_id: string }
         Insert: { created_at?: string; flow_id: string; user_id: string }
@@ -38,6 +50,8 @@ export type Database = {
           due_date: string
           id: string
           note: string | null
+          origin_meeting_id: string | null
+          origin_note_id: string | null
           priority: string
           status: string
           title: string
@@ -50,6 +64,8 @@ export type Database = {
           due_date: string
           id?: string
           note?: string | null
+          origin_meeting_id?: string | null
+          origin_note_id?: string | null
           priority?: string
           status?: string
           title: string
@@ -62,6 +78,8 @@ export type Database = {
           due_date?: string
           id?: string
           note?: string | null
+          origin_meeting_id?: string | null
+          origin_note_id?: string | null
           priority?: string
           status?: string
           title?: string
@@ -69,6 +87,8 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          { foreignKeyName: "personal_tasks_origin_meeting_id_fkey"; columns: ["origin_meeting_id"]; isOneToOne: false; referencedRelation: "personal_meetings"; referencedColumns: ["id"] },
+          { foreignKeyName: "personal_tasks_origin_note_id_fkey"; columns: ["origin_note_id"]; isOneToOne: false; referencedRelation: "personal_notes"; referencedColumns: ["id"] },
           {
             foreignKeyName: "personal_tasks_user_id_fkey"
             columns: ["user_id"]
@@ -191,10 +211,14 @@ export type Database = {
           id: string
           label: string
           label_height: number | null
+          label_offset_x: number | null
+          label_offset_y: number | null
           label_width: number | null
           queue: string
           source_node_id: string
+          source_handle: string | null
           target_node_id: string
+          target_handle: string | null
           type: string
           updated_at: string
           updated_by: string | null
@@ -208,10 +232,14 @@ export type Database = {
           id?: string
           label?: string
           label_height?: number | null
+          label_offset_x?: number | null
+          label_offset_y?: number | null
           label_width?: number | null
           queue?: string
           source_node_id: string
+          source_handle?: string | null
           target_node_id: string
+          target_handle?: string | null
           type?: string
           updated_at?: string
           updated_by?: string | null
@@ -225,10 +253,14 @@ export type Database = {
           id?: string
           label?: string
           label_height?: number | null
+          label_offset_x?: number | null
+          label_offset_y?: number | null
           label_width?: number | null
           queue?: string
           source_node_id?: string
+          source_handle?: string | null
           target_node_id?: string
+          target_handle?: string | null
           type?: string
           updated_at?: string
           updated_by?: string | null

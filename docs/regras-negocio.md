@@ -152,7 +152,7 @@
 6. Um Node do tipo `robot` referencia obrigatoriamente um Robô ativo do mesmo Cliente do Fluxo.
 7. Dados principais do Robô não são editados pelo Fluxo e refletem o cadastro atual.
 8. Uma Edge conecta apenas Nodes pertencentes ao mesmo Fluxo e não pode conectar um Node a ele mesmo.
-9. Posição de Nodes e viewport são persistidos; propriedades de conexão ficam em `flow_edges`.
+9. Posição de Nodes e viewport são persistidos; propriedades, dimensões, deslocamento do rótulo e pontos de entrada/saída das conexões ficam em `flow_edges`. O rótulo funciona como ponto intermediário da conexão: pode ser movido sem alterar os Nodes, enquanto os dois trechos da linha acompanham sua posição. Um mesmo Node pode participar de múltiplas conexões.
 10. Publicar incrementa a versão, altera o status para `publicado` e cria snapshot imutável na mesma transação.
 
 11. A primeira publicação da Documentação Robot Center é `v1.0`; cada publicação concluída incrementa o sufixo menor (`v1.1`, `v1.2`).
@@ -242,3 +242,8 @@
 7. Cada usuário decide se exibe a tabela de Robôs e quais Fluxos aparecem como atalhos.
 8. Selecionar um Fluxo não amplia permissões: se o usuário perder acesso ao Fluxo, o card deixa de ser resolvido pela consulta operacional.
 9. Preferências armazenam somente configuração e referências; os dados de Robôs e Fluxos não são duplicados.
+10. A navegação pessoal é composta por ToDo, Reuniões e Notas; cada área permanece simples e não representa projeto, equipe, CRM ou Kanban.
+11. Reuniões são filtradas por Hoje, Próximas e Anteriores e podem guardar texto livre sem estrutura obrigatória.
+12. Notas possuem título e conteúdo livre e são ordenadas pela edição mais recente.
+13. Um ToDo pode ter no máximo uma origem, Reunião ou Nota, e a origem deve pertencer ao mesmo usuário.
+14. Excluir Reunião ou Nota remove apenas a referência de origem do ToDo; o ToDo permanece.

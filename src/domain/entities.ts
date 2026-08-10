@@ -55,6 +55,8 @@ export interface EdgeFluxo {
   fluxoId: string;
   nodeOrigemId: string;
   nodeDestinoId: string;
+  sourceHandle: string | null;
+  targetHandle: string | null;
   tipo: string;
   rotulo: string;
   condicao: string;
@@ -62,6 +64,8 @@ export interface EdgeFluxo {
   descricao: string;
   rotuloLargura: number | null;
   rotuloAltura: number | null;
+  rotuloOffsetX: number | null;
+  rotuloOffsetY: number | null;
 }
 
 export interface VersaoFluxo {

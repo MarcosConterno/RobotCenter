@@ -12,6 +12,12 @@ Embora a criação envie o identificador da sessão para satisfazer o tipo gerad
 
 Não há endpoint administrativo para tarefas de terceiros.
 
+## Reuniões e Notas
+
+As abas usam diretamente a sessão autenticada do Supabase para CRUD em `personal_meetings` e `personal_notes`. Reuniões são consultadas em ordem de data/horário; Notas em ordem de `updated_at`. As consultas começam somente quando a respectiva aba é montada.
+
+Criar ToDo a partir de Reunião ou Nota persiste `origin_meeting_id` ou `origin_note_id`. O banco rejeita origem de outro proprietário e impede que as duas origens sejam preenchidas simultaneamente.
+
 ## Preferências e widgets
 
 `personal_page_preferences` persiste `show_robot_table` por usuário. `personal_page_flows` persiste somente os IDs dos Fluxos escolhidos. A interface resolve esses IDs contra os dados que `FlowsDataProvider` já recebeu sob RLS e reutiliza `RobotsOverviewTable` com os dados autorizados de `AppDataProvider`.

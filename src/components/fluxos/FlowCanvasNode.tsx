@@ -104,7 +104,8 @@ export default function FlowCanvasNode({ data, selected }: NodeProps) {
         minWidth={isDecision ? 150 : 175}
         minHeight={minimumHeight}
       />
-      <Handle className="flow-node__handle" type="target" position={Position.Top} />
+      <Handle className="flow-node__handle flow-node__handle--top" type="target" position={Position.Top} />
+      <Handle id="target-left" className="flow-node__handle flow-node__handle--left" type="target" position={Position.Left} />
       <div className="flow-node__content">
       <div className="flow-node__heading"><Icon size={14} /><span>{isDecision ? decisionMode === "decision" ? "DECISÃO" : "REGRA" : kindLabels[nodeData.kind]}</span></div>
       {inlineEditor ?? <>
@@ -127,7 +128,8 @@ export default function FlowCanvasNode({ data, selected }: NodeProps) {
       </>}
       </div>
 
-      <Handle className="flow-node__handle" type="source" position={Position.Bottom} />
+      <Handle className="flow-node__handle flow-node__handle--bottom" type="source" position={Position.Bottom} />
+      <Handle id="source-right" className="flow-node__handle flow-node__handle--right" type="source" position={Position.Right} />
     </div>
   );
 }

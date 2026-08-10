@@ -82,6 +82,10 @@ As permissões RBAC são `flows.read`, `flows.create`, `flows.update`, `flows.de
 
 A fila de uma conexão é armazenada em `flow_edges.queue` e segue exatamente a mesma RLS da Edge. A adição dessa propriedade não amplia os grants nem altera o escopo por Cliente.
 
+Os pontos opcionais `source_handle` e `target_handle` pertencem à própria Edge e seguem as policies existentes de `flow_edges`; não criam novo escopo de acesso nem permitem conexões entre Fluxos distintos.
+
+Os deslocamentos opcionais `label_offset_x` e `label_offset_y` são apenas propriedades visuais da Edge e seguem as mesmas policies, grants e escopo por Cliente.
+
 Os triggers de auditoria dos Fluxos executam uma função privada sem grants diretos para usuários. A função apenas preenche autoria e timestamps; não ignora nem substitui as policies RLS aplicadas à operação original.
 
 O RPC `publish_flow` usa `SECURITY INVOKER`: as policies e permissões da sessão continuam ativas durante a atualização do Fluxo e a criação da versão. Não há acesso anônimo às tabelas ou ao RPC.
@@ -133,3 +137,5 @@ A RPC transacional `update_role_permission_matrix(jsonb)` executa as inclusões 
 Todos os perfis autenticados possuem acesso funcional a Minha página, sem permissão RBAC adicional. `personal_tasks` concede `SELECT`, `INSERT`, `UPDATE` e `DELETE` somente a `authenticated`; cada policy exige `auth.uid() = user_id`. O trigger também torna `user_id` imutável após a criação e preenche o proprietário pela sessão. Usuários anônimos e usuários tentando operar tarefas de terceiros permanecem bloqueados pela RLS.
 
 `personal_page_preferences` e `personal_page_flows` repetem o isolamento por `auth.uid()`. A inserção de um atalho também exige que o Fluxo referenciado esteja visível à sessão pelas policies de `flows`. A configuração não concede `robots.read`, `flows.read` ou capacidades de escrita; os widgets continuam subordinados às permissões das entidades originais.
+
+`personal_meetings` e `personal_notes` concedem CRUD somente a `authenticated`, sempre com `auth.uid() = user_id` em cada policy. Updates possuem `USING` e `WITH CHECK`; triggers tornam o proprietário imutável. Não existe policy administrativa, inclusive para Admin e Master. A associação de origem do ToDo é validada pelo mesmo proprietário, impedindo referência cruzada entre workspaces.

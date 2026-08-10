@@ -166,6 +166,10 @@ O papel Cliente edita apenas Fluxos do seu Cliente. Admin cria, edita, publica e
 
 Uma Tarefa Pessoal pertence a exatamente um usuário e representa uma prioridade diária ou futura. Possui título, observação opcional, data, prioridade baixa/média/alta e estado pendente/concluído. A conclusão registra seu instante; a reabertura remove esse registro. Tarefas pessoais não pertencem a Cliente, Robô ou papel de acesso.
 
+Na experiência de Minha página, o conceito passa a ser **ToDo**: aquilo que o usuário precisa fazer. A palavra Tarefa fica reservada para outro contexto futuro do sistema.
+
+Uma Reunião Pessoal é o registro livre do que foi conversado, com agenda, participantes, resumo e bloco de anotações. Uma Nota Pessoal é o conteúdo que o usuário deseja guardar sem transformá-lo em ação ou reunião. Reuniões e Notas podem originar um ToDo, mas não são alteradas pelo ToDo criado.
+
 A Visualização Pessoal permite habilitar a tabela consolidada de Robôs e escolher Fluxos como atalhos. A preferência não copia nem altera essas entidades: ela referencia os dados operacionais já autorizados para o usuário.
 ## Remapeamento de usuários de Cliente
 

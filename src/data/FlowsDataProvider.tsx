@@ -117,7 +117,7 @@ export function FlowsDataProvider({ children }: { children: ReactNode }) {
     const [flowResult, nodesResult, edgesResult, versionsResult, creatorResult] = await Promise.all([
       supabase.from("flows").select("id,client_id,name,description,version,status,viewport,created_by,created_at,updated_at").eq("id", id).maybeSingle(),
       supabase.from("flow_nodes").select("id,flow_id,type,robot_id,position_x,position_y,data").eq("flow_id", id),
-      supabase.from("flow_edges").select("id,flow_id,source_node_id,target_node_id,type,label,condition,queue,description,label_width,label_height").eq("flow_id", id),
+      supabase.from("flow_edges").select("id,flow_id,source_node_id,target_node_id,source_handle,target_handle,type,label,condition,queue,description,label_width,label_height,label_offset_x,label_offset_y").eq("flow_id", id),
       supabase.from("flow_versions").select("id,flow_id,version,snapshot,created_by,created_at").eq("flow_id", id).order("version", { ascending: false }),
       supabase.rpc("get_flow_creator_name", { target_flow_id: id }),
     ]);
@@ -132,9 +132,11 @@ export function FlowsDataProvider({ children }: { children: ReactNode }) {
       })),
       edges: (edgesResult.data ?? []).map((edge) => ({
         id: edge.id, fluxoId: edge.flow_id, nodeOrigemId: edge.source_node_id,
-        nodeDestinoId: edge.target_node_id, tipo: edge.type, rotulo: edge.label,
+        nodeDestinoId: edge.target_node_id, sourceHandle: edge.source_handle,
+        targetHandle: edge.target_handle, tipo: edge.type, rotulo: edge.label,
         condicao: edge.condition, fila: edge.queue, descricao: edge.description,
         rotuloLargura: edge.label_width, rotuloAltura: edge.label_height,
+        rotuloOffsetX: edge.label_offset_x, rotuloOffsetY: edge.label_offset_y,
       })),
       versoes: (versionsResult.data ?? []).map((version) => ({
         id: version.id, fluxoId: version.flow_id, versao: version.version,
@@ -186,9 +188,11 @@ export function FlowsDataProvider({ children }: { children: ReactNode }) {
     if (edges.length) {
       const { error } = await supabase.from("flow_edges").upsert(edges.map((edge) => ({
         id: edge.id, flow_id: fluxo.id, source_node_id: edge.nodeOrigemId,
-        target_node_id: edge.nodeDestinoId, type: edge.tipo, label: edge.rotulo,
+        target_node_id: edge.nodeDestinoId, source_handle: edge.sourceHandle,
+        target_handle: edge.targetHandle, type: edge.tipo, label: edge.rotulo,
         condition: edge.condicao, queue: edge.fila, description: edge.descricao,
         label_width: edge.rotuloLargura, label_height: edge.rotuloAltura,
+        label_offset_x: edge.rotuloOffsetX, label_offset_y: edge.rotuloOffsetY,
       })));
       if (error) throw error;
     }

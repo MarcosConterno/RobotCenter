@@ -120,6 +120,8 @@ function toCanvasEdges(edges: EdgeFluxo[]): Edge[] {
     id: edge.id,
     source: edge.nodeOrigemId,
     target: edge.nodeDestinoId,
+    sourceHandle: edge.sourceHandle ?? undefined,
+    targetHandle: edge.targetHandle ?? undefined,
     data: {
       tipo: edge.tipo,
       rotulo: edge.rotulo,
@@ -128,6 +130,8 @@ function toCanvasEdges(edges: EdgeFluxo[]): Edge[] {
       descricao: edge.descricao,
       labelWidth: edge.rotuloLargura,
       labelHeight: edge.rotuloAltura,
+      labelOffsetX: edge.rotuloOffsetX,
+      labelOffsetY: edge.rotuloOffsetY,
     },
     type: "flowEdge",
     markerEnd: { type: MarkerType.ArrowClosed },
@@ -365,6 +369,19 @@ function FlowEditorInner({ fluxo, initialNodes, initialEdges, robos, editable, o
     markDirty();
   }, [edges, markDirty, remember]);
 
+  const updateEdgeLabelPosition = useCallback((edgeId: string, offsetX: number, offsetY: number) => {
+    const edge = edges.find((item) => item.id === edgeId);
+    const currentX = Number(edge?.data?.labelOffsetX ?? 0);
+    const currentY = Number(edge?.data?.labelOffsetY ?? 0);
+    if (Math.abs(currentX - offsetX) < 1 && Math.abs(currentY - offsetY) < 1) return;
+    remember();
+    setEdges((current) => current.map((item) => item.id === edgeId ? {
+      ...item,
+      data: { ...(item.data ?? {}), labelOffsetX: offsetX, labelOffsetY: offsetY },
+    } : item));
+    markDirty();
+  }, [edges, markDirty, remember]);
+
   function organizeFlow() {
     if (!editable) return;
     remember();
@@ -429,6 +446,8 @@ function FlowEditorInner({ fluxo, initialNodes, initialEdges, robos, editable, o
       fluxoId: fluxo.id,
       nodeOrigemId: edge.source,
       nodeDestinoId: edge.target,
+      sourceHandle: edge.sourceHandle ?? null,
+      targetHandle: edge.targetHandle ?? null,
       tipo: String(edge.data?.tipo ?? "Envia para"),
       rotulo: String(edge.data?.rotulo ?? ""),
       condicao: String(edge.data?.condicao ?? ""),
@@ -436,6 +455,8 @@ function FlowEditorInner({ fluxo, initialNodes, initialEdges, robos, editable, o
       descricao: String(edge.data?.descricao ?? ""),
       rotuloLargura: edge.data?.labelWidth == null ? null : Number(edge.data.labelWidth),
       rotuloAltura: edge.data?.labelHeight == null ? null : Number(edge.data.labelHeight),
+      rotuloOffsetX: edge.data?.labelOffsetX == null ? null : Number(edge.data.labelOffsetX),
+      rotuloOffsetY: edge.data?.labelOffsetY == null ? null : Number(edge.data.labelOffsetY),
     }));
     try {
       await onSave(mappedNodes, mappedEdges, getViewport());
@@ -460,9 +481,10 @@ function FlowEditorInner({ fluxo, initialNodes, initialEdges, robos, editable, o
       ...(edge.data ?? {}),
       editable,
       onLabelResize: (width: number, height: number) => updateEdgeLabelSize(edge.id, width, height),
+      onLabelMove: (offsetX: number, offsetY: number) => updateEdgeLabelPosition(edge.id, offsetX, offsetY),
       onSelect: () => { setSelectedEdgeId(edge.id); setSelectedNodeId(null); setPanelTab("properties"); },
     },
-  })), [edges, editable, updateEdgeLabelSize]);
+  })), [edges, editable, updateEdgeLabelPosition, updateEdgeLabelSize]);
   const renderedNodes = useMemo(() => [...nodes]
     .sort((a, b) => Number(b.data.kind === "group") - Number(a.data.kind === "group"))
     .map((node) => ({
@@ -523,6 +545,7 @@ function FlowEditorInner({ fluxo, initialNodes, initialEdges, robos, editable, o
           onNodeDragStop={handleNodeDragStop}
           nodesDraggable={editable}
           nodesConnectable={editable}
+          connectionRadius={28}
           elementsSelectable
           selectionOnDrag
           panOnDrag={[1, 2]}
