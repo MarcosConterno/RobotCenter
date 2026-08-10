@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import type {
   DadosNovoFluxo,
@@ -64,8 +64,10 @@ export function FlowsDataProvider({ children }: { children: ReactNode }) {
   const [fluxos, setFluxos] = useState<Fluxo[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
+  const loadRevision = useRef(0);
 
   const recarregar = useCallback(async () => {
+    const revision = ++loadRevision.current;
     setCarregando(true);
     setErro("");
     const supabase = createClient();
@@ -74,6 +76,7 @@ export function FlowsDataProvider({ children }: { children: ReactNode }) {
       supabase.from("flow_nodes").select("flow_id,type"),
       supabase.from("flow_edges").select("flow_id"),
     ]);
+    if (revision !== loadRevision.current) return;
     if (flowsResult.error || nodesResult.error || edgesResult.error) {
       setErro("Não foi possível carregar os fluxos.");
       setCarregando(false);
@@ -87,6 +90,27 @@ export function FlowsDataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => { void recarregar(); }, [recarregar]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefresh = () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => { void recarregar(); }, 300);
+    };
+    const channel = supabase
+      .channel("flows-data-sync")
+      .on("postgres_changes", { event: "*", schema: "public", table: "flows" }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "flow_nodes" }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "flow_edges" }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "flow_versions" }, scheduleRefresh)
+      .subscribe();
+    return () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      loadRevision.current += 1;
+      void supabase.removeChannel(channel);
+    };
+  }, [recarregar]);
 
   const carregarDetalhes = useCallback(async (id: string) => {
     const supabase = createClient();

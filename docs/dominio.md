@@ -10,6 +10,8 @@ Na importação, Cliente é identificado pelo nome. Um nome ainda não cadastrad
 
 Os identificadores de Cliente, Robô, Alteração e Publicação usados pela aplicação são UUIDs compatíveis com as chaves do PostgreSQL. A listagem de Robôs e Clientes é montada a partir do Supabase, sem registros mock iniciais.
 
+Alterações confirmadas nas entidades operacionais são refletidas nas sessões abertas por meio do Supabase Realtime. Essa sincronização atualiza a representação em memória dos providers e não modifica as entidades, validações ou regras de autoria. Eventos sucessivos são agrupados antes da releitura para evitar consultas redundantes.
+
 Cada Cliente possui a configuração visual `cor`, selecionada entre seis paletas controladas no próprio cadastro do Cliente. Todos os robôs vinculados ao mesmo Cliente exibem essa cor. O Robô mantém apenas `pacoteCor`, compartilhada entre pacotes com o mesmo nome normalizado.
 
 Automação cadastrada e gerenciada pelo sistema. Possui identificação, sistema, pacote, ambiente, estado operacional, configuração técnica, responsável textual, versão, documentação da última alteração e regras funcionais.

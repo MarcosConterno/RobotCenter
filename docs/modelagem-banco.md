@@ -19,6 +19,17 @@ Usuários e clientes são arquivados por exclusão lógica, preservando históri
 
 Dashboard e telas operacionais usam a mesma instância de estado enquanto a aplicação permanece carregada.
 
+As tabelas operacionais consumidas por `AppDataProvider` e `FlowsDataProvider` integram a publicação `supabase_realtime`. Cada provider mantém um canal por sessão do navegador e, ao receber alterações autorizadas pelo RLS, agrupa eventos próximos por 300 ms antes de recarregar o conjunto correspondente. A publicação não cria colunas, não replica dados para tabelas auxiliares e não substitui as policies existentes.
+
+```mermaid
+flowchart LR
+  A[Transação confirmada no PostgreSQL] --> B[Publicação supabase_realtime]
+  B --> C[Canal autorizado pela sessão]
+  C --> D[Debounce de 300 ms]
+  D --> E[AppDataProvider ou FlowsDataProvider]
+  E --> F[Interface atualizada]
+```
+
 A importação Excel reutiliza o contrato do formulário e não altera o schema. O nome do cliente é normalizado para localizar ou criar um registro no Supabase, cujo UUID é atribuído aos robôs do lote; o tenant obrigatório é gerado de forma única quando o cliente é novo. Robôs, regras e alterações são persistidos nas tabelas correspondentes e a leitura inicial não depende mais de mocks.
 
 A migration `20260807194902_clear_existing_robots_for_import.sql` prepara uma nova carga removendo, nessa ordem, publicações, alterações, regras e robôs. Clientes, profiles, usuários e RBAC são preservados.

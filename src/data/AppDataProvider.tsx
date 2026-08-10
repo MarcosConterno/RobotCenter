@@ -90,8 +90,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [publicacoesLocais, setPublicacoesLocais] = useState<Publicacao[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [dataRevision, setDataRevision] = useState(0);
 
   useEffect(() => {
+    let active = true;
     const supabase = createClient();
     void Promise.all([
       supabase.from("clientes").select("id,nome,tenant,cor").is("deleted_at", null).order("nome"),
@@ -103,6 +105,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       supabase.from("robot_center_documentation_versions").select("documentation_id,version,docx_path,pdf_path,status")
         .eq("status", "published").order("version", { ascending: false }),
     ]).then(([clientesResult, robosResult, regrasResult, alteracoesResult, publicacoesResult, documentationsResult, documentationVersionsResult]) => {
+      if (!active) return;
       const clientesCarregados: Cliente[] = (clientesResult.data ?? []).map((cliente) => ({
         ...cliente,
         cor: cliente.cor as Cliente["cor"],
@@ -162,7 +165,33 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         regrasForaDocumentacao: regras.filter((regra) => regra.robo_id === item.id && regra.tipo === "fora_documentacao").map((regra) => ({ id: regra.id, parentId: regra.parent_id, ordem: regra.ordem, descricao: regra.descricao })),
       }));
       setRobos(harmonizarCoresCompartilhadas(robosCarregados, clientesCarregados));
-    }).finally(() => setCarregandoRobos(false));
+    }).finally(() => {
+      if (active) setCarregandoRobos(false);
+    });
+    return () => { active = false; };
+  }, [dataRevision]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefresh = () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => setDataRevision((current) => current + 1), 300);
+    };
+    const channel = supabase
+      .channel("app-data-sync")
+      .on("postgres_changes", { event: "*", schema: "public", table: "clientes" }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "robos" }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "regras_robo" }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "alteracoes_robo" }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "publicacoes" }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "robot_center_documentations" }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "robot_center_documentation_versions" }, scheduleRefresh)
+      .subscribe();
+    return () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      void supabase.removeChannel(channel);
+    };
   }, []);
 
   async function cadastrarRobo(dados: DadosFormularioRobo) {

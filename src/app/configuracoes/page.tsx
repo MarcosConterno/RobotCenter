@@ -480,6 +480,7 @@ export default function ConfiguracoesPage() {
                       <>
                         <IconButton label="Salvar usuário" onClick={() => void salvarUsuario(usuario.id)} disabled={acaoEmAndamento === usuario.id}><Save size={16} /></IconButton>
                         <IconButton label="Cancelar edição" onClick={() => setUsuarioEditandoId(null)}><X size={16} /></IconButton>
+                        {!usuario.isMaster && <IconButton label={`Excluir ${usuario.login}`} danger onClick={() => void removerUsuario(usuario)} disabled={String(usuario.id) === usuarioAtualId || acaoEmAndamento === usuario.id}><Trash2 size={16} /></IconButton>}
                       </>
                     ) : (
                       <>

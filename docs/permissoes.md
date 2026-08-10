@@ -26,6 +26,8 @@ Nenhuma policy deve ser criada antes dessas decisões, pois apenas usar o papel 
 
 As migrations implementam autorização por tabelas RBAC e RLS deny-by-default:
 
+A publicação `supabase_realtime` inclui as tabelas operacionais usadas pelos providers de Robôs e Fluxos. A publicação não constitui autorização: cada inscrição usa o JWT da sessão e continua limitada pelas policies RLS das tabelas. Usuários Cliente recebem somente alterações do próprio cliente; usuários sem permissão de leitura não recebem as linhas protegidas. Não há canal anônimo nem uso da chave `service_role` no navegador.
+
 - **Master**: papel complementar e superior ao Admin, atribuído exclusivamente a `marcos.vinicius@loylegal.com`. Consulta e edita toda a matriz de permissões e executa ações excepcionais explicitamente protegidas, mantendo também o papel Admin por compatibilidade.
 - **Admin**: gerencia clientes, profiles, robôs, regras e publicações conforme os grants disponíveis. Pode editar e arquivar usuários e clientes, sem excluir fisicamente seus históricos. No painel de permissões, altera somente Operador, Dev, Cliente e Suporte.
 - O vínculo entre usuário e Cliente é alterado somente pelo endpoint `/api/admin/users`, após validação server-side do papel Admin. A operação usa o cliente administrativo apenas depois dessa validação; papéis não administrativos recebem `403` e não podem escolher outro `cliente_id` por payload.
