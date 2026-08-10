@@ -167,3 +167,6 @@ O papel Cliente edita apenas Fluxos do seu Cliente. Admin cria, edita, publica e
 Uma Tarefa Pessoal pertence a exatamente um usuário e representa uma prioridade diária ou futura. Possui título, observação opcional, data, prioridade baixa/média/alta e estado pendente/concluído. A conclusão registra seu instante; a reabertura remove esse registro. Tarefas pessoais não pertencem a Cliente, Robô ou papel de acesso.
 
 A Visualização Pessoal permite habilitar a tabela consolidada de Robôs e escolher Fluxos como atalhos. A preferência não copia nem altera essas entidades: ela referencia os dados operacionais já autorizados para o usuário.
+## Remapeamento de usuários de Cliente
+
+Antes de arquivar um Cliente, o Master pode reatribuir todos os usuários vinculados a outro Cliente ativo ou remover o vínculo. A mudança não altera os papéis dos usuários; um perfil Cliente sem vínculo permanece sem escopo operacional até receber novo Cliente.

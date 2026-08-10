@@ -17,3 +17,9 @@
 ## Exclusão
 
 `DELETE` mantém o arquivamento lógico existente e não remove fisicamente o profile. A existência de `clienteId` não altera essa regra.
+## Exclusão de usuário
+
+`DELETE /api/admin/users` recebe o UUID do usuário e exige uma sessão Admin validada no servidor. A operação rejeita o próprio usuário e qualquer identidade Master, arquiva `profiles`, remove `user_roles` e solicita exclusão lógica da identidade no Supabase Auth com o cliente administrativo. O profile não é removido fisicamente porque entidades históricas o referenciam com `ON DELETE RESTRICT`.
+## Remapeamento ao arquivar Cliente
+
+A interface Master chama `archive_client_with_user_reassignment(target_client_id, replacement_client_id)`. O RPC reatribui ou remove `profiles.cliente_id` e arquiva o Cliente em uma única transação. `replacement_client_id = null` remove o vínculo. Robôs ativos continuam impedindo o arquivamento.

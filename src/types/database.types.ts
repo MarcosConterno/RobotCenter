@@ -1271,6 +1271,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      archive_client_with_user_reassignment: {
+        Args: { replacement_client_id?: string | null; target_client_id: string }
+        Returns: number
+      }
       create_tutorial: {
         Args: { target_audience_role_id: string; target_name: string }
         Returns: { tutorial_id: string; draft_id: string }[]

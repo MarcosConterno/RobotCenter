@@ -212,8 +212,11 @@
 8. A atribuição ou remoção do papel Master e a alteração da permissão `access_control.read` são protegidas no banco, não apenas na interface.
 9. O usuário Master deve conservar um papel administrativo base para permanecer compatível com as rotas, APIs e policies existentes.
 10. Alterações da matriz somente são persistidas após confirmação em **Salvar alterações** e são aplicadas na mesma transação.
-11. Sessões abertas recebem notificações Realtime das entidades operacionais que já podem consultar. A sincronização apenas relê os dados após a confirmação da transação e não concede acesso, não contorna RLS e não altera permissões de escrita.
-12. Eventos recebidos em sequência são agrupados por 300 ms. Respostas de carregamentos anteriores não substituem o estado de uma solicitação mais recente, e os canais são removidos quando o provider é desmontado.
+11. Excluir um usuário arquiva o profile para preservar referências históricas, remove seus papéis ativos e realiza exclusão lógica da identidade no Supabase Auth. O próprio usuário e o Master não podem ser excluídos por esse fluxo.
+12. Sessões abertas recebem notificações Realtime das entidades operacionais que já podem consultar. A sincronização apenas relê os dados após a confirmação da transação e não concede acesso, não contorna RLS e não altera permissões de escrita.
+13. Eventos recebidos em sequência são agrupados por 300 ms. Respostas de carregamentos anteriores não substituem o estado de uma solicitação mais recente, e os canais são removidos quando o provider é desmontado.
+14. Somente Master pode arquivar um Cliente que possua usuários ativos vinculados; todos devem ser reatribuídos a outro Cliente ou desvinculados na mesma transação.
+15. A reatribuição não contorna o bloqueio de Robôs ativos e não altera o papel dos usuários.
 
 ## Tutorial e onboarding
 

@@ -248,11 +248,25 @@ export async function DELETE(request: Request) {
       .eq("user_id", parsed.data.id).eq("role_id", masterRole.id);
     if (count) return NextResponse.json({ error: "O usuário Master não pode ser excluído." }, { status: 403 });
   }
+  const { data: targetProfile, error: targetProfileError } = await admin
+    .from("profiles")
+    .select("id,deleted_at")
+    .eq("id", parsed.data.id)
+    .maybeSingle();
+  if (targetProfileError) return NextResponse.json({ error: "Não foi possível validar o perfil do usuário." }, { status: 400 });
+  if (!targetProfile) return NextResponse.json({ error: "Usuário não encontrado." }, { status: 404 });
+
   const now = new Date().toISOString();
-  const { error: profileError } = await admin.from("profiles").update({ ativo: false, deleted_at: now, deleted_by: access.user.id }).eq("id", parsed.data.id).is("deleted_at", null);
+  const { error: profileError } = await admin
+    .from("profiles")
+    .update({ ativo: false, deleted_at: targetProfile.deleted_at ?? now, deleted_by: access.user.id })
+    .eq("id", parsed.data.id);
   if (profileError) return NextResponse.json({ error: "Não foi possível excluir o perfil." }, { status: 400 });
 
-  const { error: authError } = await admin.auth.admin.updateUserById(parsed.data.id, { ban_duration: "876000h" });
-  if (authError) return NextResponse.json({ error: "Perfil excluído, mas o acesso não pôde ser bloqueado." }, { status: 500 });
+  const { error: rolesError } = await admin.from("user_roles").delete().eq("user_id", parsed.data.id);
+  if (rolesError) return NextResponse.json({ error: "Perfil arquivado, mas os acessos não puderam ser removidos." }, { status: 500 });
+
+  const { error: authError } = await admin.auth.admin.deleteUser(parsed.data.id, true);
+  if (authError) return NextResponse.json({ error: `Perfil arquivado, mas a identidade de acesso não pôde ser removida: ${authError.message}` }, { status: 500 });
   return NextResponse.json({ success: true });
 }

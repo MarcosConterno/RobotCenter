@@ -372,3 +372,6 @@ A planilha usa `robos.id` como chave de atualização e não cria unicidade arti
 `personal_tasks` armazena a organização diária de cada usuário. `user_id` referencia `profiles.id`; `due_date`, `priority`, `status`, `created_at` e `completed_at` suportam os filtros e o resumo da página. Os índices `(user_id, due_date, created_at)` e `(user_id, status, due_date)` atendem às consultas pessoais sem varredura entre usuários. Um trigger preserva proprietário e criação, atualiza `updated_at` e mantém `completed_at` coerente com o status.
 
 `personal_page_preferences` mantém uma linha por usuário e controla a exibição da tabela de robôs. `personal_page_flows` é a relação N:N entre usuário e os fluxos escolhidos como atalhos, com FKs para `profiles` e `flows`. A exclusão de um fluxo remove somente seus atalhos por cascata; não altera outras preferências nem tarefas.
+## Arquivamento de Cliente pelo Master
+
+`archive_client_with_user_reassignment` atualiza atomicamente `profiles.cliente_id` e `clientes.deleted_at`. O Cliente substituto, quando informado, deve existir e estar ativo. A operação preserva o trigger que bloqueia Clientes com Robôs ativos e não remove entidades ou históricos.

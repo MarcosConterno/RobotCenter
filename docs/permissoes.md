@@ -108,6 +108,10 @@ Versões publicadas permanecem no mesmo bucket privado, sob `<robo_id>/versions/
 
 O painel **Configurações → Permissões** agrupa o catálogo de `permissions` pelo campo `recurso` e mostra quais registros ativos de `roles` estão relacionados por `role_permissions`. A descrição funcional é o título e o código técnico aparece como informação secundária. A API `/api/admin/permissions` repete a validação de Admin/Master no servidor e não confia na visibilidade da aba.
 
+A exclusão administrativa de usuário exige Admin no servidor, bloqueia autoexclusão e protege o Master. O profile é mantido como registro arquivado para preservar as FKs de auditoria; os vínculos em `user_roles` são removidos e a identidade do Auth recebe exclusão lógica pelo cliente administrativo. Nenhuma chave administrativa é exposta ao navegador.
+
+O RPC `archive_client_with_user_reassignment` usa `SECURITY INVOKER`, exige `private.has_role('master')` e mantém RLS ativa durante a atualização de `profiles` e `clientes`. Admin comum não recebe essa capacidade. O RPC não exclui dados fisicamente e falha integralmente se houver Robôs ativos ou Cliente substituto inválido.
+
 | Área de Configurações | Master | Admin | Operador | Cliente | Suporte |
 |---|---:|---:|---:|---:|---:|
 | Usuários | Sim | Sim | Não | Não | Não |

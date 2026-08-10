@@ -1,10 +1,10 @@
 "use client";
 
-import { BookOpen, Bot, Building2, Clock3, FileText, GitFork, KeyRound, Pencil, Plus, Save, ShieldCheck, Trash2, Users, X } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Bot, Clock3, FileText, GitFork, KeyRound, Pencil, Plus, Save, ShieldCheck, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import AppShell from "@/components/layout/AppShell";
+import SettingsNavigation from "@/components/settings/SettingsNavigation";
 import { useAdminAccess } from "@/auth/AdminAccessProvider";
 import { useAppData } from "@/data/AppDataProvider";
 import { CORES_BADGE_ROBO, TIPOS_USUARIO, type CorBadgeRobo, type TipoUsuario, type Usuario } from "@/domain/entities";
@@ -18,14 +18,13 @@ interface PermissionItem { id: string; codigo: string; recurso: string; acao: st
 interface ClientMetric { clientId: string; robots: number; flows: number; documents: number; updatedAt: string }
 
 export default function ConfiguracoesPage() {
-  const router = useRouter();
   const {
     clientes,
     cadastrarCliente: adicionarCliente,
     atualizarCliente,
     excluirCliente,
   } = useAppData();
-  const { isAdmin: adminAutorizado, isMaster, canManageTutorials, status: statusAutorizacao, error: erroAutorizacao } = useAdminAccess();
+  const { isAdmin: adminAutorizado, isMaster, status: statusAutorizacao, error: erroAutorizacao } = useAdminAccess();
   const carregandoAutorizacao = statusAutorizacao === "loading";
   const [cadastroAtivo, setCadastroAtivo] = useState<CadastroAtivo>("usuarios");
   const [login, setLogin] = useState("");
@@ -51,10 +50,14 @@ export default function ConfiguracoesPage() {
   const [usuarioEditandoEmail, setUsuarioEditandoEmail] = useState("");
   const [usuarioEditandoTipo, setUsuarioEditandoTipo] = useState<TipoUsuario>("Operador");
   const [usuarioEditandoClienteId, setUsuarioEditandoClienteId] = useState("");
+  const [usuarioExcluindo, setUsuarioExcluindo] = useState<Usuario | null>(null);
   const [clienteEditandoId, setClienteEditandoId] = useState<string | null>(null);
   const [clienteEditandoNome, setClienteEditandoNome] = useState("");
   const [clienteEditandoTenant, setClienteEditandoTenant] = useState("");
   const [clienteEditandoCor, setClienteEditandoCor] = useState<CorBadgeRobo>("azul");
+  const [clienteExcluindoId, setClienteExcluindoId] = useState<string | null>(null);
+  const [clienteSubstitutoId, setClienteSubstitutoId] = useState("");
+  const [excluindoCliente, setExcluindoCliente] = useState(false);
   const [acaoEmAndamento, setAcaoEmAndamento] = useState<string | number | null>(null);
   const [permissionRoles, setPermissionRoles] = useState<PermissionRole[]>([]);
   const [permissions, setPermissions] = useState<PermissionItem[]>([]);
@@ -64,6 +67,11 @@ export default function ConfiguracoesPage() {
   const [loadingClientMetrics, setLoadingClientMetrics] = useState(false);
   const [clientMetricsLoaded, setClientMetricsLoaded] = useState(false);
   const [clientMetricsError, setClientMetricsError] = useState("");
+
+  useEffect(() => {
+    const requestedTab = new URLSearchParams(window.location.search).get("aba");
+    if (requestedTab === "usuarios" || requestedTab === "clientes" || requestedTab === "permissoes") setCadastroAtivo(requestedTab);
+  }, []);
 
   const carregarMetricasClientes = useCallback(async () => {
     setLoadingClientMetrics(true);
@@ -235,8 +243,6 @@ export default function ConfiguracoesPage() {
       setErroUsuario("Você não pode excluir o próprio usuário.");
       return;
     }
-    if (!window.confirm(`Excluir o usuário ${usuario.login}? O acesso será desativado.`)) return;
-
     setAcaoEmAndamento(usuario.id);
     setErroUsuario("");
     setSucessoUsuario("");
@@ -254,6 +260,7 @@ export default function ConfiguracoesPage() {
 
       setUsuariosGerenciados((atuais) => atuais.filter((item) => item.id !== usuario.id));
       setSucessoUsuario("Usuário excluído e acesso desativado.");
+      setUsuarioExcluindo(null);
     } catch {
       setErroUsuario("Não foi possível comunicar com o servidor.");
     } finally {
@@ -290,13 +297,45 @@ export default function ConfiguracoesPage() {
     }
   }
 
-  function removerCliente(cliente: (typeof clientes)[number]) {
-    if (!window.confirm(`Excluir o cliente ${cliente.nome}?`)) return;
-    if (!excluirCliente(cliente.id)) {
-      setErroCliente("O cliente não pode ser excluído porque possui robôs vinculados.");
+  function abrirExclusaoCliente(cliente: (typeof clientes)[number]) {
+    if (!isMaster) {
+      setErroCliente("Somente o usuário Master pode excluir clientes e remapear seus usuários.");
       return;
     }
+    if ((clientMetrics[cliente.id]?.robots ?? 0) > 0) {
+      setErroCliente("O cliente não pode ser excluído porque possui robôs ativos vinculados.");
+      return;
+    }
+    setClienteExcluindoId(cliente.id);
+    setClienteSubstitutoId("");
     setErroCliente("");
+  }
+
+  function abrirExclusaoUsuario(usuario: Usuario) {
+    setErroUsuario("");
+    setSucessoUsuario("");
+    setUsuarioExcluindo(usuario);
+  }
+
+  async function confirmarExclusaoCliente() {
+    if (!clienteExcluindoId) return;
+    setExcluindoCliente(true);
+    setErroCliente("");
+    try {
+      await excluirCliente(clienteExcluindoId, clienteSubstitutoId || null);
+      setUsuariosGerenciados((atuais) => atuais.map((usuario) => usuario.clienteId === clienteExcluindoId
+        ? { ...usuario, clienteId: clienteSubstitutoId || null }
+        : usuario));
+      setClienteExcluindoId(null);
+      setClienteSubstitutoId("");
+    } catch (deleteError) {
+      const message = deleteError && typeof deleteError === "object" && "message" in deleteError
+        ? String(deleteError.message)
+        : "Não foi possível excluir o cliente.";
+      setErroCliente(message);
+    } finally {
+      setExcluindoCliente(false);
+    }
   }
 
   async function cadastrarCliente(event: React.FormEvent<HTMLFormElement>) {
@@ -329,41 +368,7 @@ export default function ConfiguracoesPage() {
           <p style={subtitleStyle}>Gerencie usuários, clientes e permissões de acesso do Robot Center.</p>
         </header>
 
-        <div style={tabsStyle} role="tablist" aria-label="Tipos de cadastro" data-tour="settings-navigation">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={cadastroAtivo === "usuarios"}
-            onClick={() => setCadastroAtivo("usuarios")}
-            style={{ ...tabStyle, ...(cadastroAtivo === "usuarios" ? activeTabStyle : {}) }}
-          >
-            <Users size={17} />
-            Usuários
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={cadastroAtivo === "clientes"}
-            onClick={() => setCadastroAtivo("clientes")}
-            style={{ ...tabStyle, ...(cadastroAtivo === "clientes" ? activeTabStyle : {}) }}
-          >
-            <Building2 size={17} />
-            Clientes
-          </button>
-          {adminAutorizado && <button
-            type="button"
-            role="tab"
-            aria-selected={cadastroAtivo === "permissoes"}
-            onClick={() => setCadastroAtivo("permissoes")}
-            style={{ ...tabStyle, ...(cadastroAtivo === "permissoes" ? activeTabStyle : {}) }}
-          >
-            <ShieldCheck size={17} />
-            Permissões
-          </button>}
-          {canManageTutorials && <button type="button" role="tab" aria-selected={false} onClick={() => router.push("/configuracoes/tutoriais")} style={tabStyle}>
-            <BookOpen size={17} /> Tutoriais
-          </button>}
-        </div>
+        <SettingsNavigation active={cadastroAtivo} onSelect={setCadastroAtivo} />
 
         {cadastroAtivo === "usuarios" ? (
           <section style={sectionStyle} aria-label="Cadastro de usuários">
@@ -480,13 +485,13 @@ export default function ConfiguracoesPage() {
                       <>
                         <IconButton label="Salvar usuário" onClick={() => void salvarUsuario(usuario.id)} disabled={acaoEmAndamento === usuario.id}><Save size={16} /></IconButton>
                         <IconButton label="Cancelar edição" onClick={() => setUsuarioEditandoId(null)}><X size={16} /></IconButton>
-                        {!usuario.isMaster && <IconButton label={`Excluir ${usuario.login}`} danger onClick={() => void removerUsuario(usuario)} disabled={String(usuario.id) === usuarioAtualId || acaoEmAndamento === usuario.id}><Trash2 size={16} /></IconButton>}
+                        {!usuario.isMaster && <IconButton label={`Excluir ${usuario.login}`} danger onClick={() => abrirExclusaoUsuario(usuario)} disabled={String(usuario.id) === usuarioAtualId || acaoEmAndamento === usuario.id}><Trash2 size={16} /></IconButton>}
                       </>
                     ) : (
                       <>
                         <span style={userTypeStyle}>{isMaster && usuario.isMaster ? "Master" : usuario.tipo}</span>
                         {adminAutorizado && (!usuario.isMaster || isMaster) && <IconButton label={`Editar ${usuario.login}`} onClick={() => iniciarEdicaoUsuario(usuario)}><Pencil size={16} /></IconButton>}
-                        {adminAutorizado && !usuario.isMaster && <IconButton label={`Excluir ${usuario.login}`} danger onClick={() => void removerUsuario(usuario)} disabled={String(usuario.id) === usuarioAtualId || acaoEmAndamento === usuario.id}><Trash2 size={16} /></IconButton>}
+                        {adminAutorizado && !usuario.isMaster && <IconButton label={`Excluir ${usuario.login}`} danger onClick={() => abrirExclusaoUsuario(usuario)} disabled={String(usuario.id) === usuarioAtualId || acaoEmAndamento === usuario.id}><Trash2 size={16} /></IconButton>}
                       </>
                     )}
                   </div>
@@ -576,7 +581,7 @@ export default function ConfiguracoesPage() {
                       ) : (
                         <>
                           <IconButton label={`Editar ${cliente.nome}`} onClick={() => iniciarEdicaoCliente(cliente)}><Pencil size={16} /></IconButton>
-                          <IconButton label={`Excluir ${cliente.nome}`} danger onClick={() => removerCliente(cliente)}><Trash2 size={16} /></IconButton>
+                          {isMaster && <IconButton label={`Excluir ${cliente.nome}`} danger onClick={() => abrirExclusaoCliente(cliente)}><Trash2 size={16} /></IconButton>}
                         </>
                       )}
                     </div>
@@ -598,6 +603,31 @@ export default function ConfiguracoesPage() {
           />
         )}
       </div>
+      {clienteExcluindoId && (() => {
+        const cliente = clientes.find((item) => item.id === clienteExcluindoId);
+        const vinculados = usuariosGerenciados.filter((usuario) => usuario.clienteId === clienteExcluindoId);
+        return <div className="settings-client-delete-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !excluindoCliente) setClienteExcluindoId(null); }}>
+          <section className="settings-client-delete-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-client-delete-title">
+            <header><div><span>EXCLUSÃO DE CLIENTE</span><h2 id="settings-client-delete-title">Arquivar {cliente?.nome ?? "cliente"}</h2></div><button type="button" disabled={excluindoCliente} aria-label="Fechar" onClick={() => setClienteExcluindoId(null)}><X size={17} /></button></header>
+            <p>{vinculados.length === 0 ? "Este cliente não possui usuários ativos vinculados." : `${vinculados.length} ${vinculados.length === 1 ? "usuário está vinculado" : "usuários estão vinculados"} a este cliente.`}</p>
+            {vinculados.length > 0 && <div className="settings-client-delete-users">{vinculados.map((usuario) => <span key={usuario.id}>{usuario.login}<small>{usuario.tipo}</small></span>)}</div>}
+            <label><span>Destino dos usuários vinculados</span><select value={clienteSubstitutoId} onChange={(event) => setClienteSubstitutoId(event.target.value)}><option value="">Sem cliente — remover vínculo</option>{clientes.filter((item) => item.id !== clienteExcluindoId).map((item) => <option key={item.id} value={item.id}>{item.nome}</option>)}</select><small>Todos os usuários listados serão atualizados na mesma transação.</small></label>
+            <div className="settings-client-delete-warning">Robôs ativos continuam bloqueando a exclusão. Dados históricos não serão removidos.</div>
+            {erroCliente && <div className="settings-client-delete-error" role="alert">{erroCliente}</div>}
+            <footer><button type="button" disabled={excluindoCliente} onClick={() => setClienteExcluindoId(null)}>Cancelar</button><button type="button" className="is-danger" disabled={excluindoCliente} onClick={() => void confirmarExclusaoCliente()}><Trash2 size={14} />{excluindoCliente ? "Arquivando..." : "Remapear e arquivar"}</button></footer>
+          </section>
+        </div>;
+      })()}
+      {usuarioExcluindo && <div className="settings-client-delete-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && acaoEmAndamento !== usuarioExcluindo.id) setUsuarioExcluindo(null); }}>
+        <section className="settings-client-delete-dialog settings-user-delete-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-user-delete-title">
+          <header><div><span>EXCLUSÃO DE USUÁRIO</span><h2 id="settings-user-delete-title">Excluir {usuarioExcluindo.login}?</h2></div><button type="button" disabled={acaoEmAndamento === usuarioExcluindo.id} aria-label="Fechar" onClick={() => setUsuarioExcluindo(null)}><X size={17} /></button></header>
+          <div className="settings-user-delete-identity"><span>{usuarioExcluindo.login.trim().charAt(0).toUpperCase() || "U"}</span><div><strong>{usuarioExcluindo.login}</strong><small>{usuarioExcluindo.email || "Email não informado"} · {usuarioExcluindo.tipo}</small></div></div>
+          <p>O usuário perderá o acesso ao Robot Center. O perfil será arquivado para preservar históricos e registros de auditoria.</p>
+          <div className="settings-client-delete-warning">Esta ação não pode ser desfeita pela interface.</div>
+          {erroUsuario && <div className="settings-client-delete-error" role="alert">{erroUsuario}</div>}
+          <footer><button type="button" disabled={acaoEmAndamento === usuarioExcluindo.id} onClick={() => setUsuarioExcluindo(null)}>Cancelar</button><button type="button" className="is-danger" disabled={acaoEmAndamento === usuarioExcluindo.id} onClick={() => void removerUsuario(usuarioExcluindo)}><Trash2 size={14} />{acaoEmAndamento === usuarioExcluindo.id ? "Excluindo..." : "Excluir usuário"}</button></footer>
+        </section>
+      </div>}
     </AppShell>
   );
 }
@@ -869,37 +899,6 @@ const disabledPermissionRoleStyle: React.CSSProperties = { cursor: "not-allowed"
 const permissionCheckboxStyle: React.CSSProperties = { width: 14, height: 14, margin: 0, accentColor: "var(--accent)" };
 const rolePillStyle: React.CSSProperties = { padding: "4px 7px", borderRadius: 999, color: "var(--accent)", background: "var(--accent-soft)", border: "1px solid color-mix(in srgb, var(--accent) 38%, var(--border))", fontSize: 10, fontWeight: 700 };
 const unselectedRolePillStyle: React.CSSProperties = { ...rolePillStyle, color: "var(--muted)", background: "var(--surface)", borderColor: "var(--border)", opacity: 0.7 };
-
-const tabsStyle: React.CSSProperties = {
-  display: "flex",
-  alignSelf: "flex-start",
-  gap: 4,
-  padding: 4,
-  border: "1px solid var(--border)",
-  borderRadius: 12,
-  background: "var(--card)",
-};
-
-const tabStyle: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 8,
-  minHeight: 38,
-  border: "1px solid transparent",
-  borderRadius: 8,
-  padding: "0 14px",
-  background: "transparent",
-  color: "var(--muted)",
-  fontSize: 13,
-  fontWeight: 700,
-  cursor: "pointer",
-};
-
-const activeTabStyle: React.CSSProperties = {
-  border: "1px solid var(--accent)",
-  background: "var(--accent-soft)",
-  color: "var(--accent)",
-};
 
 const sectionStyle: React.CSSProperties = {
   border: "1px solid var(--border)",

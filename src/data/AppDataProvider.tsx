@@ -79,7 +79,7 @@ interface AppDataContextValue {
   cadastrarUsuario: (dados: DadosCadastroUsuario) => void;
   cadastrarCliente: (dados: DadosCadastroCliente) => Promise<Cliente>;
   atualizarCliente: (id: string, dados: DadosCadastroCliente) => Promise<Cliente | null>;
-  excluirCliente: (id: string) => boolean;
+  excluirCliente: (id: string, replacementClientId: string | null) => Promise<number>;
 }
 
 const AppDataContext = createContext<AppDataContextValue | null>(null);
@@ -514,10 +514,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     return atualizado;
   }
 
-  function excluirCliente(id: string) {
-    if (robos.some((robo) => robo.clienteId === id)) return false;
+  async function excluirCliente(id: string, replacementClientId: string | null) {
+    if (robos.some((robo) => robo.clienteId === id)) throw new Error("O cliente possui robôs ativos vinculados.");
+    const { data, error } = await createClient().rpc("archive_client_with_user_reassignment", {
+      target_client_id: id,
+      replacement_client_id: replacementClientId,
+    });
+    if (error) throw error;
     setClientes((atuais) => atuais.filter((cliente) => cliente.id !== id));
-    return true;
+    return data;
   }
 
   const publicacoes = useMemo(() => publicacoesLocais, [publicacoesLocais]);

@@ -4,6 +4,7 @@ import { ArrowDown, ArrowLeft, ArrowUp, BookOpen, GripVertical, History, Play, P
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/layout/AppShell";
+import SettingsNavigation from "@/components/settings/SettingsNavigation";
 import { useTutorial } from "@/tutorial/TutorialProvider";
 import { TOUR_PAGE_CATALOG, findTourPage } from "@/tutorial/targetCatalog";
 import type { TutorialDraftStep, TutorialEditorData, TutorialPlacement } from "@/tutorial/adminTypes";
@@ -33,6 +34,7 @@ export default function TutorialEditorPage({ tutorialId }: { tutorialId: string 
   return <AppShell title="Editor de tutorial"><section className="tutorial-editor-page">
     <div className="tutorial-breadcrumb"><Link href="/configuracoes/tutoriais"><ArrowLeft size={14} /> Tutoriais</Link><span>/</span><span>{data.name}</span></div>
     <header className="tutorial-editor-heading"><div><span>EDITOR DE TUTORIAL</span><h1>{data.name}</h1><p>Rascunho independente da versão publicada {data.currentVersion ? `v${data.currentVersion}` : "—"}.</p></div><div><button className="tutorial-secondary-button" onClick={() => tour.previewTutorial(data.name, data.steps)}><Play size={14} /> Testar</button><button className="tutorial-secondary-button" disabled={saving} onClick={() => void save()}><Save size={14} /> Salvar</button><button className="tutorial-primary-button" disabled={saving} onClick={() => setPublishOpen(true)}><Send size={14} /> Publicar</button></div></header>
+    <SettingsNavigation active="tutoriais" />
     <div className="tutorial-editor-meta"><label>Nome<input value={data.name} onChange={(event) => setData({ ...data, name: event.target.value })} /></label><label>Público<select value={data.audienceRoleId} onChange={(event) => setData({ ...data, audienceRoleId: event.target.value })}>{roles.map((role) => <option key={role.id} value={role.id}>{role.nome}</option>)}</select></label><div><span>Status</span><strong>{data.status === "published" ? "Publicado" : data.status === "inactive" ? "Inativo" : "Rascunho"}</strong></div><div><span>Próxima versão</span><strong>v{nextVersion}</strong></div></div>
     {message && <div className="tutorial-message is-success">{message}</div>}{error && <div className="tutorial-message is-error">{error}</div>}
     <div className="tutorial-editor-section-heading"><div><BookOpen size={16} /><span>Passos</span><small>{data.steps.length} cadastrados</small></div><button className="tutorial-primary-button" onClick={addStep}><Plus size={14} /> Adicionar passo</button></div>
