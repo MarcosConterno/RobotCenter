@@ -87,7 +87,7 @@ export default function MeetingsPanel({ userId, initialMeetingId, onInitialMeeti
     if (mutationError) setError(mutationError.message); else setMeetings((current) => current.filter((item) => item.id !== meeting.id));
   }
 
-  return <section className={styles.workspacePanel} aria-labelledby="meetings-title">
+  return <section className={styles.workspacePanel} aria-labelledby="meetings-title" data-tour="my-page-meetings">
     <header className={styles.workspaceHeader}><div><span>CADERNO PESSOAL</span><h2 id="meetings-title">Reuniões</h2></div><button className={styles.primaryButton} type="button" onClick={startCreate}><Plus size={15} /> Nova reunião</button></header>
     <div className={styles.workspaceToolbar}>
       <nav className={styles.filters} aria-label="Filtros de reuniões">{([['today', 'Hoje'], ['upcoming', 'Próximas'], ['previous', 'Anteriores']] as const).map(([id, label]) => <button key={id} type="button" className={filter === id ? styles.activeFilter : undefined} onClick={() => setFilter(id)}>{label}</button>)}</nav>

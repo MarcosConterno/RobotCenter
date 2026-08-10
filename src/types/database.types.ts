@@ -639,6 +639,56 @@ export type Database = {
           },
         ]
       }
+      robot_uploaded_documents: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          file_name: string
+          id: string
+          mime_type: string
+          robot_id: string
+          size_bytes: number | null
+          storage_path: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          file_name: string
+          id?: string
+          mime_type: string
+          robot_id: string
+          size_bytes?: number | null
+          storage_path: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          file_name?: string
+          id?: string
+          mime_type?: string
+          robot_id?: string
+          size_bytes?: number | null
+          storage_path?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "robot_uploaded_documents_created_by_fkey"; columns: ["created_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "robot_uploaded_documents_deleted_by_fkey"; columns: ["deleted_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "robot_uploaded_documents_robot_id_fkey"; columns: ["robot_id"]; isOneToOne: false; referencedRelation: "robos"; referencedColumns: ["id"] },
+          { foreignKeyName: "robot_uploaded_documents_updated_by_fkey"; columns: ["updated_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
+      }
       robot_center_documentation_blocks: {
         Row: {
           content: string

@@ -105,6 +105,16 @@ export interface RobotCenterDocumentationSummary {
   pdfPath?: string | null;
 }
 
+export interface RobotUploadedDocument {
+  id: string;
+  robotId: string;
+  storagePath: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number | null;
+  createdAt: string;
+}
+
 export interface Robo {
   id: string;
   clienteId: string;
@@ -129,6 +139,7 @@ export interface Robo {
   gatilhoParaRoboId?: string | null;
   uploadedDocumentationPath?: string | null;
   uploadedDocumentationName?: string | null;
+  uploadedDocuments?: RobotUploadedDocument[];
   robotCenterDocumentation?: RobotCenterDocumentationSummary | null;
   ultimaPublicacaoEm: string;
   alteracoes: AlteracaoRobo[];

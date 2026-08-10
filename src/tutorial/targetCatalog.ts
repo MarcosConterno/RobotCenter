@@ -14,6 +14,20 @@ export interface TourPageOption {
 
 export const TOUR_PAGE_CATALOG: TourPageOption[] = [
   {
+    key: "my-page",
+    label: "Minha página",
+    route: "/minha-pagina",
+    targets: [
+      { key: "sidebar-my-page", label: "Menu Minha página", selector: '[data-tour="sidebar-my-page"]' },
+      { key: "my-page-welcome", label: "Saudação e visão pessoal", selector: '[data-tour="my-page-welcome"]' },
+      { key: "my-page-tabs", label: "Navegação do workspace", selector: '[data-tour="my-page-tabs"]' },
+      { key: "my-page-todos", label: "ToDos e resumo do dia", selector: '[data-tour="my-page-todos"]' },
+      { key: "my-page-meetings", label: "Caderno de reuniões", selector: '[data-tour="my-page-meetings"]' },
+      { key: "my-page-notes", label: "Notas pessoais", selector: '[aria-labelledby="notes-title"]' },
+      { key: "my-page-personalize", label: "Personalização e widgets", selector: '[data-tour="my-page-personalize"]' },
+    ],
+  },
+  {
     key: "dashboard",
     label: "Dashboard",
     route: "/dashboard",

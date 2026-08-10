@@ -44,6 +44,8 @@
 .changeItem p { margin: 4px 0 0; color: var(--text); font-size: 11.5px; line-height: 1.5; }
 .fileGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 14px; }
 .fileContent { display: grid; gap: 14px; }
+.uploadedFileList { display: grid; gap: 8px; }
+.uploadedFileItem { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--separator); border-radius: 9px; padding: 10px 11px; background: var(--surface); }
 .fileIdentity { display: flex; align-items: center; gap: 10px; color: var(--accent); }
 .fileIdentity strong, .fileIdentity span { display: block; }
 .fileIdentity strong { color: var(--text-strong); font-size: 12px; overflow-wrap: anywhere; }
@@ -51,14 +53,22 @@
 .actions { display: flex; flex-wrap: wrap; gap: 7px; }
 .actions button, .actions a { min-height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--accent); background: var(--surface); font: inherit; font-size: 10.5px; font-weight: 700; text-decoration: none; cursor: pointer; }
 .actions button:disabled { opacity: .6; cursor: wait; }
+.uploadAction { display: inline-flex; min-height: 31px; align-items: center; gap: 6px; border: 1px solid var(--accent); border-radius: 8px; padding: 0 10px; color: var(--accent); background: var(--accent-soft); font: inherit; font-size: 10px; font-weight: 700; cursor: pointer; }
+.uploadAction:disabled { opacity: .6; cursor: wait; }
+.actions .dangerAction, .requirementActions .dangerAction { color: var(--danger); }
 .emptyText, .helperText, .errorText { margin: 0; font-size: 11px; line-height: 1.5; }
 .emptyText, .helperText { color: var(--muted); }
 .errorText { color: var(--danger); }
 .emptyAction { display: grid; gap: 13px; }
-.requirement, .childRequirement { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 13px; padding: 13px 0; border-bottom: 1px solid var(--separator); }
+.requirement, .childRequirement { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; align-items: start; gap: 13px; padding: 13px 0; border-bottom: 1px solid var(--separator); }
 .requirement strong, .childRequirement strong { color: var(--accent); font-size: 11px; }
 .requirement p, .childRequirement p { margin: 0; color: var(--text); font-size: 12px; line-height: 1.55; white-space: pre-wrap; }
 .childRequirement { margin-left: 30px; }
+.requirementActions { display: flex; gap: 5px; }
+.requirementActions button { display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 7px; padding: 0; color: var(--muted); background: var(--surface); cursor: pointer; }
+.requirementActions button:hover { border-color: var(--accent); color: var(--accent); }
+.requirementActions button:disabled { opacity: .5; cursor: default; }
+.requirementEditor { width: 100%; min-height: 76px; box-sizing: border-box; resize: vertical; border: 1px solid var(--accent); border-radius: 8px; padding: 9px 10px; color: var(--text); background: var(--surface); font: inherit; font-size: 11.5px; line-height: 1.5; outline: none; }
 .redmineEmpty { min-height: 190px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; text-align: center; color: var(--muted); }
 .redmineEmpty strong { color: var(--text-strong); font-size: 12.5px; }
 .redmineEmpty p { margin: 0; font-size: 11px; }
@@ -78,6 +88,7 @@
   .fieldsGrid, .summaryGrid { grid-template-columns: 1fr; }
   .field strong { white-space: normal; overflow-wrap: anywhere; }
   .requirement, .childRequirement { grid-template-columns: 1fr; gap: 5px; }
+  .uploadedFileItem { align-items: stretch; flex-direction: column; }
   .childRequirement { margin-left: 18px; }
   .sectionBody { padding: 14px; }
 }

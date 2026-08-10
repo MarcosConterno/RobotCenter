@@ -65,7 +65,8 @@ O histórico `alteracoes_robo` permite leitura com `robots.read`, respeitando `p
 As policies consultam `roles`, `permissions`, `user_roles` e `role_permissions` por funções no schema privado. `user_metadata` não participa da autorização. Todas as tabelas públicas da aplicação têm RLS habilitada, e `anon` não recebe acesso. O papel Master é um vínculo RBAC real, nunca uma condição confiada apenas ao email enviado pela interface.
 - Todo usuário autenticado pode alterar exclusivamente a própria senha pelo menu da conta. A operação usa a sessão atual do Supabase Auth e não concede acesso administrativo a outros usuários.
 - O histórico do Dashboard respeita `publicacoes_select`; somente papéis com `publications.create` podem inserir registros por **Salvar e publicar**.
-- O bucket privado `robot-manuals` permite leitura somente a quem possui `robots.read` e acesso ao cliente do robô. Upload e substituição exigem `robots.update`; não existe acesso anônimo.
+- O bucket privado `robot-manuals` permite leitura somente a quem possui `robots.read` e acesso ao cliente do robô. Upload e exclusão de objetos exigem `robots.update`; não existe acesso anônimo. Os metadados em `robot_uploaded_documents` repetem o mesmo escopo por RLS.
+- Master e Admin podem criar, editar ou arquivar requisitos funcionais e regras fora da documentação diretamente na aba Documentação, sem editar o robô inteiro. A interface não exibe as ações a outros papéis, e `regras_robo` exige `robots.update` no banco.
 - Os relacionamentos de gatilho fazem parte de `robos`: leitura segue `robots.read` e alteração segue `robots.update`, com o mesmo isolamento por cliente já aplicado pela RLS.
 
 ## Fluxos

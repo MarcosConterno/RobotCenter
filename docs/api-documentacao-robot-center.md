@@ -19,4 +19,4 @@ A futura API deverá separar visualização publicada (`robot_center_documentati
 
 ## Página de detalhes
 
-`/robos/[id]` consulta os Robôs já autorizados pela RLS e utiliza somente metadados visíveis da Documentação Robot Center. Usuários sem `manage` não recebem rascunhos; a presença documental do card é derivada de `uploadedDocumentationPath` ou de documentação interna com status `published`.
+`/robos/[id]` consulta os Robôs já autorizados pela RLS e utiliza somente metadados visíveis da Documentação Robot Center. Usuários sem `manage` não recebem rascunhos; a presença documental do card é derivada de `uploadedDocuments`, do campo legado `uploadedDocumentationPath` ou de documentação interna com status `published`.

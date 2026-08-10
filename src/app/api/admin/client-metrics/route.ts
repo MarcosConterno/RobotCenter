@@ -31,14 +31,15 @@ export async function GET() {
   }
 
   const admin = createAdminClient();
-  const [clientsResult, robotsResult, flowsResult, documentsResult] = await Promise.all([
+  const [clientsResult, robotsResult, flowsResult, documentsResult, uploadedDocumentsResult] = await Promise.all([
     admin.from("clientes").select("id,updated_at").is("deleted_at", null),
     admin.from("robos").select("id,cliente_id,manual_path,updated_at").is("deleted_at", null),
     admin.from("flows").select("id,client_id,updated_at"),
     admin.from("robot_center_documentations").select("id,robo_id,updated_at").is("deleted_at", null),
+    admin.from("robot_uploaded_documents").select("id,robot_id,updated_at").is("deleted_at", null),
   ]);
 
-  const queryError = clientsResult.error || robotsResult.error || flowsResult.error || documentsResult.error;
+  const queryError = clientsResult.error || robotsResult.error || flowsResult.error || documentsResult.error || uploadedDocumentsResult.error;
   if (queryError) {
     console.error("[api/admin/client-metrics] query failed", { code: queryError.code, message: queryError.message });
     return NextResponse.json({ error: "Não foi possível calcular os indicadores dos clientes." }, { status: 500 });
@@ -46,6 +47,7 @@ export async function GET() {
 
   const metrics = new Map<string, ClientMetric>();
   const robotClient = new Map<string, string>();
+  const robotsWithUploadedDocuments = new Set((uploadedDocumentsResult.data ?? []).map((document) => document.robot_id));
   const updateTimestamp = (metric: ClientMetric, timestamp: string) => {
     if (new Date(timestamp).getTime() > new Date(metric.updatedAt).getTime()) metric.updatedAt = timestamp;
   };
@@ -58,7 +60,7 @@ export async function GET() {
     if (!metric) continue;
     robotClient.set(robot.id, robot.cliente_id);
     metric.robots += 1;
-    if (robot.manual_path) metric.documents += 1;
+    if (robot.manual_path && !robotsWithUploadedDocuments.has(robot.id)) metric.documents += 1;
     updateTimestamp(metric, robot.updated_at);
   }
   for (const flow of flowsResult.data ?? []) {
@@ -73,6 +75,13 @@ export async function GET() {
     if (!metric) continue;
     metric.documents += 1;
     updateTimestamp(metric, documentation.updated_at);
+  }
+  for (const document of uploadedDocumentsResult.data ?? []) {
+    const clientId = robotClient.get(document.robot_id);
+    const metric = clientId ? metrics.get(clientId) : undefined;
+    if (!metric) continue;
+    metric.documents += 1;
+    updateTimestamp(metric, document.updated_at);
   }
 
   return NextResponse.json({ metrics: [...metrics.values()] }, { headers: { "Cache-Control": "no-store" } });

@@ -194,7 +194,7 @@ export default function MinhaPaginaPage() {
       await loadTasks();
       return;
     }
-    setFilter(status === "completed" ? "completed" : "pending");
+    if (status === "pending") setFilter("pending");
   }
 
   async function deleteTask(task: Todo) {
@@ -248,24 +248,24 @@ export default function MinhaPaginaPage() {
   return (
     <AppShell title="Minha página" hideTopbar>
       <div className={styles.page}>
-        <header className={styles.welcome}>
+        <header className={styles.welcome} data-tour="my-page-welcome">
           <div>
             <p className={styles.date}><CalendarDays size={14} />{currentDate}</p>
             <h1>{greeting()}, {displayName}</h1>
             <p>Organize seu dia e acompanhe suas prioridades.</p>
           </div>
           <div className={styles.welcomeActions}>
-            <button type="button" className={styles.settingsButton} onClick={() => setSettingsOpen((current) => !current)} aria-expanded={settingsOpen}>
+            <button type="button" className={styles.settingsButton} data-tour="my-page-personalize" onClick={() => setSettingsOpen((current) => !current)} aria-expanded={settingsOpen}>
               <Settings2 size={15} /> Personalizar
             </button>
             <Topbar title="Conta do usuário" bare />
           </div>
         </header>
 
-        <nav className={styles.workspaceTabs} aria-label="Áreas do workspace pessoal">
-          <button type="button" className={activeTab === "todo" ? styles.activeWorkspaceTab : undefined} aria-current={activeTab === "todo" ? "page" : undefined} onClick={() => setActiveTab("todo")}><ListTodo size={15} /> ToDo</button>
-          <button type="button" className={activeTab === "meetings" ? styles.activeWorkspaceTab : undefined} aria-current={activeTab === "meetings" ? "page" : undefined} onClick={() => setActiveTab("meetings")}><UsersRound size={15} /> Reuniões</button>
-          <button type="button" className={activeTab === "notes" ? styles.activeWorkspaceTab : undefined} aria-current={activeTab === "notes" ? "page" : undefined} onClick={() => setActiveTab("notes")}><NotebookPen size={15} /> Notas</button>
+        <nav className={styles.workspaceTabs} aria-label="Áreas do workspace pessoal" data-tour="my-page-tabs">
+          <button type="button" data-tour="my-page-tab-todo" className={activeTab === "todo" ? styles.activeWorkspaceTab : undefined} aria-current={activeTab === "todo" ? "page" : undefined} onClick={() => setActiveTab("todo")}><ListTodo size={15} /> ToDo</button>
+          <button type="button" data-tour="my-page-tab-meetings" className={activeTab === "meetings" ? styles.activeWorkspaceTab : undefined} aria-current={activeTab === "meetings" ? "page" : undefined} onClick={() => setActiveTab("meetings")}><UsersRound size={15} /> Reuniões</button>
+          <button type="button" data-tour="my-page-tab-notes" className={activeTab === "notes" ? styles.activeWorkspaceTab : undefined} aria-current={activeTab === "notes" ? "page" : undefined} onClick={() => setActiveTab("notes")}><NotebookPen size={15} /> Notas</button>
         </nav>
 
         {settingsOpen && (
@@ -283,7 +283,7 @@ export default function MinhaPaginaPage() {
           </section>
         )}
 
-        {activeTab === "todo" && <div className={styles.layout}>
+        {activeTab === "todo" && <div className={styles.layout} data-tour="my-page-todos">
           <section className={styles.tasksPanel} aria-labelledby="todos-title">
             <div className={styles.panelHeader}>
               <div><span>Organização pessoal</span><h2 id="todos-title">Meus ToDos</h2></div>

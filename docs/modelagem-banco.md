@@ -319,7 +319,7 @@ O componente **Atualizações recentes** lê `public.publicacoes`, ordenada por 
 
 ## Manual PDF do robô
 
-`robos.manual_path` e `robos.manual_nome` referenciam a Documentação Upada armazenada no bucket privado `robot-manuals`. O objeto usa o caminho `<robo_id>/manual.pdf`, aceita somente PDF de até 20 MB e é aberto por URL assinada temporária. O banco não armazena o conteúdo binário. Nenhum arquivo existente é migrado ou duplicado.
+`robot_uploaded_documents` registra os metadados dos anexos privados do robô: caminho, nome original, MIME, tamanho e auditoria. O bucket privado `robot-manuals` aceita PDF, DOCX e XLSX de até 20 MB, usando caminhos únicos sob `<robo_id>/`. Os campos legados `robos.manual_path` e `robos.manual_nome` são preservados, e seus arquivos existentes ganham somente uma linha de metadados, sem duplicação ou remoção do objeto.
 
 ## Base da Documentação Robot Center
 
@@ -345,7 +345,7 @@ Ao concluir uma versão, a mesma transação insere uma linha em `publicacoes` c
 
 ```text
 robos
-  ├── manual_path/manual_nome -> robot-manuals (Documentação Upada)
+  ├── robot_uploaded_documents (0..N) -> robot-manuals (Documentação Upada)
   └── robot_center_documentations (0..1)
         ├── robot_center_documentation_drafts (0..1)
         └── robot_center_documentation_versions (0..N, imutáveis)

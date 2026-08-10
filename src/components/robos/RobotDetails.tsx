@@ -7,6 +7,7 @@ import {
   Building2,
   CalendarDays,
   CalendarClock,
+  Check,
   CirclePower,
   Cpu,
   Download,
@@ -17,18 +18,21 @@ import {
   Layers3,
   Package,
   Pencil,
+  Plus,
   Server,
+  Trash2,
   Upload,
   UserRound,
   Workflow,
+  X,
   Zap,
 } from "lucide-react";
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { useAdminAccess } from "@/auth/AdminAccessProvider";
 import { formatarData, formatarDataHora } from "@/domain/formatters";
-import type { Cliente, RegraRobo, Robo } from "@/domain/entities";
+import type { Cliente, RegraRobo, Robo, RobotUploadedDocument } from "@/domain/entities";
 import { createClient } from "@/lib/supabase/client";
 
 import styles from "./RobotDetails.module.css";
@@ -50,8 +54,11 @@ export default function RobotDetails({ robot, clientes = EMPTY_CLIENTES, robos =
   const { isAdmin } = useAdminAccess();
   const [activeTab, setActiveTab] = useState<MainTab>("general");
   const [documentationTab, setDocumentationTab] = useState<DocumentationTab>("functional");
-  const [uploadedDocumentationBusy, setUploadedDocumentationBusy] = useState<"view" | "download" | null>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+  const [uploadedDocuments, setUploadedDocuments] = useState<RobotUploadedDocument[]>(robot.uploadedDocuments ?? []);
+  const [uploadedDocumentationBusy, setUploadedDocumentationBusy] = useState<string | null>(null);
   const [uploadedDocumentationError, setUploadedDocumentationError] = useState("");
+  const [uploadingDocuments, setUploadingDocuments] = useState(false);
 
   const cliente = clientes.find((item) => item.id === robot.clienteId);
   const gatilhoDe = robos.find((item) => item.id === robot.gatilhoDeRoboId);
@@ -66,16 +73,17 @@ export default function RobotDetails({ robot, clientes = EMPTY_CLIENTES, robos =
       ? styles.testEnvironment
       : styles.developmentEnvironment;
 
-  async function openUploadedDocumentation(download: boolean) {
-    if (!robot.uploadedDocumentationPath) return;
-    setUploadedDocumentationBusy(download ? "download" : "view");
+  useEffect(() => { setUploadedDocuments(robot.uploadedDocuments ?? []); }, [robot.uploadedDocuments]);
+
+  async function openUploadedDocumentation(document: RobotUploadedDocument, download: boolean) {
+    setUploadedDocumentationBusy(`${document.id}:${download ? "download" : "view"}`);
     setUploadedDocumentationError("");
     const { data, error } = await createClient().storage
       .from("robot-manuals")
       .createSignedUrl(
-        robot.uploadedDocumentationPath,
+        document.storagePath,
         900,
-        download ? { download: robot.uploadedDocumentationName ?? "documentacao-upada.pdf" } : undefined,
+        download ? { download: document.fileName } : undefined,
       );
     setUploadedDocumentationBusy(null);
     if (error) {
@@ -83,6 +91,64 @@ export default function RobotDetails({ robot, clientes = EMPTY_CLIENTES, robos =
       return;
     }
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  }
+
+  async function uploadDocuments(files: FileList | null) {
+    if (!files?.length || !isAdmin) return;
+    const allowedTypes = new Map([
+      ["pdf", "application/pdf"],
+      ["docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+      ["xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
+    ]);
+    setUploadingDocuments(true);
+    setUploadedDocumentationError("");
+    const supabase = createClient();
+    try {
+      for (const file of Array.from(files)) {
+        const extension = file.name.split(".").pop()?.toLocaleLowerCase("pt-BR") ?? "";
+        const mimeType = allowedTypes.get(extension);
+        if (!mimeType) throw new Error(`O arquivo “${file.name}” deve ser PDF, DOCX ou XLSX.`);
+        if (file.size > 20 * 1024 * 1024) throw new Error(`O arquivo “${file.name}” deve ter no máximo 20 MB.`);
+        const safeName = file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9._-]+/g, "-");
+        const storagePath = `${robot.id}/${crypto.randomUUID()}-${safeName}`;
+        const { error: uploadError } = await supabase.storage.from("robot-manuals").upload(storagePath, file, { contentType: mimeType, upsert: false });
+        if (uploadError) throw uploadError;
+        const { data, error: metadataError } = await supabase.from("robot_uploaded_documents").insert({
+          robot_id: robot.id,
+          storage_path: storagePath,
+          file_name: file.name,
+          mime_type: mimeType,
+          size_bytes: file.size,
+        }).select("id,robot_id,storage_path,file_name,mime_type,size_bytes,created_at").single();
+        if (metadataError) {
+          await supabase.storage.from("robot-manuals").remove([storagePath]);
+          throw metadataError;
+        }
+        setUploadedDocuments((current) => [{ id: data.id, robotId: data.robot_id, storagePath: data.storage_path, fileName: data.file_name, mimeType: data.mime_type, sizeBytes: data.size_bytes, createdAt: data.created_at }, ...current]);
+      }
+    } catch (cause) {
+      setUploadedDocumentationError(cause instanceof Error ? cause.message : "Não foi possível enviar os arquivos.");
+    } finally {
+      setUploadingDocuments(false);
+      if (uploadInputRef.current) uploadInputRef.current.value = "";
+    }
+  }
+
+  async function deleteUploadedDocument(document: RobotUploadedDocument) {
+    if (!isAdmin || !window.confirm(`Excluir o arquivo “${document.fileName}”?`)) return;
+    setUploadedDocumentationBusy(`${document.id}:delete`);
+    setUploadedDocumentationError("");
+    const supabase = createClient();
+    const { error: metadataError } = await supabase.from("robot_uploaded_documents").update({ deleted_at: new Date().toISOString() }).eq("id", document.id).eq("robot_id", robot.id);
+    if (metadataError) {
+      setUploadedDocumentationError("Não foi possível excluir o arquivo.");
+      setUploadedDocumentationBusy(null);
+      return;
+    }
+    const { error: storageError } = await supabase.storage.from("robot-manuals").remove([document.storagePath]);
+    if (storageError) console.error("Falha ao remover objeto arquivado", { message: storageError.message });
+    setUploadedDocuments((current) => current.filter((item) => item.id !== document.id));
+    setUploadedDocumentationBusy(null);
   }
 
   async function openRobotCenterArtifact(kind: "pdf" | "docx", download: boolean) {
@@ -180,23 +246,26 @@ export default function RobotDetails({ robot, clientes = EMPTY_CLIENTES, robos =
           </nav>
 
           {documentationTab === "functional" ? (
-            <RequirementSection title="Requisitos Funcionais" prefix="RF" rules={robot.regras} />
+            <RequirementSection title="Requisitos Funcionais" prefix="RF" rules={robot.regras} robotId={robot.id} canEdit={isAdmin} />
           ) : documentationTab === "outside" ? (
-            <RequirementSection title="Regras Fora da Documentação" prefix="RFD" rules={robot.regrasForaDocumentacao} description="Regras cadastradas separadamente da documentação técnica." />
+            <RequirementSection title="Regras Fora da Documentação" prefix="RFD" rules={robot.regrasForaDocumentacao} robotId={robot.id} canEdit={isAdmin} description="Regras cadastradas separadamente da documentação técnica." />
           ) : (
             <div className={styles.fileGrid}>
-              <Section title="Documentação Upada" description="Arquivo externo anexado manualmente ao robô.">
-                {robot.uploadedDocumentationPath ? (
-                  <div className={styles.fileContent}>
-                    <div className={styles.fileIdentity}><FileText size={20} /><div><strong>{robot.uploadedDocumentationName ?? "Documentação.pdf"}</strong><span>PDF externo</span></div></div>
-                    <div className={styles.actions}>
-                      <button type="button" onClick={() => void openUploadedDocumentation(false)} disabled={uploadedDocumentationBusy !== null}><ExternalLink size={14} /> {uploadedDocumentationBusy === "view" ? "Abrindo..." : "Visualizar"}</button>
-                      <button type="button" onClick={() => void openUploadedDocumentation(true)} disabled={uploadedDocumentationBusy !== null}><Download size={14} /> {uploadedDocumentationBusy === "download" ? "Preparando..." : "Baixar"}</button>
-                      {isAdmin && <Link href={`/robos/${robot.id}/editar`}><Upload size={14} /> Substituir</Link>}
-                    </div>
-                    {uploadedDocumentationError && <p className={styles.errorText}>{uploadedDocumentationError}</p>}
+              <Section
+                title="Documentação Upada"
+                description="Documentos e anexos enviados manualmente para este robô."
+                headerMeta={isAdmin ? <button className={styles.uploadAction} type="button" disabled={uploadingDocuments} onClick={() => uploadInputRef.current?.click()}><Upload size={13} /> {uploadingDocuments ? "Enviando..." : "Adicionar arquivos"}</button> : undefined}
+              >
+                <input ref={uploadInputRef} type="file" multiple hidden accept=".pdf,.docx,.xlsx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={(event) => void uploadDocuments(event.target.files)} />
+                {uploadedDocuments.length ? <div className={styles.uploadedFileList}>{uploadedDocuments.map((document) => <article className={styles.uploadedFileItem} key={document.id}>
+                  <div className={styles.fileIdentity}><FileText size={18} /><div><strong>{document.fileName}</strong><span>{document.mimeType.includes("spreadsheet") ? "Planilha XLSX" : document.mimeType.includes("wordprocessing") ? "Documento DOCX" : "Documento PDF"}{document.sizeBytes ? ` · ${(document.sizeBytes / 1024 / 1024).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MB` : ""}</span></div></div>
+                  <div className={styles.actions}>
+                    <button type="button" onClick={() => void openUploadedDocumentation(document, false)} disabled={uploadedDocumentationBusy !== null}><ExternalLink size={14} /> {uploadedDocumentationBusy === `${document.id}:view` ? "Abrindo..." : "Visualizar"}</button>
+                    <button type="button" onClick={() => void openUploadedDocumentation(document, true)} disabled={uploadedDocumentationBusy !== null}><Download size={14} /> {uploadedDocumentationBusy === `${document.id}:download` ? "Preparando..." : "Baixar"}</button>
+                    {isAdmin && <button className={styles.dangerAction} type="button" onClick={() => void deleteUploadedDocument(document)} disabled={uploadedDocumentationBusy !== null}><Trash2 size={14} /> {uploadedDocumentationBusy === `${document.id}:delete` ? "Excluindo..." : "Excluir"}</button>}
                   </div>
-                ) : <EmptyText>Nenhum arquivo externo anexado.</EmptyText>}
+                </article>)}</div> : <EmptyText>Nenhum arquivo externo anexado.</EmptyText>}
+                {uploadedDocumentationError && <p className={styles.errorText}>{uploadedDocumentationError}</p>}
               </Section>
 
               <Section
@@ -285,16 +354,88 @@ function EmptyText({ children }: { children: ReactNode }) {
   return <p className={styles.emptyText}>{children}</p>;
 }
 
-function RequirementSection({ title, prefix, rules, description }: { title: string; prefix: "RF" | "RNF" | "RFD"; rules: RegraRobo[]; description?: string }) {
+function RequirementSection({ title, prefix, rules, robotId, canEdit, description }: { title: string; prefix: "RF" | "RNF" | "RFD"; rules: RegraRobo[]; robotId: string; canEdit: boolean; description?: string }) {
+  const [currentRules, setCurrentRules] = useState(rules);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [newRuleDraft, setNewRuleDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => { setCurrentRules(rules); }, [rules]);
+
+  async function createRule() {
+    const description = newRuleDraft.trim();
+    if (!description) return;
+    setSaving(true); setError("");
+    const nextOrder = currentRules.reduce((highest, rule) => Math.max(highest, rule.ordem ?? -1), -1) + 1;
+    const { data, error: mutationError } = await createClient().from("regras_robo").insert({
+      robo_id: robotId,
+      descricao: description,
+      ordem: nextOrder,
+      tipo: prefix === "RFD" ? "fora_documentacao" : "documentacao",
+    }).select("id,parent_id,ordem,descricao").single();
+    setSaving(false);
+    if (mutationError || !data) { setError("Não foi possível adicionar a regra."); return; }
+    setCurrentRules((current) => [...current, {
+      id: data.id,
+      parentId: data.parent_id,
+      ordem: data.ordem,
+      descricao: data.descricao,
+    }]);
+    setCreating(false); setNewRuleDraft("");
+  }
+
+  async function saveRule(rule: RegraRobo) {
+    if (!rule.id || !draft.trim()) return;
+    setSaving(true); setError("");
+    const { error: mutationError } = await createClient().from("regras_robo").update({ descricao: draft.trim() }).eq("id", rule.id).eq("robo_id", robotId);
+    setSaving(false);
+    if (mutationError) { setError("Não foi possível editar a regra."); return; }
+    setCurrentRules((current) => current.map((item) => item.id === rule.id ? { ...item, descricao: draft.trim() } : item));
+    setEditingId(null); setDraft("");
+  }
+
+  async function deleteRule(rule: RegraRobo) {
+    if (!rule.id || !window.confirm("Excluir esta regra?")) return;
+    setSaving(true); setError("");
+    const { error: mutationError } = await createClient().from("regras_robo").update({ deleted_at: new Date().toISOString() }).eq("id", rule.id).eq("robo_id", robotId);
+    setSaving(false);
+    if (mutationError) { setError("Não foi possível excluir a regra."); return; }
+    setCurrentRules((current) => current.filter((item) => item.id !== rule.id));
+    if (editingId === rule.id) { setEditingId(null); setDraft(""); }
+  }
+
   return (
-    <Section title={title} description={description}>
-      {rules.length ? <div className={styles.requirementList}>{rules.map((rule, index) => {
+    <Section title={title} description={description} headerMeta={canEdit ? <button className={styles.uploadAction} type="button" disabled={saving || creating} onClick={() => { setCreating(true); setEditingId(null); setDraft(""); setError(""); }}><Plus size={13} /> Adicionar regra</button> : undefined}>
+      {creating && <article className={styles.requirement}>
+        <strong>{`${prefix}${String(currentRules.length + 1).padStart(3, "0")}`}</strong>
+        <textarea className={styles.requirementEditor} value={newRuleDraft} autoFocus placeholder="Escreva a nova regra" onChange={(event) => setNewRuleDraft(event.target.value)} />
+        <div className={styles.requirementActions}>
+          <button type="button" title="Salvar regra" disabled={saving || !newRuleDraft.trim()} onClick={() => void createRule()}><Check size={14} /></button>
+          <button type="button" title="Cancelar" disabled={saving} onClick={() => { setCreating(false); setNewRuleDraft(""); }}><X size={14} /></button>
+        </div>
+      </article>}
+      {currentRules.length ? <div className={styles.requirementList}>{currentRules.map((rule, index) => {
         const explicitCode = rule.descricao.match(REQUIREMENT_CODE_PATTERN)?.[1]?.toUpperCase();
         const code = explicitCode ?? `${prefix}${String(index + 1).padStart(3, "0")}`;
         const descriptionText = explicitCode ? rule.descricao.replace(REQUIREMENT_PREFIX_PATTERN, "") : rule.descricao;
         const isChild = code.includes(".");
-        return <article key={`${code}-${index}`} className={isChild ? styles.childRequirement : styles.requirement}><strong>{code}</strong><p>{descriptionText}</p></article>;
-      })}</div> : <EmptyText>Nenhum requisito cadastrado.</EmptyText>}
+        const editing = Boolean(rule.id && editingId === rule.id);
+        return <article key={rule.id ?? `${code}-${index}`} className={isChild ? styles.childRequirement : styles.requirement}>
+          <strong>{code}</strong>
+          {editing ? <textarea className={styles.requirementEditor} value={draft} autoFocus onChange={(event) => setDraft(event.target.value)} /> : <p>{descriptionText}</p>}
+          {canEdit && rule.id ? <div className={styles.requirementActions}>{editing ? <>
+            <button type="button" title="Salvar" disabled={saving || !draft.trim()} onClick={() => void saveRule(rule)}><Check size={14} /></button>
+            <button type="button" title="Cancelar" disabled={saving} onClick={() => { setEditingId(null); setDraft(""); }}><X size={14} /></button>
+          </> : <>
+            <button type="button" title="Editar regra" disabled={saving} onClick={() => { setEditingId(rule.id ?? null); setDraft(rule.descricao); }}><Pencil size={14} /></button>
+            <button type="button" className={styles.dangerAction} title="Excluir regra" disabled={saving} onClick={() => void deleteRule(rule)}><Trash2 size={14} /></button>
+          </>}</div> : null}
+        </article>;
+      })}</div> : !creating ? <EmptyText>{prefix === "RFD" ? "Nenhuma regra fora da documentação cadastrada." : "Nenhum requisito cadastrado."}</EmptyText> : null}
+      {error && <p className={styles.errorText}>{error}</p>}
     </Section>
   );
 }

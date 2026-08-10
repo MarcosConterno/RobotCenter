@@ -12,6 +12,7 @@ import {
   type Publicacao,
   type Robo,
   type RobotCenterDocumentationSummary,
+  type RobotUploadedDocument,
   type Usuario,
 } from "@/domain/entities";
 import { createClient } from "@/lib/supabase/client";
@@ -39,11 +40,23 @@ async function enviarDocumentacaoUpadaRobo(roboId: string, arquivo?: File | null
   if (arquivo.size > 20 * 1024 * 1024) throw new Error("O manual deve ter no máximo 20 MB.");
 
   const supabase = createClient();
-  const uploadedDocumentationPath = `${roboId}/manual.pdf`;
+  const safeName = arquivo.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9._-]+/g, "-");
+  const uploadedDocumentationPath = `${roboId}/${crypto.randomUUID()}-${safeName}`;
   const { error: uploadError } = await supabase.storage
     .from("robot-manuals")
-    .upload(uploadedDocumentationPath, arquivo, { contentType: "application/pdf", upsert: true });
+    .upload(uploadedDocumentationPath, arquivo, { contentType: "application/pdf", upsert: false });
   if (uploadError) throw uploadError;
+  const { error: metadataError } = await supabase.from("robot_uploaded_documents").insert({
+    robot_id: roboId,
+    storage_path: uploadedDocumentationPath,
+    file_name: arquivo.name,
+    mime_type: arquivo.type,
+    size_bytes: arquivo.size,
+  });
+  if (metadataError) {
+    await supabase.storage.from("robot-manuals").remove([uploadedDocumentationPath]);
+    throw metadataError;
+  }
   const { error: updateError } = await supabase.from("robos")
     .update({ manual_path: uploadedDocumentationPath, manual_nome: arquivo.name })
     .eq("id", roboId);
@@ -105,7 +118,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       supabase.from("robot_center_documentations").select("id,robo_id,status,updated_at").is("deleted_at", null),
       supabase.from("robot_center_documentation_versions").select("documentation_id,version,docx_path,pdf_path,status")
         .eq("status", "published").order("version", { ascending: false }),
-    ]).then(([clientesResult, robosResult, regrasResult, alteracoesResult, publicacoesResult, documentationsResult, documentationVersionsResult]) => {
+      supabase.from("robot_uploaded_documents").select("id,robot_id,storage_path,file_name,mime_type,size_bytes,created_at").is("deleted_at", null).order("created_at", { ascending: false }),
+    ]).then(([clientesResult, robosResult, regrasResult, alteracoesResult, publicacoesResult, documentationsResult, documentationVersionsResult, uploadedDocumentsResult]) => {
       if (!active) return;
       const clientesCarregados: Cliente[] = (clientesResult.data ?? []).map((cliente) => ({
         ...cliente,
@@ -125,6 +139,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       const publicacoes = publicacoesResult.data ?? [];
       const documentations = documentationsResult.data ?? [];
       const documentationVersions = documentationVersionsResult.data ?? [];
+      const uploadedDocuments = uploadedDocumentsResult.data ?? [];
       const robosCarregados: Robo[] = robosResult.data.map((item) => ({
         id: item.id,
         clienteId: item.cliente_id,
@@ -149,6 +164,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         gatilhoParaRoboId: item.gatilho_para_robo_id,
         uploadedDocumentationPath: item.manual_path,
         uploadedDocumentationName: item.manual_nome,
+        uploadedDocuments: uploadedDocuments.filter((document) => document.robot_id === item.id).map((document): RobotUploadedDocument => ({
+          id: document.id,
+          robotId: document.robot_id,
+          storagePath: document.storage_path,
+          fileName: document.file_name,
+          mimeType: document.mime_type,
+          sizeBytes: document.size_bytes,
+          createdAt: document.created_at,
+        })),
         robotCenterDocumentation: (() => {
           const documentation = documentations.find((entry) => entry.robo_id === item.id);
           if (!documentation) return null;
@@ -189,6 +213,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       .on("postgres_changes", { event: "*", schema: "public", table: "publicacoes" }, scheduleRefresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "robot_center_documentations" }, scheduleRefresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "robot_center_documentation_versions" }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "robot_uploaded_documents" }, scheduleRefresh)
       .subscribe();
     return () => {
       if (refreshTimer) clearTimeout(refreshTimer);

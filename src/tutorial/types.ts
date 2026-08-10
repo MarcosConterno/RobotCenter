@@ -1,5 +1,5 @@
 export const ONBOARDING_KEY = "robot-center-onboarding";
-export const ONBOARDING_VERSION = 1;
+export const ONBOARDING_VERSION = 2;
 
 export type TutorialStatus = "not_started" | "in_progress" | "completed" | "skipped";
 

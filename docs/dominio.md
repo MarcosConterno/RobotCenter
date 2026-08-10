@@ -105,6 +105,8 @@ Usuário autenticado é representado por `auth.users`; seus dados funcionais fic
 
 O Tutorial é um onboarding guiado e não obrigatório, resolvido conforme as capacidades reais da interface do usuário. O progresso pertence ao Profile autenticado, suporta versão e permanece disponível entre navegadores. Os estados são não iniciado, em andamento, concluído e pulado; uma conclusão não impede nova execução manual.
 
+O onboarding padrão apresenta primeiro a Minha página e suas áreas pessoais de ToDo, Reuniões e Notas, além da personalização de widgets. Durante esses passos, o tour alterna as abas internas automaticamente sem criar ou alterar dados do usuário.
+
 Tutoriais administrativos possuem um público baseado nos papéis reais do RBAC, rascunho editável e versões publicadas imutáveis. Página e elemento são escolhidos de um catálogo lógico; seletores CSS não integram o conteúdo informado pelo administrador. A execução utiliza a versão publicada adequada ao papel e ainda ignora passos incompatíveis com as capacidades atuais do usuário.
 ## Identidade visual compartilhada
 
@@ -121,7 +123,7 @@ Alterações de regras são registradas na descrição da publicação com a cat
 
 ## Documentação Upada
 
-O Robô pode possuir um PDF externo opcional, denominado Documentação Upada. No domínio, `uploadedDocumentationPath` e `uploadedDocumentationName` mapeiam os campos físicos legados `robos.manual_path` e `robos.manual_nome`. O objeto permanece privado no bucket `robot-manuals`. O arquivo não integra regras, publicações ou o motor DOCX/PDF e pode ser substituído durante a edição sem afetar outros documentos.
+O Robô pode possuir vários documentos externos em `uploadedDocuments`, incluindo PDF, DOCX e XLSX. Os metadados pertencem a `robot_uploaded_documents` e os objetos permanecem privados no bucket `robot-manuals`. `uploadedDocumentationPath` e `uploadedDocumentationName` continuam como compatibilidade para o PDF legado e são migrados sem apagar o objeto existente. Esses anexos não integram regras, publicações ou o motor DOCX/PDF.
 
 ## Documentação Robot Center
 

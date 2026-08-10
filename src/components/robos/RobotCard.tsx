@@ -30,6 +30,7 @@ export default function RobotCard({
 }: RobotCardProps) {
   const hasDocumentation = Boolean(
     robot.uploadedDocumentationPath
+    || robot.uploadedDocuments?.length
     || robot.robotCenterDocumentation?.status === "published",
   );
 

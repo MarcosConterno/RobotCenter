@@ -21,6 +21,8 @@
 10. A atualização manual de versões é exclusiva de Master e Admin e consulta cada valor distinto de `pacote` uma única vez, usando a rede corporativa direta ou a VPN disponível no computador do usuário.
 11. Uma consulta bem-sucedida atualiza `version_checked_at` em todos os robôs vinculados ao pacote; `versao` só muda quando o valor encontrado for diferente.
 12. Falhas de registry não alteram `versao` nem `version_checked_at` e não interrompem os demais pacotes.
+13. Master e Admin podem criar, editar e excluir logicamente requisitos funcionais e regras fora da documentação diretamente nos detalhes do robô, sem abrir o formulário completo de edição.
+14. Um robô pode possuir vários anexos privados em PDF, DOCX ou XLSX, com até 20 MB por arquivo.
 
 ## Regras funcionais
 
@@ -180,7 +182,7 @@
 ## Documentação do robô
 
 1. Documentação Upada e Documentação Robot Center são recursos independentes e podem coexistir.
-2. O PDF externo continua em `robot-manuals`; não é convertido, extraído nem enviado ao motor DOCX/PDF.
+2. Os anexos externos continuam em `robot-manuals`; não são convertidos, extraídos nem enviados ao motor DOCX/PDF.
 3. Substituir a Documentação Upada não altera rascunhos ou versões internas.
 4. Somente Admin pode criar ou editar a Documentação Robot Center.
 5. A autorização de edição é validada na rota e novamente pelas policies RLS.
@@ -233,6 +235,7 @@
 8. O modo de teste nunca cria ou atualiza `user_tutorial_progress`.
 9. Passos aceitam somente páginas e targets presentes no catálogo do código.
 10. Quando a versão publicada aumenta, a ausência de progresso nessa versão volta a destacar discretamente o botão Tutorial sem abrir o tour automaticamente.
+11. O tutorial padrão inclui Minha página, ToDo, Reuniões, Notas e personalização; a navegação entre as abas é somente visual e não modifica dados pessoais.
 ## Minha página e tarefas pessoais
 
 1. Todo usuário autenticado pode utilizar Minha página, independentemente de seu papel.
