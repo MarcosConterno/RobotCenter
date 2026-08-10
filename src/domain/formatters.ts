@@ -6,6 +6,18 @@ export function formatarData(dataIso: string) {
   return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(data);
 }
 
+export function formatarDataHora(dataIso: string) {
+  const data = new Date(dataIso);
+  if (Number.isNaN(data.getTime())) return dataIso;
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(data);
+}
+
 export function formatarDataHoraRelativa(dataIso: string) {
   const data = new Date(dataIso);
   if (Number.isNaN(data.getTime())) return dataIso;

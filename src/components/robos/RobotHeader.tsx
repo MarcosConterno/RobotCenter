@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronUp, FileUp, Filter, Plus, Search, X } from "lucide-react";
+import { ChevronDown, ChevronUp, FileUp, Filter, Plus, RefreshCw, Search, X } from "lucide-react";
 import { useState, type CSSProperties } from "react";
 
 interface RobotHeaderProps {
@@ -26,6 +26,8 @@ interface RobotHeaderProps {
   canCreate: boolean;
   canImport: boolean;
   onImport: () => void;
+  canSyncVersions: boolean;
+  onSyncVersions: () => void;
   onLimparFiltros: () => void;
 }
 
@@ -91,6 +93,8 @@ export default function RobotHeader({
   canCreate,
   canImport,
   onImport,
+  canSyncVersions,
+  onSyncVersions,
   onLimparFiltros,
 }: RobotHeaderProps) {
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -113,6 +117,12 @@ export default function RobotHeader({
         </div>
 
         <div className="robots-page-actions" style={actionsStyle}>
+          {canSyncVersions && (
+            <button type="button" onClick={onSyncVersions} style={secondaryButtonStyle}>
+              <RefreshCw size={16} />
+              Atualizar versões
+            </button>
+          )}
           {canImport && (
             <button type="button" onClick={onImport} style={secondaryButtonStyle}>
               <FileUp size={16} />

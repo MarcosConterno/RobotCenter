@@ -80,6 +80,8 @@ As policies consultam `roles`, `permissions`, `user_roles` e `role_permissions` 
 
 As permissões RBAC são `flows.read`, `flows.create`, `flows.update`, `flows.delete` e `flows.publish`. As policies de `flow_nodes`, `flow_edges` e `flow_versions` herdam o cliente consultando o Fluxo relacionado. `client_id` recebido da interface nunca é suficiente para autorizar uma operação.
 
+A sincronização manual de versões exige sessão válida e papel `admin` ou `master` na API. O conector local apenas consulta o registry; somente a API autenticada altera `robos.versao` e `robos.version_checked_at`. As policies existentes de `robos` permanecem como defesa adicional.
+
 A fila de uma conexão é armazenada em `flow_edges.queue` e segue exatamente a mesma RLS da Edge. A adição dessa propriedade não amplia os grants nem altera o escopo por Cliente.
 
 Os pontos opcionais `source_handle` e `target_handle` pertencem à própria Edge e seguem as policies existentes de `flow_edges`; não criam novo escopo de acesso nem permitem conexões entre Fluxos distintos.

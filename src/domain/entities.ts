@@ -122,6 +122,7 @@ export interface Robo {
   stack: string;
   fila: string;
   versao: string;
+  versionCheckedAt?: string | null;
   responsavel: string;
   disparo?: TipoDisparoRobo;
   gatilhoDeRoboId?: string | null;

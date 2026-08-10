@@ -6,6 +6,7 @@ import {
   Boxes,
   Building2,
   CalendarDays,
+  CalendarClock,
   CirclePower,
   Cpu,
   Download,
@@ -26,7 +27,7 @@ import Link from "next/link";
 import { useState, type ReactNode } from "react";
 
 import { useAdminAccess } from "@/auth/AdminAccessProvider";
-import { formatarData } from "@/domain/formatters";
+import { formatarData, formatarDataHora } from "@/domain/formatters";
 import type { Cliente, RegraRobo, Robo } from "@/domain/entities";
 import { createClient } from "@/lib/supabase/client";
 
@@ -110,6 +111,7 @@ export default function RobotDetails({ robot, clientes = EMPTY_CLIENTES, robos =
           <StatusPill active={robot.ativo} />
           <span><Package size={12} /> {robot.pacote}</span>
           <span><GitBranch size={12} /> {robot.versao}</span>
+          <span><CalendarClock size={12} /> Att Versão: {robot.versionCheckedAt ? formatarDataHora(robot.versionCheckedAt) : "—"}</span>
           <span><Server size={12} /> {robot.fila}</span>
           <span><Layers3 size={12} /> {robot.stack}</span>
         </div>
@@ -143,6 +145,7 @@ export default function RobotDetails({ robot, clientes = EMPTY_CLIENTES, robos =
               <Field icon={<Package size={16} />} label="Pacote" value={robot.pacote} />
               <Field icon={<Layers3 size={16} />} label="Stack" value={robot.stack} />
               <Field icon={<GitBranch size={16} />} label="Versão" value={robot.versao} />
+              <Field icon={<CalendarClock size={16} />} label="Att Versão" value={robot.versionCheckedAt ? formatarDataHora(robot.versionCheckedAt) : "—"} />
               <Field icon={<Server size={16} />} label="Fila" value={robot.fila} />
               <Field icon={<Zap size={16} />} label="Disparo" value={robot.disparo === "Gatilho" ? "Por Gatilho" : robot.disparo ?? "Manual"} />
               <Field icon={<UserRound size={16} />} label="Responsável" value={robot.responsavel} />

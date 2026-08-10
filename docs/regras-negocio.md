@@ -18,6 +18,9 @@
 7. Excluir um Robô o remove do estado em memória.
 8. A busca considera nome, sistema, pacote, stack e fila.
 9. Os filtros de Sistema, Pacote, Ambiente e Status são independentes.
+10. A atualização manual de versões é exclusiva de Master e Admin e consulta cada valor distinto de `pacote` uma única vez, usando a rede corporativa direta ou a VPN disponível no computador do usuário.
+11. Uma consulta bem-sucedida atualiza `version_checked_at` em todos os robôs vinculados ao pacote; `versao` só muda quando o valor encontrado for diferente.
+12. Falhas de registry não alteram `versao` nem `version_checked_at` e não interrompem os demais pacotes.
 
 ## Regras funcionais
 

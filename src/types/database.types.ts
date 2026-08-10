@@ -962,6 +962,7 @@ export type Database = {
           stack: string
           updated_at: string
           updated_by: string | null
+          version_checked_at: string | null
           versao: string
         }
         Insert: {
@@ -993,6 +994,7 @@ export type Database = {
           stack: string
           updated_at?: string
           updated_by?: string | null
+          version_checked_at?: string | null
           versao: string
         }
         Update: {
@@ -1024,6 +1026,7 @@ export type Database = {
           stack?: string
           updated_at?: string
           updated_by?: string | null
+          version_checked_at?: string | null
           versao?: string
         }
         Relationships: [

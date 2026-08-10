@@ -7,6 +7,7 @@ import AppShell from "@/components/layout/AppShell";
 import RobotHeader from "@/components/robos/RobotHeader";
 import RobotImportDialog from "@/components/robos/RobotImportDialog";
 import RobotTable from "@/components/robos/RobotTable";
+import RobotVersionSyncDialog from "@/components/robos/RobotVersionSyncDialog";
 import { useAdminAccess } from "@/auth/AdminAccessProvider";
 import { useAppData } from "@/data/AppDataProvider";
 import { AMBIENTES_ROBO } from "@/domain/entities";
@@ -17,8 +18,8 @@ const statusOptions = [TODAS_OPCOES, "Ativo", "Inativo"] as const;
 
 export default function RobosPage() {
   const router = useRouter();
-  const { canManageRobots } = useAdminAccess();
-  const { robos, clientes, importarRobos } = useAppData();
+  const { canManageRobots, isAdmin } = useAdminAccess();
+  const { robos, clientes, importarRobos, recarregarDados } = useAppData();
   const [robotSelecionadoDoDashboard, setRobotSelecionadoDoDashboard] = useState<string | null>(null);
   const [robotParaEditarId, setRobotParaEditarId] = useState<string | null>(null);
   const [pesquisa, setPesquisa] = useState("");
@@ -28,6 +29,7 @@ export default function RobosPage() {
   const [ambiente, setAmbiente] = useState(TODAS_OPCOES);
   const [status, setStatus] = useState(TODAS_OPCOES);
   const [importOpen, setImportOpen] = useState(false);
+  const [versionSyncOpen, setVersionSyncOpen] = useState(false);
   const dashboardSelectionAppliedRef = useRef(false);
 
   useEffect(() => {
@@ -128,6 +130,8 @@ export default function RobosPage() {
           canCreate={canManageRobots}
           canImport={canManageRobots}
           onImport={() => setImportOpen(true)}
+          canSyncVersions={isAdmin}
+          onSyncVersions={() => setVersionSyncOpen(true)}
         />
 
         <div style={{ marginTop: 24 }}>
@@ -147,6 +151,11 @@ export default function RobosPage() {
         onImport={async (items) => {
           await importarRobos(items);
         }}
+      />}
+      {isAdmin && versionSyncOpen && <RobotVersionSyncDialog
+        robots={robos}
+        onClose={() => setVersionSyncOpen(false)}
+        onComplete={recarregarDados}
       />}
     </>
   );

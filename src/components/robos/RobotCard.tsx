@@ -1,5 +1,6 @@
 import {
   Cpu,
+  CalendarClock,
   FileCheck2,
   GitBranch,
   Layers3,
@@ -8,6 +9,7 @@ import {
 } from "lucide-react";
 import type { CSSProperties } from "react";
 import type { Robo } from "@/domain/entities";
+import { formatarDataHora } from "@/domain/formatters";
 
 interface RobotCardProps {
   robot: Robo;
@@ -149,7 +151,14 @@ export default function RobotCard({
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <GitBranch size={14} style={{ flexShrink: 0 }} />
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {robot.versao}
+            Versão: {robot.versao}
+          </span>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <CalendarClock size={14} style={{ flexShrink: 0 }} />
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            Att Versão: {robot.versionCheckedAt ? formatarDataHora(robot.versionCheckedAt) : "—"}
           </span>
         </div>
 

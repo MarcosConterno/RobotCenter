@@ -166,13 +166,13 @@ Nenhuma tabela foi criada. A tradução inicial, ainda dependente de confirmaç�
 
 ### `robos`
 
-Além dos campos existentes, armazena `court_name`, `ideal` e `max`. `cliente_id` é obrigatório e o formulário seleciona um registro existente de `clientes`.
+Além dos campos existentes, armazena `court_name`, `ideal`, `max` e `version_checked_at`. `cliente_id` é obrigatório e o formulário seleciona um registro existente de `clientes`. `pacote` identifica o pacote no registry interno; `version_checked_at` registra somente verificações concluídas com sucesso.
 
 ### `alteracoes_robo`
 
 Histórico imutável vinculado por `robo_id`, com `descricao`, `realizada_em`, `created_at` e `created_by`. A migration copia todo `robos.alteracao_realizada` não vazio para esta tabela e preserva a coluna legada para evitar perda de dados.
 
-`id`, `nome`, `sistema`, `pacote`, `descricao`, `ambiente`, `ativo`, `stack`, `fila`, `versao`, `responsavel`, `ultima_publicacao_em`, `alteracao_realizada`.
+`id`, `nome`, `sistema`, `pacote`, `descricao`, `ambiente`, `ativo`, `stack`, `fila`, `versao`, `version_checked_at`, `responsavel`, `ultima_publicacao_em`, `alteracao_realizada`.
 
 ### `regras_robo`
 

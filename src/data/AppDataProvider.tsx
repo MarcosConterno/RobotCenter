@@ -80,6 +80,7 @@ interface AppDataContextValue {
   cadastrarCliente: (dados: DadosCadastroCliente) => Promise<Cliente>;
   atualizarCliente: (id: string, dados: DadosCadastroCliente) => Promise<Cliente | null>;
   excluirCliente: (id: string, replacementClientId: string | null) => Promise<number>;
+  recarregarDados: () => void;
 }
 
 const AppDataContext = createContext<AppDataContextValue | null>(null);
@@ -141,6 +142,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         stack: item.stack,
         fila: item.fila,
         versao: item.versao,
+        versionCheckedAt: item.version_checked_at,
         responsavel: item.responsavel,
         disparo: item.disparo as Robo["disparo"],
         gatilhoDeRoboId: item.gatilho_de_robo_id,
@@ -526,6 +528,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }
 
   const publicacoes = useMemo(() => publicacoesLocais, [publicacoesLocais]);
+  const recarregarDados = () => setDataRevision((current) => current + 1);
 
   const value: AppDataContextValue = {
     robos,
@@ -543,6 +546,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     cadastrarCliente,
     atualizarCliente,
     excluirCliente,
+    recarregarDados,
   };
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;

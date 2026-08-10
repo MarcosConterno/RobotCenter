@@ -16,6 +16,8 @@ Cada Cliente possui a configuração visual `cor`, selecionada entre seis paleta
 
 Automação cadastrada e gerenciada pelo sistema. Possui identificação, sistema, pacote, ambiente, estado operacional, configuração técnica, responsável textual, versão, documentação da última alteração e regras funcionais.
 
+O campo `pacote` também identifica o pacote consultado no registry NPM interno. `versionCheckedAt` registra a última verificação concluída com sucesso; falhas de rede ou pacote não encontrado preservam tanto esse instante quanto a versão existente.
+
 ### Sistema
 
 Sistema com o qual o robô se relaciona. É um valor textual do Robô. Não é sinônimo de Cliente nem de Pacote.
