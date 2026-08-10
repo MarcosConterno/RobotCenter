@@ -8,6 +8,7 @@ interface AdminAccessContextValue {
   isAdmin: boolean;
   isMaster: boolean;
   isOperator: boolean;
+  isHeadSector: boolean;
   isClient: boolean;
   isSupport: boolean;
   canManageRobots: boolean;
@@ -18,6 +19,9 @@ interface AdminAccessContextValue {
   canEditFlows: boolean;
   canCreateFlows: boolean;
   canDeleteFlows: boolean;
+  canViewStackRequests: boolean;
+  canCreateStackRequests: boolean;
+  canManageStackRequests: boolean;
   clientId: string | null;
   displayName: string;
   roles: string[];
@@ -62,22 +66,27 @@ export function AdminAccessProvider({ children }: { children: ReactNode }) {
     const isMaster = roles.includes("master");
     const isAdmin = roles.includes("admin") || isMaster;
     const isOperator = roles.includes("operador");
+    const isHeadSector = roles.includes("head_setor");
     const isClient = roles.includes("cliente");
     const isSupport = roles.includes("suporte");
     return {
       isAdmin,
       isMaster,
       isOperator,
+      isHeadSector,
       isClient,
       isSupport,
       canManageRobots: isAdmin,
       canUpdateCapacity: isAdmin || isOperator,
       canAccessSettings: isAdmin,
-      canAccessRobots: isAdmin || isOperator || isClient || isSupport,
+      canAccessRobots: isAdmin || isHeadSector || isOperator || isClient || isSupport,
       canAccessFlows: isAdmin || isOperator || isClient || isSupport,
       canEditFlows: isAdmin || isClient,
       canCreateFlows: isAdmin,
       canDeleteFlows: isAdmin,
+      canViewStackRequests: permissions.includes("stack_requests.read"),
+      canCreateStackRequests: permissions.includes("stack_requests.create"),
+      canManageStackRequests: permissions.some((permission) => ["stack_requests.update", "stack_requests.status", "stack_requests.complete", "stack_requests.cancel", "stack_requests.request_info"].includes(permission)),
       canManageTutorials: isMaster || permissions.includes("tutorials.manage"),
       clientId,
       displayName,

@@ -1,0 +1,36 @@
+.panel { display: grid; gap: 14px; }
+.header { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
+.header h2 { margin: 0; color: var(--text-strong); font-size: 15px; }
+.header p { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
+.primary, .secondary, .danger { display: inline-flex; min-height: 34px; align-items: center; justify-content: center; gap: 7px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 750; cursor: pointer; }
+.secondary { border-color: var(--border); background: var(--surface); color: var(--text); }
+.danger { border-color: color-mix(in srgb, #ef4444 50%, var(--border)); background: color-mix(in srgb, #ef4444 12%, var(--card)); color: #ef4444; }
+.primary:disabled, .secondary:disabled, .danger:disabled { cursor: not-allowed; opacity: .55; }
+.form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
+.form label, .messageBox label { display: grid; gap: 6px; color: var(--text-2); font-size: 10px; font-weight: 700; }
+.form input, .form select, .messageBox textarea, .editGrid input, .editGrid select { width: 100%; min-height: 38px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: var(--surface); color: var(--text); font: inherit; }
+.form select option, .editGrid select option { color: var(--text); background: var(--card); }
+.form input:focus, .form select:focus, .messageBox textarea:focus, .editGrid input:focus, .editGrid select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.formActions, .actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; grid-column: 1 / -1; }
+.error { margin: 0; color: #ef4444; font-size: 11px; }
+.list { display: grid; gap: 10px; }
+.empty { padding: 28px; border: 1px dashed var(--border); border-radius: 12px; color: var(--muted); text-align: center; background: var(--card); }
+.card { overflow: hidden; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
+.cardHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--separator); }
+.cardHeader h3 { margin: 0; color: var(--text-strong); font-size: 13px; }
+.cardHeader p { margin: 4px 0 0; color: var(--muted); font-size: 10px; }
+.status { display: inline-flex; padding: 5px 8px; border-radius: 999px; color: var(--accent); background: var(--accent-soft); font-size: 9px; font-weight: 800; }
+.body { display: grid; gap: 13px; padding: 14px 16px; }
+.editGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.editGrid label { display: grid; gap: 5px; color: var(--muted); font-size: 9px; font-weight: 700; }
+.meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.meta div { padding: 9px; border: 1px solid var(--separator); border-radius: 8px; background: var(--surface); }
+.meta span { display: block; color: var(--muted); font-size: 8px; text-transform: uppercase; }
+.meta strong { display: block; margin-top: 3px; color: var(--text); font-size: 10px; }
+.messageBox { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--separator); }
+.messageBox textarea { min-height: 70px; padding: 9px 10px; resize: vertical; }
+.history { display: grid; gap: 7px; padding-top: 12px; border-top: 1px solid var(--separator); }
+.history h4 { margin: 0; color: var(--text-strong); font-size: 11px; }
+.historyItem { display: grid; grid-template-columns: 130px 1fr auto; gap: 10px; align-items: start; padding: 8px 10px; border-radius: 8px; background: var(--surface); color: var(--text-2); font-size: 9px; }
+.historyItem time { color: var(--muted); white-space: nowrap; }
+@media (max-width: 760px) { .header { align-items: flex-start; flex-direction: column; } .form, .editGrid { grid-template-columns: 1fr; } .meta { grid-template-columns: repeat(2, minmax(0, 1fr)); } .historyItem { grid-template-columns: 1fr; } }

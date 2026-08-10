@@ -8,6 +8,8 @@ Todo Robô pertence a exatamente um produto por `productType`: `INTEGRADOR`, `CO
 
 Todos os Robôs possuem `command`, que registra o comando técnico de execução e pode permanecer vazio em registros legados. Consulta Processual, Peticionamento e Movimento podem informar `tribunal` e `tribunalSystem`; esses campos permanecem nulos em Robôs Integradores.
 
+Stack é opcional no cadastro do Robô. Uma Solicitação de Stack pertence obrigatoriamente a um Robô já cadastrado e percorre os estados Solicitada, Em análise, Aguardando informação, Concluída ou Cancelada. A Stack gerada é informação da solicitação e não cria vínculo automático com o catálogo.
+
 Pode ser cadastrado individualmente ou importado em lote por administradores. O modelo Excel representa os mesmos dados do formulário: cliente, sistema, robô, CourtName, fila, stack, Ideal, Max, pacote, versão, descrição, ambiente, status, responsável, alterações e regras.
 
 Na importação, Cliente é identificado pelo nome. Um nome ainda não cadastrado cria um Cliente com tenant técnico único, e todos os Robôs subsequentes com o mesmo nome recebem o mesmo `clienteId`. Assim, o vínculo permanece estável para consultas e filtros por Cliente.

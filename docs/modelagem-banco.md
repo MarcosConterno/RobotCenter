@@ -146,7 +146,11 @@ Cliente é um cadastro independente. Não é Sistema nem Pacote e ainda não pos
 
 As constantes `AMBIENTES_ROBO`, `TIPOS_USUARIO` e `CATEGORIAS_PUBLICACAO` são a origem única para types e validações.
 
-Sistema, Pacote, Stack, Fila, Versão e Responsável continuam valores textuais. O código atual não sustenta tabelas próprias para esses conceitos.
+Stack permanece também como valor textual opcional do Robô e pode referenciar `robot_stacks` por `stack_id` quando informada.
+
+### Solicitações de Stack
+
+`stack_requests` pertence a um Robô e registra nome sugerido, fila opcional, Type, Job, status, Stack gerada e datas de solicitação/conclusão. `stack_request_history` mantém eventos e mensagens imutáveis. Ambas usam UUID, auditoria, índices de relacionamento e RLS. A conclusão não cria nem vincula automaticamente um registro em `robot_stacks`.
 
 ## 5. Diagrama textual
 

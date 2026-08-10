@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAppData } from "@/data/AppDataProvider";
+import { useAdminAccess } from "@/auth/AdminAccessProvider";
 import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/types/database.types";
 import { announceDashboardUnreadCount, DASHBOARD_UNREAD_STORAGE_KEY, readDashboardUnreadCount } from "@/domain/dashboard-notifications";
@@ -13,6 +14,7 @@ const FAVICON_SELECTOR = "link[rel='icon'], link[rel='shortcut icon']";
 const DEFAULT_FAVICON = "/images/robot-center-system-logo-transparent.png";
 
 type PublicationRow = Database["public"]["Tables"]["publicacoes"]["Row"];
+interface StackRequestRow { id: string; robot_id: string; suggested_stack_name: string; status: string }
 
 function updateFavicon(hasUnreadUpdates: boolean) {
   const favicon = document.querySelector<HTMLLinkElement>(FAVICON_SELECTOR);
@@ -49,6 +51,7 @@ export default function DashboardUpdateNotifier() {
   const pathname = usePathname();
   const router = useRouter();
   const { robos } = useAppData();
+  const { canViewStackRequests } = useAdminAccess();
   const robosRef = useRef(robos);
   const notifiedPublicationIds = useRef(new Set<string>());
   const [unreadCount, setUnreadCount] = useState(0);
@@ -61,6 +64,13 @@ export default function DashboardUpdateNotifier() {
     window.sessionStorage.removeItem(DASHBOARD_UNREAD_STORAGE_KEY);
     setUnreadCount(0);
     announceDashboardUnreadCount(0);
+  }, []);
+
+  const incrementUnreadUpdates = useCallback(() => {
+    const next = readDashboardUnreadCount() + 1;
+    window.sessionStorage.setItem(DASHBOARD_UNREAD_STORAGE_KEY, String(next));
+    setUnreadCount(next);
+    queueMicrotask(() => announceDashboardUnreadCount(next));
   }, []);
 
   useEffect(() => {
@@ -124,14 +134,7 @@ export default function DashboardUpdateNotifier() {
 
           const dashboardIsVisible = window.location.pathname === "/dashboard"
             && document.visibilityState === "visible";
-          if (!dashboardIsVisible) {
-            setUnreadCount((current) => {
-              const next = current + 1;
-              window.sessionStorage.setItem(DASHBOARD_UNREAD_STORAGE_KEY, String(next));
-              announceDashboardUnreadCount(next);
-              return next;
-            });
-          }
+          if (!dashboardIsVisible) incrementUnreadUpdates();
 
           if ("Notification" in window && Notification.permission === "granted") {
             const robot = robosRef.current.find((item) => item.id === publication.robo_id);
@@ -150,12 +153,28 @@ export default function DashboardUpdateNotifier() {
           }
         },
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "stack_requests" },
+        (payload) => {
+          if (!canViewStackRequests) return;
+          const request = payload.new as StackRequestRow;
+          if (!request?.id) return;
+          const dashboardIsVisible = window.location.pathname === "/dashboard" && document.visibilityState === "visible";
+          if (!dashboardIsVisible) incrementUnreadUpdates();
+          if ("Notification" in window && Notification.permission === "granted") {
+            const robot = robosRef.current.find((item) => item.id === request.robot_id);
+            const notification = new Notification("Solicitação de Stack atualizada", { body: `${robot?.nome ?? "Robô"}: ${request.suggested_stack_name}`, icon: DEFAULT_FAVICON, tag: `stack-request-${request.id}-${request.status}` });
+            notification.onclick = () => { window.focus(); router.push("/dashboard"); notification.close(); };
+          }
+        },
+      )
       .subscribe();
 
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [router]);
+  }, [canViewStackRequests, incrementUnreadUpdates, router]);
 
   return null;
 }

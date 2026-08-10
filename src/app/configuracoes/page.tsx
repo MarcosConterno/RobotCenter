@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, Clock3, FileText, GitFork, KeyRound, Pencil, Plus, Save, ShieldCheck, Trash2, X } from "lucide-react";
+import { Bot, Clock3, FileText, GitFork, KeyRound, Pencil, Plus, Save, Search, ShieldCheck, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import AppShell from "@/components/layout/AppShell";
@@ -647,17 +647,29 @@ function PermissionsPanel({ roles, permissions, loading, error, isMaster, onSave
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [draft, setDraft] = useState<Record<string, string[]>>({});
+  const [permissionSearch, setPermissionSearch] = useState("");
+  const [selectedRole, setSelectedRole] = useState<string>("all");
 
   useEffect(() => {
     setDraft(Object.fromEntries(permissions.map((permission) => [permission.id, [...permission.roles]])));
   }, [permissions]);
 
-  const groups = permissions.reduce<Record<string, PermissionItem[]>>((result, permission) => {
+  const filteredPermissions = permissions.filter((permission) => {
+    const term = permissionSearch.trim().toLocaleLowerCase("pt-BR");
+    return (!term || `${permission.codigo} ${permission.descricao ?? ""} ${resourceLabel(permission.recurso)}`.toLocaleLowerCase("pt-BR").includes(term))
+      && (selectedRole === "all" || (draft[permission.id] ?? permission.roles).includes(selectedRole));
+  });
+  const groups = filteredPermissions.reduce<Record<string, PermissionItem[]>>((result, permission) => {
     (result[permission.recurso] ??= []).push(permission);
     return result;
   }, {});
-  const canEdit = (permission: PermissionItem, role: PermissionRole) => isMaster
-    || (permission.recurso !== "access_control" && role.codigo !== "master" && role.codigo !== "admin");
+  const visibleRoles = selectedRole === "all" ? roles : roles.filter((role) => role.codigo === selectedRole);
+  const pendingChanges = permissions.reduce((total, permission) => total + roles.filter((role) => permission.roles.includes(role.codigo) !== (draft[permission.id] ?? []).includes(role.codigo)).length, 0);
+  const canEdit = (permission: PermissionItem, role: PermissionRole) => {
+    if (role.codigo === "master") return false;
+    if (permission.recurso === "stack_requests" && ["cliente", "suporte"].includes(role.codigo)) return false;
+    return true;
+  };
   const toggleRole = (permissionId: string, roleCode: string) => setDraft((current) => {
     const selected = new Set(current[permissionId] ?? []);
     if (selected.has(roleCode)) selected.delete(roleCode); else selected.add(roleCode);
@@ -707,7 +719,7 @@ function PermissionsPanel({ roles, permissions, loading, error, isMaster, onSave
         <span style={isMaster ? masterBadgeStyle : adminBadgeStyle}><ShieldCheck size={14} /> {isMaster ? "Acesso Master" : "Acesso Admin"}</span>
         {editing ? <>
           <button type="button" style={secondaryActionStyle} onClick={cancelEditing} disabled={saving}><X size={14} /> Cancelar</button>
-          <button type="button" style={primaryActionStyle} onClick={() => void savePermissions()} disabled={saving}><Save size={14} /> {saving ? "Salvando..." : "Salvar alterações"}</button>
+          <button type="button" style={primaryActionStyle} onClick={() => void savePermissions()} disabled={saving}><Save size={14} /> {saving ? "Salvando..." : `Salvar alterações${pendingChanges ? ` (${pendingChanges})` : ""}`}</button>
         </> : <button type="button" style={secondaryActionStyle} onClick={() => { setEditing(true); setSaveError(""); }}><Pencil size={14} /> Editar permissões</button>}
       </div>
     </div>
@@ -715,11 +727,12 @@ function PermissionsPanel({ roles, permissions, loading, error, isMaster, onSave
     {error && <p role="alert" style={formErrorStyle}>{error}</p>}
     {saveError && <p role="alert" style={formErrorStyle}>{saveError}</p>}
     {!loading && !error && <>
+      <div style={permissionToolbarStyle}><label style={permissionSearchStyle}><Search size={14} /><input style={permissionSearchInputStyle} value={permissionSearch} onChange={(event) => setPermissionSearch(event.target.value)} placeholder="Buscar permissão ou módulo" /></label><button type="button" style={selectedRole === "all" ? selectedRoleFilterStyle : roleFilterStyle} onClick={() => setSelectedRole("all")}>Todos os perfis</button></div>
       <div style={roleSummaryStyle}>
-        {roles.map((role) => <div key={role.id} style={roleCardStyle} title={role.descricao ?? undefined}>
+        {roles.map((role) => <button type="button" key={role.id} style={{ ...roleCardStyle, ...(selectedRole === role.codigo ? selectedRoleCardStyle : {}) }} title={role.descricao ?? undefined} onClick={() => setSelectedRole((current) => current === role.codigo ? "all" : role.codigo)}>
           <span style={roleCardIconStyle}><ShieldCheck size={12} /></span>
           <div style={roleCardContentStyle}><strong style={roleCardTitleStyle}>{role.nome}</strong><span style={roleCardDescriptionStyle}>{role.descricao}</span></div>
-        </div>)}
+        </button>)}
       </div>
       <div style={permissionGroupsStyle}>
         {Object.entries(groups).map(([resource, items]) => <article key={resource} style={permissionGroupStyle}>
@@ -728,11 +741,11 @@ function PermissionsPanel({ roles, permissions, loading, error, isMaster, onSave
             {items.map((permission) => <div key={permission.id} style={permissionRowStyle}>
               <div style={permissionIdentityStyle}><strong>{permission.descricao || permission.acao}</strong><span>{permission.codigo}</span></div>
               <div style={permissionRolesStyle}>{editing
-                ? roles.map((role) => <label key={role.id} style={{ ...permissionRoleOptionStyle, ...((draft[permission.id] ?? []).includes(role.codigo) ? selectedPermissionRoleStyle : {}), ...(!canEdit(permission, role) ? disabledPermissionRoleStyle : {}) }} title={!canEdit(permission, role) ? "Esta liberação exige acesso Master." : undefined}>
+                ? visibleRoles.map((role) => <label key={role.id} style={{ ...permissionRoleOptionStyle, ...((draft[permission.id] ?? []).includes(role.codigo) ? selectedPermissionRoleStyle : {}), ...(!canEdit(permission, role) ? disabledPermissionRoleStyle : {}) }} title={!canEdit(permission, role) ? role.codigo === "master" ? "As permissões do Master são protegidas." : "Este perfil não pode acessar Solicitações de Stack." : undefined}>
                     <input type="checkbox" checked={(draft[permission.id] ?? []).includes(role.codigo)} disabled={!canEdit(permission, role) || saving} onChange={() => toggleRole(permission.id, role.codigo)} style={permissionCheckboxStyle} />
                     {role.nome}
                   </label>)
-                : roles.map((role) => {
+                : visibleRoles.map((role) => {
                     const allowed = permission.roles.includes(role.codigo);
                     return <span key={role.id} style={allowed ? rolePillStyle : unselectedRolePillStyle} aria-label={`${role.nome}: ${allowed ? "permitido" : "não permitido"}`}>{role.nome}</span>;
                   })}
@@ -750,6 +763,7 @@ function resourceLabel(resource: string) {
     access_control: "Controle de acesso", clients: "Clientes", dashboard: "Dashboard", flows: "Fluxos",
     publications: "Publicações", robot_center_documentation: "Documentação Robot Center", robots: "Robôs",
     settings: "Configurações", robot_catalog: "Cadastros", tutorials: "Tutoriais", users: "Usuários",
+    stack_requests: "Solicitações de Stack",
   };
   return labels[resource] ?? resource.replaceAll("_", " ");
 }
@@ -885,7 +899,13 @@ const permissionHeaderActionsStyle: React.CSSProperties = { display: "flex", fle
 const secondaryActionStyle: React.CSSProperties = { display: "inline-flex", minHeight: 34, alignItems: "center", justifyContent: "center", gap: 7, padding: "0 11px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--text)", fontSize: 11, fontWeight: 700, cursor: "pointer" };
 const primaryActionStyle: React.CSSProperties = { ...secondaryActionStyle, borderColor: "var(--accent)", background: "var(--accent)", color: "var(--on-accent)" };
 const roleSummaryStyle: React.CSSProperties = { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 7, padding: "11px 18px", borderBottom: "1px solid var(--separator)", background: "color-mix(in srgb, var(--surface) 38%, transparent)" };
-const roleCardStyle: React.CSSProperties = { display: "flex", minWidth: 0, maxWidth: 225, alignItems: "center", gap: 7, padding: "7px 9px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--card)", color: "var(--text-2)" };
+const roleCardStyle: React.CSSProperties = { display: "flex", minWidth: 0, maxWidth: 225, alignItems: "center", gap: 7, padding: "7px 9px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--card)", color: "var(--text-2)", textAlign: "left", cursor: "pointer" };
+const selectedRoleCardStyle: React.CSSProperties = { borderColor: "var(--accent)", background: "var(--accent-soft)" };
+const permissionToolbarStyle: React.CSSProperties = { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, padding: "12px 18px 0" };
+const permissionSearchStyle: React.CSSProperties = { display: "flex", minWidth: 260, flex: "1 1 320px", alignItems: "center", gap: 8, minHeight: 36, padding: "0 10px", border: "1px solid var(--border)", borderRadius: 8, color: "var(--muted)", background: "var(--surface)" };
+const permissionSearchInputStyle: React.CSSProperties = { width: "100%", border: 0, outline: 0, background: "transparent", color: "var(--text)", fontSize: 11 };
+const roleFilterStyle: React.CSSProperties = { minHeight: 34, padding: "0 10px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--card)", color: "var(--text-2)", fontSize: 10, fontWeight: 700, cursor: "pointer" };
+const selectedRoleFilterStyle: React.CSSProperties = { ...roleFilterStyle, borderColor: "var(--accent)", color: "var(--accent)", background: "var(--accent-soft)" };
 const roleCardIconStyle: React.CSSProperties = { display: "inline-grid", width: 24, height: 24, placeItems: "center", flex: "0 0 auto", borderRadius: 6, color: "var(--muted)", background: "var(--surface)", border: "1px solid var(--border)" };
 const roleCardContentStyle: React.CSSProperties = { display: "grid", minWidth: 0, gap: 1 };
 const roleCardTitleStyle: React.CSSProperties = { color: "var(--text-strong)", fontSize: 10.5, lineHeight: 1.2 };

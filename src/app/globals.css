@@ -90,6 +90,39 @@ textarea {
   font: inherit;
 }
 
+/* Mantém campos e listas nativas sincronizados com o tema da aplicação.
+   O popup de <select> é desenhado pelo navegador/Windows e precisa receber
+   color-scheme e cores também nas options, não apenas no campo fechado. */
+select {
+  color: var(--text);
+  color-scheme: light;
+}
+
+select option,
+select optgroup {
+  color: var(--text);
+  background-color: var(--card);
+}
+
+select option:disabled,
+select optgroup:disabled {
+  color: var(--muted);
+}
+
+[data-theme="dark"] select {
+  color-scheme: dark !important;
+}
+
+[data-theme="dark"] select option,
+[data-theme="dark"] select optgroup {
+  color: var(--text-strong);
+  background-color: var(--card);
+}
+
+[data-theme="light"] select {
+  color-scheme: light !important;
+}
+
 button {
   cursor: pointer;
 }
@@ -2191,9 +2224,9 @@ button {
 /* Dashboard — saudação, indicadores e feed alinhado */
 .dashboard-welcome { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 3px 2px 2px; }
 .dashboard-welcome__copy { display: flex; align-items: center; gap: 9px; }
-.dashboard-welcome__emoji { display: inline-flex; align-items: center; justify-content: center; font-size: 24px; line-height: 1; }
-.dashboard-welcome div > span { display: block; color: var(--muted); font-size: 11px; }
-.dashboard-welcome h1 { margin: 1px 0 0; color: var(--text-strong); font-size: 21px; line-height: 1.15; font-weight: 720; }
+.dashboard-welcome .dashboard-welcome__eyebrow { display: block; color: var(--accent); font-size: 10px; font-weight: 800; letter-spacing: 1.3px; }
+.dashboard-welcome h1 { margin: 5px 0 3px; color: var(--text-strong); font-size: 24px; line-height: 1.15; font-weight: 720; }
+.dashboard-welcome p { margin: 0; color: var(--muted); font-size: 11px; }
 
 .dashboard-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .dashboard-stat-card { position: relative; display: flex; min-width: 0; min-height: 76px; align-items: center; gap: 11px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--stat-color) 18%, var(--border)); border-radius: 12px; padding: 13px 15px; background: color-mix(in srgb, var(--stat-background) 48%, var(--card)); box-shadow: var(--shadow); }
@@ -2320,3 +2353,29 @@ button {
 .settings-user-delete-identity strong, .settings-user-delete-identity small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .settings-user-delete-identity strong { color: var(--text-strong); font-size: 12px; }
 .settings-user-delete-identity small { color: var(--muted); font-size: 9.5px; }
+.stack-requests-dashboard { overflow: hidden; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
+.stack-requests-dashboard > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--separator); }
+.stack-requests-dashboard > header > div { display: flex; align-items: center; gap: 10px; }
+.stack-requests-dashboard > header > div > span { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 8px; color: var(--accent); background: var(--accent-soft); }
+.stack-requests-dashboard h2 { margin: 0; color: var(--text-strong); font-size: 14px; }
+.stack-requests-dashboard header p { margin: 3px 0 0; color: var(--muted); font-size: 10px; }
+.stack-requests-dashboard header > strong { padding: 5px 9px; border-radius: 999px; color: var(--accent); background: var(--accent-soft); font-size: 9px; }
+.stack-requests-dashboard__stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border-bottom: 1px solid var(--separator); }
+.stack-requests-dashboard__stats button { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; border: 0; border-right: 1px solid var(--separator); background: transparent; color: inherit; cursor: pointer; }
+.stack-requests-dashboard__stats button:last-child { border-right: 0; }
+.stack-requests-dashboard__stats button:hover { background: var(--surface); }
+.stack-requests-dashboard__stats button.is-active { background: var(--accent-soft); box-shadow: inset 0 -2px 0 var(--accent); }
+.stack-requests-dashboard__stats button.is-active span, .stack-requests-dashboard__stats button.is-active strong { color: var(--accent); }
+.stack-requests-dashboard__stats span { color: var(--muted); font-size: 9px; }
+.stack-requests-dashboard__stats strong { color: var(--text-strong); font-size: 15px; }
+.stack-requests-dashboard__list { display: grid; }
+.stack-requests-dashboard__list > button { display: grid; grid-template-columns: 1fr auto 80px; align-items: center; gap: 12px; padding: 10px 16px; border: 0; border-bottom: 1px solid var(--separator); background: transparent; color: var(--text); text-align: left; cursor: pointer; }
+.stack-requests-dashboard__list > button:hover { background: var(--surface); }
+.stack-requests-dashboard__list > button span { display: grid; gap: 2px; }
+.stack-requests-dashboard__list strong { font-size: 10px; }.stack-requests-dashboard__list small, .stack-requests-dashboard__list time { color: var(--muted); font-size: 9px; }
+.stack-requests-dashboard__list em { padding: 4px 7px; border-radius: 999px; color: var(--accent); background: var(--accent-soft); font-size: 8px; font-style: normal; font-weight: 750; }
+.stack-requests-dashboard__list > p { margin: 0; padding: 24px; color: var(--muted); font-size: 10px; text-align: center; }
+.stack-requests-dashboard__footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 16px; color: var(--muted); background: var(--surface); font-size: 8px; }
+.stack-requests-dashboard__footer label { display: flex; align-items: center; gap: 6px; }
+.stack-requests-dashboard__footer select { min-height: 24px; padding: 0 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); color: var(--text); font-size: 8px; }
+@media (max-width: 720px) { .stack-requests-dashboard__stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .stack-requests-dashboard__list > button { grid-template-columns: 1fr auto; }.stack-requests-dashboard__list time { display: none; } }

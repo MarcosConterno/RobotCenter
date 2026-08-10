@@ -45,15 +45,15 @@ async function garantirCadastrosDoRobo(dados: Pick<DadosFormularioRobo, "pacote"
   const key = (value: string) => normalizarIdentificador(value);
   const existingPackage = packagesResult.data?.find((item) => key(item.name) === key(dados.pacote));
   let packageId = existingPackage?.id;
-  let stackId = stacksResult.data?.find((item) => key(item.name) === key(dados.stack))?.id;
+  let stackId = dados.stack ? stacksResult.data?.find((item) => key(item.name) === key(dados.stack))?.id : undefined;
   let queueId = queuesResult.data?.find((item) => key(item.name) === key(dados.fila))?.id;
   let commandId = dados.command ? commandsResult.data?.find((item) => key(item.command) === key(dados.command))?.id : undefined;
   if (!packageId) { const { data, error } = await supabase.from("robot_packages").insert({ name: dados.pacote, color: dados.pacoteCor }).select("id").single(); if (error) throw new Error(`Pacote não cadastrado e não foi possível criá-lo: ${error.message}`); packageId = data.id; }
   else if (existingPackage && existingPackage.color !== dados.pacoteCor) { const { error } = await supabase.from("robot_packages").update({ color: dados.pacoteCor }).eq("id", packageId); if (error) throw error; }
-  if (!stackId) { const { data, error } = await supabase.from("robot_stacks").insert({ name: dados.stack }).select("id").single(); if (error) throw new Error(`Stack não cadastrada e não foi possível criá-la: ${error.message}`); stackId = data.id; }
+  if (dados.stack && !stackId) { const { data, error } = await supabase.from("robot_stacks").insert({ name: dados.stack }).select("id").single(); if (error) throw new Error(`Stack não cadastrada e não foi possível criá-la: ${error.message}`); stackId = data.id; }
   if (!queueId) { const { data, error } = await supabase.from("robot_queues").insert({ name: dados.fila }).select("id").single(); if (error) throw new Error(`Fila não cadastrada e não foi possível criá-la: ${error.message}`); queueId = data.id; }
   if (dados.command && !commandId) { const { data, error } = await supabase.from("robot_commands").insert({ name: dados.command, command: dados.command }).select("id").single(); if (error) throw new Error(`Command não cadastrado e não foi possível criá-lo: ${error.message}`); commandId = data.id; }
-  return { packageId, stackId, queueId, commandId: commandId ?? null };
+  return { packageId, stackId: stackId ?? null, queueId, commandId: commandId ?? null };
 }
 
 async function enviarDocumentacaoUpadaRobo(roboId: string, arquivo?: File | null) {
@@ -176,7 +176,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         descricao: item.descricao,
         ambiente: item.ambiente as Robo["ambiente"],
         ativo: item.ativo,
-        stack: item.stack,
+        stack: item.stack ?? "",
         fila: item.fila,
         versao: item.versao,
         command: item.command,
@@ -256,7 +256,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       cliente_id: cadastro.clienteId, cliente_cor: clienteCor, nome: cadastro.nome, sistema: cadastro.sistema,
       court_name: cadastro.courtName, ideal: cadastro.ideal, max: cadastro.max, pacote: cadastro.pacote,
       pacote_cor: cadastro.pacoteCor, descricao: cadastro.descricao, ambiente: cadastro.ambiente,
-      ativo: cadastro.ativo, stack: cadastro.stack, fila: cadastro.fila, versao: cadastro.versao,
+      ativo: cadastro.ativo, stack: cadastro.stack || null, fila: cadastro.fila, versao: cadastro.versao,
       command: cadastro.command, product_type: cadastro.productType,
       package_id: catalogIds.packageId, stack_id: catalogIds.stackId, queue_id: catalogIds.queueId, command_id: catalogIds.commandId,
       tribunal: cadastro.productType === "INTEGRADOR" ? null : cadastro.tribunal,
@@ -308,7 +308,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       cliente_id: cadastro.clienteId, nome: cadastro.nome,
       sistema: cadastro.sistema, court_name: cadastro.courtName, ideal: cadastro.ideal, max: cadastro.max,
       pacote: cadastro.pacote, pacote_cor: cadastro.pacoteCor, descricao: cadastro.descricao,
-      ambiente: cadastro.ambiente, ativo: cadastro.ativo, stack: cadastro.stack, fila: cadastro.fila,
+      ambiente: cadastro.ambiente, ativo: cadastro.ativo, stack: cadastro.stack || null, fila: cadastro.fila,
       versao: cadastro.versao, command: cadastro.command, product_type: cadastro.productType,
       package_id: catalogIds.packageId, stack_id: catalogIds.stackId, queue_id: catalogIds.queueId, command_id: catalogIds.commandId,
       tribunal: cadastro.productType === "INTEGRADOR" ? null : cadastro.tribunal,
@@ -477,7 +477,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         if (campos.descricao !== undefined) patch.descricao = campos.descricao;
         if (campos.ambiente !== undefined) patch.ambiente = campos.ambiente;
         if (campos.ativo !== undefined) patch.ativo = campos.ativo;
-        if (campos.stack !== undefined) patch.stack = campos.stack;
+        if (campos.stack !== undefined) patch.stack = campos.stack || null;
         if (campos.fila !== undefined) patch.fila = campos.fila;
         if (campos.versao !== undefined) patch.versao = campos.versao;
         if (campos.command !== undefined) patch.command = campos.command;
@@ -523,7 +523,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         sistema: campos.sistema ?? "Não informado",
         courtName: campos.courtName ?? "Não informado",
         fila: campos.fila ?? "Não informado",
-        stack: campos.stack ?? "Não informado",
+        stack: campos.stack ?? "",
         ideal: campos.ideal ?? 0,
         max: Math.max(campos.max ?? 0, campos.ideal ?? 0),
         pacote: campos.pacote ?? "Não informado",
@@ -553,7 +553,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       const { data: roboCriado, error: erroRobo } = await supabase.from("robos").insert({
         cliente_id: cliente?.id ?? null, cliente_cor: clienteCor, nome: cadastro.nome, sistema: cadastro.sistema, court_name: cadastro.courtName,
         ideal: cadastro.ideal, max: cadastro.max, pacote: cadastro.pacote, pacote_cor: pacoteCor, descricao: cadastro.descricao,
-        ambiente: cadastro.ambiente, ativo: cadastro.ativo, stack: cadastro.stack, fila: cadastro.fila,
+        ambiente: cadastro.ambiente, ativo: cadastro.ativo, stack: cadastro.stack || null, fila: cadastro.fila,
         versao: cadastro.versao, command: cadastro.command, product_type: cadastro.productType,
         package_id: catalogIds.packageId, stack_id: catalogIds.stackId, queue_id: catalogIds.queueId, command_id: catalogIds.commandId,
         tribunal: cadastro.productType === "INTEGRADOR" ? null : cadastro.tribunal,

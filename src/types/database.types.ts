@@ -1038,7 +1038,7 @@ export type Database = {
           product_type: string
           responsavel: string
           sistema: string
-          stack: string
+          stack: string | null
           stack_id: string | null
           tribunal: string | null
           tribunal_system: string | null
@@ -1078,7 +1078,7 @@ export type Database = {
           product_type?: string
           responsavel: string
           sistema: string
-          stack: string
+          stack?: string | null
           stack_id?: string | null
           tribunal?: string | null
           tribunal_system?: string | null
@@ -1118,7 +1118,7 @@ export type Database = {
           product_type?: string
           responsavel?: string
           sistema?: string
-          stack?: string
+          stack?: string | null
           stack_id?: string | null
           tribunal?: string | null
           tribunal_system?: string | null
@@ -1267,6 +1267,26 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      stack_request_history: {
+        Row: { changes: Json; created_at: string; created_by: string; event_type: string; id: string; message: string | null; new_status: string | null; previous_status: string | null; stack_request_id: string }
+        Insert: { changes?: Json; created_at?: string; created_by?: string; event_type: string; id?: string; message?: string | null; new_status?: string | null; previous_status?: string | null; stack_request_id: string }
+        Update: { changes?: Json; created_at?: string; created_by?: string; event_type?: string; id?: string; message?: string | null; new_status?: string | null; previous_status?: string | null; stack_request_id?: string }
+        Relationships: [
+          { foreignKeyName: "stack_request_history_created_by_fkey"; columns: ["created_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "stack_request_history_stack_request_id_fkey"; columns: ["stack_request_id"]; isOneToOne: false; referencedRelation: "stack_requests"; referencedColumns: ["id"] },
+        ]
+      }
+      stack_requests: {
+        Row: { completed_at: string | null; created_at: string; created_by: string; generated_stack: string | null; id: string; job: string; queue_id: string | null; requested_at: string; robot_id: string; status: string; suggested_stack_name: string; type: string; updated_at: string; updated_by: string | null }
+        Insert: { completed_at?: string | null; created_at?: string; created_by?: string; generated_stack?: string | null; id?: string; job: string; queue_id?: string | null; requested_at?: string; robot_id: string; status?: string; suggested_stack_name: string; type: string; updated_at?: string; updated_by?: string | null }
+        Update: { completed_at?: string | null; created_at?: string; created_by?: string; generated_stack?: string | null; id?: string; job?: string; queue_id?: string | null; requested_at?: string; robot_id?: string; status?: string; suggested_stack_name?: string; type?: string; updated_at?: string; updated_by?: string | null }
+        Relationships: [
+          { foreignKeyName: "stack_requests_created_by_fkey"; columns: ["created_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "stack_requests_queue_id_fkey"; columns: ["queue_id"]; isOneToOne: false; referencedRelation: "robot_queues"; referencedColumns: ["id"] },
+          { foreignKeyName: "stack_requests_robot_id_fkey"; columns: ["robot_id"]; isOneToOne: false; referencedRelation: "robos"; referencedColumns: ["id"] },
+          { foreignKeyName: "stack_requests_updated_by_fkey"; columns: ["updated_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
         ]
       }
       tutorial_drafts: {

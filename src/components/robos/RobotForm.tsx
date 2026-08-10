@@ -210,7 +210,7 @@ export default function RobotForm({
           <Field label="Sistema" placeholder="Ex.: Legal One" value={form.sistema} onChange={(v) => update("sistema", v)} required />
           <Field label="CourtName" placeholder="Ex.: TJSP" value={form.courtName} onChange={(v) => update("courtName", v)} required />
           <CatalogSelect label="Fila" value={form.fila} items={catalogs.queues} onChange={(v) => update("fila", v)} />
-          <CatalogSelect label="Stack" value={form.stack} items={catalogs.stacks} onChange={(v) => update("stack", v)} />
+          <CatalogSelect label="Stack (opcional)" value={form.stack} items={catalogs.stacks} onChange={(v) => update("stack", v)} />
           <NumberField label="Ideal" value={form.ideal} onChange={(value) => update("ideal", value)} />
           <NumberField label="Max" value={form.max} onChange={(value) => update("max", value)} />
           <div>
@@ -253,7 +253,7 @@ export default function RobotForm({
       {step === 3 && <FormSection icon={<CheckCircle2 size={17} />} title="Revisar e salvar" description="Confira os dados antes de publicar o robô.">
         <div className="robot-form-review">
           <ReviewGroup title="Identificação" items={[["Robô", form.nome], ["Responsável", form.responsavel], ["Ambiente", form.ambiente], ["Status", form.ativo ? "Ativo" : "Inativo"], ["Descrição", form.descricao]]} />
-          <ReviewGroup title="Configuração" items={[["Produto", ROBOT_PRODUCTS.find((item) => item.productType === form.productType)?.label ?? form.productType], ["Cliente", clientes.find((item) => item.id === form.clienteId)?.nome ?? "Não se aplica"], ["Sistema", form.sistema], ["Pacote", form.pacote], ["Stack", form.stack], ["Fila", form.fila], ["Command", form.command || "Não informado"], ["Versão", form.versao], ["Capacidade", `Ideal ${form.ideal} · Máx. ${form.max}`]]} />
+          <ReviewGroup title="Configuração" items={[["Produto", ROBOT_PRODUCTS.find((item) => item.productType === form.productType)?.label ?? form.productType], ["Cliente", clientes.find((item) => item.id === form.clienteId)?.nome ?? "Não se aplica"], ["Sistema", form.sistema], ["Pacote", form.pacote], ["Stack", form.stack || "Não informada"], ["Fila", form.fila], ["Command", form.command || "Não informado"], ["Versão", form.versao], ["Capacidade", `Ideal ${form.ideal} · Máx. ${form.max}`]]} />
         </div>
       </FormSection>}
 

@@ -36,10 +36,11 @@ import { formatarData, formatarDataHora } from "@/domain/formatters";
 import type { Cliente, RegraRobo, Robo, RobotUploadedDocument } from "@/domain/entities";
 import { getRobotProductByType } from "@/domain/robot-products";
 import { createClient } from "@/lib/supabase/client";
+import StackRequestsPanel from "./StackRequestsPanel";
 
 import styles from "./RobotDetails.module.css";
 
-type MainTab = "general" | "documentation" | "redmine";
+type MainTab = "general" | "documentation" | "stackRequests" | "redmine";
 type DocumentationTab = "functional" | "outside" | "files";
 const EMPTY_CLIENTES: Cliente[] = [];
 const EMPTY_ROBOS: Robo[] = [];
@@ -50,11 +51,12 @@ interface RobotDetailsProps {
   robot: Robo;
   clientes?: Cliente[];
   robos?: Robo[];
+  initialTab?: MainTab;
 }
 
-export default function RobotDetails({ robot, clientes = EMPTY_CLIENTES, robos = EMPTY_ROBOS }: RobotDetailsProps) {
-  const { isAdmin } = useAdminAccess();
-  const [activeTab, setActiveTab] = useState<MainTab>("general");
+export default function RobotDetails({ robot, clientes = EMPTY_CLIENTES, robos = EMPTY_ROBOS, initialTab = "general" }: RobotDetailsProps) {
+  const { isAdmin, canViewStackRequests } = useAdminAccess();
+  const [activeTab, setActiveTab] = useState<MainTab>(() => initialTab === "stackRequests" && !canViewStackRequests ? "general" : initialTab);
   const [documentationTab, setDocumentationTab] = useState<DocumentationTab>("functional");
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const [uploadedDocuments, setUploadedDocuments] = useState<RobotUploadedDocument[]>(robot.uploadedDocuments ?? []);
@@ -181,7 +183,7 @@ export default function RobotDetails({ robot, clientes = EMPTY_CLIENTES, robos =
           <span><GitBranch size={12} /> {robot.versao}</span>
           <span><CalendarClock size={12} /> Att Versão: {robot.versionCheckedAt ? formatarDataHora(robot.versionCheckedAt) : "—"}</span>
           <span><Server size={12} /> {robot.fila}</span>
-          <span><Layers3 size={12} /> {robot.stack}</span>
+          <span><Layers3 size={12} /> {robot.stack || "Sem Stack"}</span>
         </div>
         {isAdmin && (
           <Link href={`/robos/${robot.id}/editar`} className={`${styles.primaryAction} ${styles.headerAction}`}>
@@ -193,6 +195,7 @@ export default function RobotDetails({ robot, clientes = EMPTY_CLIENTES, robos =
       <nav className={styles.mainTabs} role="tablist" aria-label="Seções do robô">
         <TabButton active={activeTab === "general"} onClick={() => setActiveTab("general")}>Detalhes Gerais</TabButton>
         <TabButton active={activeTab === "documentation"} onClick={() => setActiveTab("documentation")}>Documentação</TabButton>
+        {canViewStackRequests && <TabButton active={activeTab === "stackRequests"} onClick={() => setActiveTab("stackRequests")}>Solicitações de Stack</TabButton>}
         <TabButton active={activeTab === "redmine"} onClick={() => setActiveTab("redmine")}>Redmine</TabButton>
       </nav>
 
@@ -312,6 +315,8 @@ export default function RobotDetails({ robot, clientes = EMPTY_CLIENTES, robos =
           )}
         </div>
       )}
+
+      {activeTab === "stackRequests" && <div className={styles.tabPanel}><StackRequestsPanel robotId={robot.id} /></div>}
 
       {activeTab === "redmine" && (
         <div className={styles.tabPanel}>

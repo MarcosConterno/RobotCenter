@@ -9,8 +9,9 @@ import RobotDetails from "@/components/robos/RobotDetails";
 import { useAppData } from "@/data/AppDataProvider";
 import { getRobotProductPath } from "@/domain/robot-products";
 
-export default function RobotDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function RobotDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string }> }) {
   const { id } = use(params);
+  const { tab } = use(searchParams);
   const { robos, clientes, carregandoRobos } = useAppData();
   const robot = robos.find((item) => item.id === id);
   const cliente = robot ? clientes.find((item) => item.id === robot.clienteId) : undefined;
@@ -26,7 +27,7 @@ export default function RobotDetailPage({ params }: { params: Promise<{ id: stri
         {carregandoRobos
           ? <div className="robot-detail-route__message">Carregando robô...</div>
           : robot
-            ? <RobotDetails robot={robot} clientes={clientes} robos={robos} />
+            ? <RobotDetails robot={robot} clientes={clientes} robos={robos} initialTab={tab === "stackRequests" ? "stackRequests" : "general"} />
             : <div className="robot-detail-route__message is-error">Robô não encontrado ou acesso não autorizado.</div>}
       </main>
     </AppShell>

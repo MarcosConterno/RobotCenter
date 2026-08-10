@@ -21,7 +21,7 @@ export const dadosFormularioRoboSchema = z.object({
   descricao: textoObrigatorio("Descrição"),
   ambiente: z.enum(AMBIENTES_ROBO),
   ativo: z.boolean(),
-  stack: textoObrigatorio("Stack"),
+  stack: z.string().trim().default(""),
   fila: textoObrigatorio("Fila"),
   versao: textoObrigatorio("Versão"),
   command: z.string().trim().default(""),

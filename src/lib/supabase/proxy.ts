@@ -61,7 +61,7 @@ export async function updateSession(request: NextRequest) {
     }));
     const allowed = request.nextUrl.pathname.startsWith("/configuracoes")
       ? roleCodes.has("admin") || roleCodes.has("master")
-      : roleCodes.has("admin") || roleCodes.has("master") || roleCodes.has("operador") || roleCodes.has("cliente") || roleCodes.has("suporte");
+      : roleCodes.has("admin") || roleCodes.has("master") || roleCodes.has("head_setor") || roleCodes.has("operador") || roleCodes.has("cliente") || roleCodes.has("suporte");
     if (!allowed) {
       const dashboardUrl = request.nextUrl.clone();
       dashboardUrl.pathname = "/minha-pagina";

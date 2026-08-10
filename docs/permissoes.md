@@ -37,6 +37,9 @@ A publicação `supabase_realtime` inclui as tabelas operacionais usadas pelos p
 - **Dev**: inicia com as mesmas permissões e o mesmo escopo global de dados do Operador. Sua matriz é independente e pode ser editada por Admin ou Master para receber novas capacidades no futuro.
 - **Cliente**: lê somente seu próprio cliente, seus robôs, regras e publicações; não acessa Configurações e não possui escrita.
 - **Suporte**: acessa Dashboard, listagem/detalhes de Robôs e Fluxos em modo de visualização. Recebe somente as leituras necessárias e não acessa Configurações nem ações de manutenção.
+- **Head Setor**: consulta Robôs e analisa Solicitações de Stack conforme as permissões `stack_requests.*`, sem receber manutenção geral do cadastro de Robôs.
+
+Solicitações de Stack possuem permissões separadas para leitura, criação, resposta, edição, status, pedido de informação, conclusão, cancelamento e histórico. Master e Admin administram essa matriz; Dev, Cliente e Suporte são bloqueados também por RLS. Operador recebe somente leitura e histórico por padrão.
 
 Admin e Operador atualizam capacidade pela RPC `public.update_robot_capacity`. A função valida sessão e permissão específica e não permite alterar outras colunas do robô.
 
@@ -115,6 +118,8 @@ Versões publicadas permanecem no mesmo bucket privado, sob `<robo_id>/versions/
 ## Painel administrativo de permissões
 
 O painel **Configurações → Permissões** agrupa o catálogo de `permissions` pelo campo `recurso` e mostra quais registros ativos de `roles` estão relacionados por `role_permissions`. A descrição funcional é o título e o código técnico aparece como informação secundária. A API `/api/admin/permissions` repete a validação de Admin/Master no servidor e não confia na visibilidade da aba.
+
+Admin e Master podem editar a matriz completa de todos os demais perfis, inclusive o próprio perfil Admin e o recurso `access_control`. O perfil Master é imutável pela matriz e conserva todas as permissões ativas. Dev pode receber permissões de Solicitações de Stack pela matriz; Cliente e Suporte permanecem bloqueados no RPC e nas policies.
 
 A exclusão administrativa de usuário exige Admin no servidor, bloqueia autoexclusão e protege o Master. O profile é mantido como registro arquivado para preservar as FKs de auditoria; os vínculos em `user_roles` são removidos e a identidade do Auth recebe exclusão lógica pelo cliente administrativo. Nenhuma chave administrativa é exposta ao navegador.
 

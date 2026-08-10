@@ -93,8 +93,8 @@ export async function GET() {
   const users = (profiles ?? []).map((profile) => {
     const assignments = profile.user_roles as unknown as Array<{ roles: { codigo?: string } | Array<{ codigo?: string }> | null }>;
     const codes = assignments?.flatMap((assignment) => Array.isArray(assignment.roles) ? assignment.roles : [assignment.roles]).filter(Boolean).flatMap(roleCodes) ?? [];
-    const code = codes.find((item) => TIPOS_USUARIO.some((type) => type.toLowerCase() === item));
-    const tipo = TIPOS_USUARIO.find((item) => item.toLowerCase() === code) ?? "Operador";
+    const code = codes.find((item) => TIPOS_USUARIO.some((type) => type.toLowerCase().replaceAll(" ", "_") === item));
+    const tipo = TIPOS_USUARIO.find((item) => item.toLowerCase().replaceAll(" ", "_") === code) ?? "Operador";
     return { id: profile.id, login: profile.login, email: emailById.get(profile.id) ?? "", tipo, clienteId: profile.cliente_id, isMaster: codes.includes("master") };
   });
 
@@ -116,7 +116,7 @@ export async function POST(request: Request) {
 
   const admin = createAdminClient();
   const { login, email, password, tipo, clientId = null } = parsed.data;
-  const roleCode = tipo.toLowerCase();
+  const roleCode = tipo.toLowerCase().replaceAll(" ", "_");
 
   const { data: role, error: roleError } = await admin
     .from("roles")
@@ -194,7 +194,7 @@ export async function PATCH(request: Request) {
   const targetIsMaster = Boolean(targetMasterRoles);
   if (targetIsMaster && !access.isMaster) return NextResponse.json({ error: "Somente Master pode alterar o usuário Master." }, { status: 403 });
   if (targetIsMaster && tipo !== "Admin") return NextResponse.json({ error: "O usuário Master deve manter também o perfil Admin." }, { status: 400 });
-  const { data: role, error: roleError } = await admin.from("roles").select("id").eq("codigo", tipo.toLowerCase()).eq("ativo", true).single();
+  const { data: role, error: roleError } = await admin.from("roles").select("id").eq("codigo", tipo.toLowerCase().replaceAll(" ", "_")).eq("ativo", true).single();
   if (roleError || !role) return NextResponse.json({ error: "Papel de usuário não encontrado." }, { status: 400 });
 
   if (clientId) {

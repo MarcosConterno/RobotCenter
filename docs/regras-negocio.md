@@ -17,7 +17,15 @@
 - A importação oferece “Baixar base de robôs”, com os registros do produto aberto, e “Baixar modelo”, com cabeçalhos, validações, instruções e a coluna Produto previamente preenchida conforme a página atual.
 - A coluna Produto da planilha controla a listagem do robô. Em atualização vazia, preserva-se o produto atual; em criação vazia, utiliza-se o produto da página que abriu a importação.
 
-1. Um Robô deve possuir nome, sistema, pacote, descrição, ambiente, stack, fila, versão e responsável não vazios.
+1. Um Robô deve possuir nome, sistema, pacote, descrição, ambiente, fila, versão e responsável não vazios; Stack é opcional.
+
+### Solicitações de Stack
+
+- A solicitação sempre referencia um Robô existente e registra nome sugerido, Type e Job; Fila é opcional.
+- Concluir exige informar a Stack gerada e registra automaticamente a data da conclusão.
+- Toda criação, edição, mudança de status, pergunta e resposta acrescenta um evento ao histórico imutável.
+- A conclusão não altera automaticamente a Stack do Robô nem o catálogo de Stacks.
+- Operador possui leitura; Head Setor, Admin e Master podem receber capacidades de gestão pela matriz. Dev pode receber acesso configurável; Cliente e Suporte permanecem bloqueados.
 2. `alteracaoRealizada` pode ficar vazia.
 3. O ambiente deve ser Produção, Teste ou Desenvolvimento.
 4. Um Robô pode estar ativo ou inativo.
