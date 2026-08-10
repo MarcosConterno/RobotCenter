@@ -7,6 +7,7 @@ import { use } from "react";
 import AppShell from "@/components/layout/AppShell";
 import RobotDetails from "@/components/robos/RobotDetails";
 import { useAppData } from "@/data/AppDataProvider";
+import { getRobotProductPath } from "@/domain/robot-products";
 
 export default function RobotDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -18,7 +19,7 @@ export default function RobotDetailPage({ params }: { params: Promise<{ id: stri
     <AppShell title="Robôs">
       <main className="robot-detail-route">
         <nav className="robot-detail-route__breadcrumb" aria-label="Navegação estrutural">
-          <Link href="/robos"><ArrowLeft size={13} /> Robôs</Link>
+          <Link href={robot ? getRobotProductPath(robot.productType) : "/robos/integradores"}><ArrowLeft size={13} /> Robôs</Link>
           {cliente ? <><span>/</span><span>{cliente.nome}</span></> : null}
           <span>/</span><strong>{robot?.nome ?? "Detalhes"}</strong>
         </nav>

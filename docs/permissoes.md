@@ -68,6 +68,7 @@ As policies consultam `roles`, `permissions`, `user_roles` e `role_permissions` 
 - O bucket privado `robot-manuals` permite leitura somente a quem possui `robots.read` e acesso ao cliente do robô. Upload e exclusão de objetos exigem `robots.update`; não existe acesso anônimo. Os metadados em `robot_uploaded_documents` repetem o mesmo escopo por RLS.
 - Master e Admin podem criar, editar ou arquivar requisitos funcionais e regras fora da documentação diretamente na aba Documentação, sem editar o robô inteiro. A interface não exibe as ações a outros papéis, e `regras_robo` exige `robots.update` no banco.
 - Os relacionamentos de gatilho fazem parte de `robos`: leitura segue `robots.read` e alteração segue `robots.update`, com o mesmo isolamento por cliente já aplicado pela RLS.
+- `product_type`, `command`, `tribunal` e `tribunal_system` fazem parte da mesma tabela `robos`. A segregação visual por produto não amplia acesso: leitura e escrita continuam submetidas às policies `robos_select`, `robos_insert_staff` e `robos_update_staff`, incluindo escopo por Cliente.
 
 ## Fluxos
 

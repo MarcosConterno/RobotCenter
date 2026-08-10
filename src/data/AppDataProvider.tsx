@@ -18,7 +18,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/types/database.types";
 
-const LIMITE_PUBLICACOES = 20;
+const LIMITE_PUBLICACOES = 50;
 
 function normalizarIdentificador(valor: string) {
   return valor
@@ -157,6 +157,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         stack: item.stack,
         fila: item.fila,
         versao: item.versao,
+        command: item.command,
+        productType: item.product_type as Robo["productType"],
+        tribunal: item.tribunal,
+        tribunalSystem: item.tribunal_system,
         versionCheckedAt: item.version_checked_at,
         responsavel: item.responsavel,
         disparo: item.disparo as Robo["disparo"],
@@ -230,6 +234,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       court_name: cadastro.courtName, ideal: cadastro.ideal, max: cadastro.max, pacote: cadastro.pacote,
       pacote_cor: cadastro.pacoteCor, descricao: cadastro.descricao, ambiente: cadastro.ambiente,
       ativo: cadastro.ativo, stack: cadastro.stack, fila: cadastro.fila, versao: cadastro.versao,
+      command: cadastro.command, product_type: cadastro.productType,
+      tribunal: cadastro.productType === "INTEGRADOR" ? null : cadastro.tribunal,
+      tribunal_system: cadastro.productType === "INTEGRADOR" ? null : cadastro.tribunalSystem,
       responsavel: cadastro.responsavel,
       disparo: cadastro.disparo, gatilho_de_robo_id: cadastro.gatilhoDeRoboId,
       gatilho_para_robo_id: cadastro.gatilhoParaRoboId,
@@ -277,7 +284,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       sistema: cadastro.sistema, court_name: cadastro.courtName, ideal: cadastro.ideal, max: cadastro.max,
       pacote: cadastro.pacote, pacote_cor: cadastro.pacoteCor, descricao: cadastro.descricao,
       ambiente: cadastro.ambiente, ativo: cadastro.ativo, stack: cadastro.stack, fila: cadastro.fila,
-      versao: cadastro.versao, responsavel: cadastro.responsavel,
+      versao: cadastro.versao, command: cadastro.command, product_type: cadastro.productType,
+      tribunal: cadastro.productType === "INTEGRADOR" ? null : cadastro.tribunal,
+      tribunal_system: cadastro.productType === "INTEGRADOR" ? null : cadastro.tribunalSystem,
+      responsavel: cadastro.responsavel,
       disparo: cadastro.disparo, gatilho_de_robo_id: cadastro.gatilhoDeRoboId,
       gatilho_para_robo_id: cadastro.gatilhoParaRoboId,
     }).eq("id", id);
@@ -330,6 +340,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
     const atualizado = { ...atual, ideal, max };
     setRobos((atuais) => atuais.map((robo) => robo.id === id ? atualizado : robo));
+    if (atual.ideal !== ideal || atual.max !== max) {
+      await publicarAlteracoes(id, atualizado, `Capacidade alterada: ideal de ${atual.ideal} para ${ideal} e máximo de ${atual.max} para ${max}.`);
+    }
     return atualizado;
   }
 
@@ -440,6 +453,16 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         if (campos.stack !== undefined) patch.stack = campos.stack;
         if (campos.fila !== undefined) patch.fila = campos.fila;
         if (campos.versao !== undefined) patch.versao = campos.versao;
+        if (campos.command !== undefined) patch.command = campos.command;
+        if (campos.productType !== undefined) {
+          patch.product_type = campos.productType;
+          if (campos.productType === "INTEGRADOR") {
+            patch.tribunal = null;
+            patch.tribunal_system = null;
+          }
+        }
+        if (campos.tribunal !== undefined && campos.productType !== "INTEGRADOR") patch.tribunal = campos.tribunal;
+        if (campos.tribunalSystem !== undefined && campos.productType !== "INTEGRADOR") patch.tribunal_system = campos.tribunalSystem;
         if (campos.responsavel !== undefined) patch.responsavel = campos.responsavel;
         if (campos.disparo !== undefined) patch.disparo = campos.disparo;
         if (campos.gatilhoDeRoboId !== undefined) patch.gatilho_de_robo_id = campos.gatilhoDeRoboId;
@@ -471,6 +494,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         pacote: campos.pacote ?? "Não informado",
         pacoteCor: campos.pacoteCor ?? "violeta",
         versao: campos.versao ?? "Não informado",
+        command: campos.command ?? "",
+        productType: campos.productType ?? "INTEGRADOR",
+        tribunal: campos.productType === "INTEGRADOR" ? null : campos.tribunal ?? null,
+        tribunalSystem: campos.productType === "INTEGRADOR" ? null : campos.tribunalSystem ?? null,
         descricao: campos.descricao ?? "Não informado",
         ambiente: campos.ambiente ?? "Desenvolvimento",
         ativo: campos.ativo ?? false,
@@ -491,7 +518,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         cliente_id: cliente.id, cliente_cor: clienteCor, nome: cadastro.nome, sistema: cadastro.sistema, court_name: cadastro.courtName,
         ideal: cadastro.ideal, max: cadastro.max, pacote: cadastro.pacote, pacote_cor: pacoteCor, descricao: cadastro.descricao,
         ambiente: cadastro.ambiente, ativo: cadastro.ativo, stack: cadastro.stack, fila: cadastro.fila,
-        versao: cadastro.versao, responsavel: cadastro.responsavel,
+        versao: cadastro.versao, command: cadastro.command, product_type: cadastro.productType,
+        tribunal: cadastro.productType === "INTEGRADOR" ? null : cadastro.tribunal,
+        tribunal_system: cadastro.productType === "INTEGRADOR" ? null : cadastro.tribunalSystem,
+        responsavel: cadastro.responsavel,
         disparo: cadastro.disparo, gatilho_de_robo_id: cadastro.gatilhoDeRoboId,
         gatilho_para_robo_id: cadastro.gatilhoParaRoboId,
       }).select("id,updated_at").single();
@@ -526,6 +556,18 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       const atualizadosPorId = new Map(robosAtualizados.map((robo) => [robo.id, robo]));
       return [...atuais.map((robo) => atualizadosPorId.get(robo.id) ?? robo), ...novosRobos];
     });
+    const alterados = [...novosRobos, ...robosAtualizados];
+    if (alterados.length) {
+      const publicadaEm = new Date().toISOString();
+      const novosIds = new Set(novosRobos.map((robo) => robo.id));
+      const { error: publicationError } = await supabase.from("publicacoes").insert(alterados.map((robo) => ({
+        robo_id: robo.id,
+        categoria: novosIds.has(robo.id) ? "Novo Robô" : "Atualização do Robô",
+        descricao: novosIds.has(robo.id) ? `Robô ${robo.nome} cadastrado por importação.` : `Robô ${robo.nome} atualizado por importação.`,
+        publicada_em: publicadaEm,
+      })));
+      if (publicationError) throw publicationError;
+    }
     return [...novosRobos, ...robosAtualizados];
   }
 

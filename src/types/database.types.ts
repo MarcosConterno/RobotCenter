@@ -989,6 +989,7 @@ export type Database = {
           ativo: boolean
           cliente_id: string
           cliente_cor: string
+          command: string
           court_name: string
           created_at: string
           created_by: string | null
@@ -1007,9 +1008,12 @@ export type Database = {
           nome: string
           pacote: string
           pacote_cor: string
+          product_type: string
           responsavel: string
           sistema: string
           stack: string
+          tribunal: string | null
+          tribunal_system: string | null
           updated_at: string
           updated_by: string | null
           version_checked_at: string | null
@@ -1021,6 +1025,7 @@ export type Database = {
           ativo?: boolean
           cliente_id: string
           cliente_cor?: string
+          command?: string
           court_name: string
           created_at?: string
           created_by?: string | null
@@ -1039,9 +1044,12 @@ export type Database = {
           nome: string
           pacote: string
           pacote_cor?: string
+          product_type?: string
           responsavel: string
           sistema: string
           stack: string
+          tribunal?: string | null
+          tribunal_system?: string | null
           updated_at?: string
           updated_by?: string | null
           version_checked_at?: string | null
@@ -1053,6 +1061,7 @@ export type Database = {
           ativo?: boolean
           cliente_id?: string
           cliente_cor?: string
+          command?: string
           court_name?: string
           created_at?: string
           created_by?: string | null
@@ -1071,9 +1080,12 @@ export type Database = {
           nome?: string
           pacote?: string
           pacote_cor?: string
+          product_type?: string
           responsavel?: string
           sistema?: string
           stack?: string
+          tribunal?: string | null
+          tribunal_system?: string | null
           updated_at?: string
           updated_by?: string | null
           version_checked_at?: string | null

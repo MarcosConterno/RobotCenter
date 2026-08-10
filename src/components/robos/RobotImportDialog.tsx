@@ -6,23 +6,27 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AMBIENTES_ROBO,
   TIPOS_DISPARO_ROBO,
+  type TipoProdutoRobo,
   type Cliente,
   type CamposImportacaoRobo,
   type DadosImportacaoRobo,
   type Robo,
 } from "@/domain/entities";
+import { ROBOT_PRODUCTS } from "@/domain/robot-products";
 
 const HEADERS = [
   "Operação", "ID do Robô", "Cliente", "Sistema", "Robô", "CourtName", "Fila", "Stack",
   "Ideal", "Max", "Pacote", "Versão", "Descrição", "Ambiente", "Status", "Responsável",
   "Disparo", "Gatilho De (ID)", "Gatilho Para (ID)", "Alterações realizadas", "Regras",
   "Regras fora da documentação",
+  "Command", "Tribunal", "Sistema Tribunal", "Produto",
 ] as const;
 
 interface RobotImportDialogProps {
   open: boolean;
   robos: Robo[];
   clientes: Cliente[];
+  defaultProductType: TipoProdutoRobo;
   onClose: () => void;
   onImport: (robots: DadosImportacaoRobo[]) => void | Promise<void>;
 }
@@ -59,7 +63,7 @@ function statusOpcional(value: unknown) {
   throw new Error("Status deve ser Ativo ou Inativo.");
 }
 
-export default function RobotImportDialog({ open, robos, clientes, onClose, onImport }: RobotImportDialogProps) {
+export default function RobotImportDialog({ open, robos, clientes, defaultProductType, onClose, onImport }: RobotImportDialogProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
@@ -82,7 +86,7 @@ export default function RobotImportDialog({ open, robos, clientes, onClose, onIm
 
   if (!open) return null;
 
-  async function baixarModelo() {
+  async function baixarPlanilha(includeData: boolean) {
     setProcessing(true);
     setError("");
     try {
@@ -91,17 +95,18 @@ export default function RobotImportDialog({ open, robos, clientes, onClose, onIm
       workbook.creator = "Robot Center";
       const sheet = workbook.addWorksheet("Robôs", { views: [{ state: "frozen", ySplit: 1 }] });
       sheet.addRow([...HEADERS]);
-      robos.forEach((robo) => {
+      if (includeData) robos.forEach((robo) => {
         const cliente = clientes.find((item) => item.id === robo.clienteId);
         sheet.addRow([
           "Atualizar", robo.id, cliente?.nome ?? "", robo.sistema, robo.nome, robo.courtName, robo.fila,
           robo.stack, robo.ideal, robo.max, robo.pacote, robo.versao, robo.descricao, robo.ambiente,
           robo.ativo ? "Ativo" : "Inativo", robo.responsavel, robo.disparo ?? "Manual",
           robo.gatilhoDeRoboId ?? "", robo.gatilhoParaRoboId ?? "", "", "", "",
+          robo.command, robo.tribunal ?? "", robo.tribunalSystem ?? "",
+          ROBOT_PRODUCTS.find((product) => product.productType === robo.productType)?.label ?? robo.productType,
         ]);
       });
-      if (!robos.length) sheet.addRow(["Criar"]);
-      sheet.autoFilter = { from: "A1", to: `V${Math.max(sheet.rowCount, 2)}` };
+      sheet.autoFilter = { from: "A1", to: `Z${Math.max(sheet.rowCount, 2)}` };
       sheet.getRow(1).height = 28;
       sheet.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
       sheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
@@ -114,6 +119,10 @@ export default function RobotImportDialog({ open, robos, clientes, onClose, onIm
         sheet.getCell(`N${rowNumber}`).dataValidation = { type: "list", allowBlank: true, formulae: ['"Produção,Teste,Desenvolvimento"'] };
         sheet.getCell(`O${rowNumber}`).dataValidation = { type: "list", allowBlank: true, formulae: ['"Ativo,Inativo"'] };
         sheet.getCell(`Q${rowNumber}`).dataValidation = { type: "list", allowBlank: true, formulae: ['"Agendado,Manual,Gatilho"'] };
+        sheet.getCell(`Z${rowNumber}`).dataValidation = { type: "list", allowBlank: false, formulae: [`"${ROBOT_PRODUCTS.map((product) => product.label).join(",")}"`] };
+        if (!includeData) {
+          sheet.getCell(`Z${rowNumber}`).value = ROBOT_PRODUCTS.find((product) => product.productType === defaultProductType)?.label ?? "Robôs Integradores";
+        }
       }
 
       const instructions = workbook.addWorksheet("Instruções");
@@ -126,6 +135,7 @@ export default function RobotImportDialog({ open, robos, clientes, onClose, onIm
         "O cliente é identificado pelo nome. Em criação, um nome inexistente gera o cliente; em atualização isso só ocorre se a célula Cliente for preenchida.",
         "Alterações e regras são aceitas somente em linhas Criar. Separe vários itens por ponto e vírgula ou quebra de linha.",
         "Para remover Gatilho De/Para em uma atualização, escreva LIMPAR. IDs de gatilho devem ser de robôs ativos do mesmo cliente.",
+        "Produto define em qual listagem o robô será exibido. Selecione Robôs Integradores, Consulta Processual, Peticionamento ou Movimento.",
         "O arquivo é validado por completo antes de qualquer gravação. Corrija todos os erros exibidos antes de aplicar.",
       ];
       textos.forEach((texto, index) => { instructions.getCell(`A${index + 3}`).value = texto; });
@@ -137,7 +147,7 @@ export default function RobotImportDialog({ open, robos, clientes, onClose, onIm
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = "modelo-seguro-importacao-robos.xlsx";
+      anchor.download = includeData ? "base-de-robos.xlsx" : "modelo-importacao-robos.xlsx";
       anchor.click();
       URL.revokeObjectURL(url);
     } catch (cause) {
@@ -202,6 +212,14 @@ export default function RobotImportDialog({ open, robos, clientes, onClose, onIm
           atribuirTexto("CourtName", "courtName"); atribuirTexto("Fila", "fila"); atribuirTexto("Stack", "stack");
           atribuirTexto("Pacote", "pacote"); atribuirTexto("Versão", "versao"); atribuirTexto("Descrição", "descricao");
           atribuirTexto("Responsável", "responsavel");
+          atribuirTexto("Command", "command"); atribuirTexto("Tribunal", "tribunal"); atribuirTexto("Sistema Tribunal", "tribunalSystem");
+          const productRaw = valorTexto(record.get(chave("Produto")));
+          const selectedProduct = productRaw
+            ? ROBOT_PRODUCTS.find((product) => chave(product.label) === chave(productRaw) || chave(product.productType) === chave(productRaw))
+            : undefined;
+          if (productRaw && !selectedProduct) throw new Error("Produto inválido. Selecione uma opção disponível no modelo.");
+          campos.productType = selectedProduct?.productType ?? existente?.productType ?? defaultProductType;
+          if (campos.productType === "INTEGRADOR" && (campos.tribunal || campos.tribunalSystem)) throw new Error("Robôs Integradores não utilizam Tribunal ou Sistema Tribunal.");
           const ideal = numeroOpcional(record.get(chave("Ideal")), "Ideal");
           const max = numeroOpcional(record.get(chave("Max")), "Max");
           if (ideal !== undefined) campos.ideal = ideal;
@@ -280,7 +298,8 @@ export default function RobotImportDialog({ open, robos, clientes, onClose, onIm
         </header>
         <div style={contentStyle}>
           <button type="button" disabled={processing} onClick={() => fileInputRef.current?.click()} style={optionStyle}><span style={iconStyle}><Upload size={22} /></span><span><strong>Validar planilha</strong><small style={optionDescriptionStyle}>Nenhum dado é gravado nesta etapa.</small></span></button>
-          <button type="button" disabled={processing} onClick={() => void baixarModelo()} style={optionStyle}><span style={iconStyle}><Download size={22} /></span><span><strong>Baixar modelo atual</strong><small style={optionDescriptionStyle}>Inclui IDs e os dados existentes.</small></span></button>
+          <button type="button" disabled={processing} onClick={() => void baixarPlanilha(true)} style={optionStyle}><span style={iconStyle}><Download size={22} /></span><span><strong>Baixar base de robôs</strong><small style={optionDescriptionStyle}>Inclui IDs, produtos e os dados existentes desta listagem.</small></span></button>
+          <button type="button" disabled={processing} onClick={() => void baixarPlanilha(false)} style={optionStyle}><span style={iconStyle}><FileSpreadsheet size={18} /></span><span><strong>Baixar modelo</strong><small style={optionDescriptionStyle}>Cabeçalhos e Produto preenchido conforme esta listagem.</small></span></button>
           <input ref={fileInputRef} type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden onChange={(event) => { const file = event.target.files?.[0]; if (file) void lerArquivo(file); }} />
           {processing && <p role="status" style={statusStyle}><FileSpreadsheet size={16} /> Processando...</p>}
           {pendentes.length > 0 && <div style={previewStyle}><CheckCircle2 size={20} /><div><strong>Planilha validada</strong><span style={previewTextStyle}>{resumo.criar} criação(ões) · {resumo.atualizar} atualização(ões)</span></div><button type="button" disabled={processing} onClick={() => void aplicarImportacao()} style={applyStyle}>Aplicar alterações</button></div>}
@@ -293,15 +312,15 @@ export default function RobotImportDialog({ open, robos, clientes, onClose, onIm
 }
 
 const overlayStyle: React.CSSProperties = { position: "fixed", inset: 0, zIndex: 70, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "rgba(2,6,23,.76)" };
-const dialogStyle: React.CSSProperties = { width: "min(680px, 100%)", border: "1px solid var(--border)", borderRadius: 16, background: "var(--card)", boxShadow: "var(--shadow)" };
+const dialogStyle: React.CSSProperties = { width: "min(760px, 100%)", border: "1px solid var(--border)", borderRadius: 16, background: "var(--card)", boxShadow: "var(--shadow)" };
 const headerStyle: React.CSSProperties = { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, padding: 22, borderBottom: "1px solid var(--separator)" };
 const titleStyle: React.CSSProperties = { margin: 0, color: "var(--text-strong)", fontSize: 20 };
 const subtitleStyle: React.CSSProperties = { margin: "6px 0 0", color: "var(--muted)", fontSize: 13 };
 const closeStyle: React.CSSProperties = { display: "inline-flex", width: 34, height: 34, alignItems: "center", justifyContent: "center", border: "1px solid var(--border)", borderRadius: 8, background: "var(--card)", color: "var(--text)", cursor: "pointer" };
-const contentStyle: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 14, padding: 22 };
-const optionStyle: React.CSSProperties = { display: "flex", minHeight: 104, alignItems: "center", gap: 14, border: "1px solid var(--border)", borderRadius: 12, padding: 16, background: "var(--surface)", color: "var(--text-strong)", textAlign: "left", cursor: "pointer" };
-const iconStyle: React.CSSProperties = { display: "inline-flex", flex: "0 0 auto", width: 44, height: 44, alignItems: "center", justifyContent: "center", borderRadius: 10, background: "var(--primary-soft)", color: "var(--primary)" };
-const optionDescriptionStyle: React.CSSProperties = { display: "block", marginTop: 5, color: "var(--muted)", fontSize: 12, lineHeight: 1.4 };
+const contentStyle: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, padding: 16 };
+const optionStyle: React.CSSProperties = { display: "flex", minHeight: 72, alignItems: "center", gap: 10, border: "1px solid var(--border)", borderRadius: 10, padding: 11, background: "var(--surface)", color: "var(--text-strong)", textAlign: "left", cursor: "pointer" };
+const iconStyle: React.CSSProperties = { display: "inline-flex", flex: "0 0 auto", width: 34, height: 34, alignItems: "center", justifyContent: "center", borderRadius: 8, background: "var(--primary-soft)", color: "var(--primary)" };
+const optionDescriptionStyle: React.CSSProperties = { display: "block", marginTop: 3, color: "var(--muted)", fontSize: 10.5, lineHeight: 1.35 };
 const statusStyle: React.CSSProperties = { gridColumn: "1 / -1", display: "flex", alignItems: "center", gap: 8, margin: 0, color: "var(--primary)", fontSize: 13 };
 const previewStyle: React.CSSProperties = { gridColumn: "1 / -1", display: "flex", alignItems: "center", gap: 12, border: "1px solid color-mix(in srgb, #22C55E 45%, var(--border))", borderRadius: 12, padding: 14, background: "color-mix(in srgb, #22C55E 10%, var(--card))", color: "var(--text-strong)" };
 const previewTextStyle: React.CSSProperties = { display: "block", marginTop: 3, color: "var(--muted)", fontSize: 12 };

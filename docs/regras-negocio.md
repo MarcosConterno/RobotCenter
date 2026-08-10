@@ -9,6 +9,14 @@
 
 ## Robôs
 
+- O menu Robôs agrupa quatro listagens: Robôs Integradores, Consulta Processual, Peticionamento e Movimento.
+- As quatro listagens utilizam a mesma entidade, formulário, filtros, cards e detalhe, segregados exclusivamente por `productType`.
+- Todo Robô possui Command. Registros Integradores legados podem mantê-lo vazio até a próxima atualização conhecida.
+- Tribunal e Sistema Tribunal são opcionais para Consulta Processual, Peticionamento e Movimento e não se aplicam a Integradores.
+- Os filtros comuns operam dentro do produto selecionado; produtos judiciais acrescentam Tribunal e Sistema Tribunal.
+- A importação oferece “Baixar base de robôs”, com os registros do produto aberto, e “Baixar modelo”, com cabeçalhos, validações, instruções e a coluna Produto previamente preenchida conforme a página atual.
+- A coluna Produto da planilha controla a listagem do robô. Em atualização vazia, preserva-se o produto atual; em criação vazia, utiliza-se o produto da página que abriu a importação.
+
 1. Um Robô deve possuir nome, sistema, pacote, descrição, ambiente, stack, fila, versão e responsável não vazios.
 2. `alteracaoRealizada` pode ficar vazia.
 3. O ambiente deve ser Produção, Teste ou Desenvolvimento.

@@ -7,6 +7,7 @@ export const CATEGORIAS_PUBLICACAO = [
   "Atualização do Robô",
 ] as const;
 export const TIPOS_DISPARO_ROBO = ["Agendado", "Manual", "Gatilho"] as const;
+export const TIPOS_PRODUTO_ROBO = ["INTEGRADOR", "CONSULTA_PROCESSUAL", "PETICIONAMENTO", "MOVIMENTO"] as const;
 export const TIPOS_NODE_FLUXO = ["robot", "trigger", "system", "decision", "note", "text", "group"] as const;
 export const STATUS_FLUXO = ["rascunho", "publicado"] as const;
 
@@ -15,6 +16,7 @@ export type TipoUsuario = (typeof TIPOS_USUARIO)[number];
 export type CorBadgeRobo = (typeof CORES_BADGE_ROBO)[number];
 export type CategoriaPublicacao = (typeof CATEGORIAS_PUBLICACAO)[number];
 export type TipoDisparoRobo = (typeof TIPOS_DISPARO_ROBO)[number];
+export type TipoProdutoRobo = (typeof TIPOS_PRODUTO_ROBO)[number];
 export type TipoNodeFluxo = (typeof TIPOS_NODE_FLUXO)[number];
 export type StatusFluxo = (typeof STATUS_FLUXO)[number];
 
@@ -132,6 +134,10 @@ export interface Robo {
   stack: string;
   fila: string;
   versao: string;
+  command: string;
+  productType: TipoProdutoRobo;
+  tribunal: string | null;
+  tribunalSystem: string | null;
   versionCheckedAt?: string | null;
   responsavel: string;
   disparo?: TipoDisparoRobo;

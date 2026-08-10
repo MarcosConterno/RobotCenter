@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  ArrowLeft,
   ArrowRight,
   Bot,
   Clock,
@@ -39,8 +38,8 @@ interface RuleChange {
   description: string;
 }
 
-const DASHBOARD_HISTORY_LIMIT = 10;
 const RECENT_UPDATES_LIMIT = 5;
+const DASHBOARD_HISTORY_OPTIONS = [5, 10, 25, 50] as const;
 
 function getEnvironmentIcon(ambiente: Robo["ambiente"]): LucideIcon {
   if (ambiente === "Produção") return Rocket;
@@ -89,7 +88,7 @@ function parsePublicationDescription(description: string) {
 }
 
 export default function Feed({ publicacoes, robos, onViewRobot }: FeedProps) {
-  const [showCompleteHistory, setShowCompleteHistory] = useState(false);
+  const [resultLimit, setResultLimit] = useState<number>(RECENT_UPDATES_LIMIT);
   const robosPorId = useMemo(() => new Map(robos.map((robo) => [robo.id, robo])), [robos]);
   const items = useMemo(() => publicacoes
     .flatMap((publicacao) => {
@@ -97,8 +96,7 @@ export default function Feed({ publicacoes, robos, onViewRobot }: FeedProps) {
       return robo ? [{ publicacao, robo }] : [];
     })
     .sort((a, b) => new Date(b.publicacao.publicadaEm).getTime() - new Date(a.publicacao.publicadaEm).getTime())
-    .slice(0, DASHBOARD_HISTORY_LIMIT), [publicacoes, robosPorId]);
-  const visibleItems = showCompleteHistory ? items : items.slice(0, RECENT_UPDATES_LIMIT);
+    .slice(0, resultLimit), [publicacoes, resultLimit, robosPorId]);
 
   return (
     <section className="updates-feed" data-tour="dashboard-recent-updates">
@@ -107,15 +105,16 @@ export default function Feed({ publicacoes, robos, onViewRobot }: FeedProps) {
           <h2>Atualizações recentes</h2>
           <p>Acompanhe as últimas alterações realizadas nos robôs.</p>
         </div>
-        {items.length > RECENT_UPDATES_LIMIT && (
-          <button type="button" className="updates-feed__history-button" onClick={() => setShowCompleteHistory((current) => !current)}>
-            {showCompleteHistory ? <><ArrowLeft size={13} /> Mostrar recentes</> : <>Ver histórico completo <ArrowRight size={13} /></>}
-          </button>
-        )}
+        <label className="updates-feed__limit">
+          <span>Mostrar</span>
+          <select value={resultLimit} onChange={(event) => setResultLimit(Number(event.target.value))} aria-label="Quantidade de atualizações exibidas">
+            {DASHBOARD_HISTORY_OPTIONS.map((option) => <option key={option} value={option}>{option} resultados</option>)}
+          </select>
+        </label>
       </header>
 
       <div className="updates-feed__list">
-        {visibleItems.map(({ publicacao, robo }) => {
+        {items.map(({ publicacao, robo }) => {
           const EnvironmentIcon = getEnvironmentIcon(robo.ambiente);
           const { label: updateLabel, Icon: UpdateIcon } = getUpdateKind(publicacao);
           const parsedDescription = parsePublicationDescription(publicacao.descricao);
@@ -170,7 +169,7 @@ export default function Feed({ publicacoes, robos, onViewRobot }: FeedProps) {
           );
         })}
 
-        {visibleItems.length === 0 && (
+        {items.length === 0 && (
           <div className="updates-feed__empty">
             <span><Bot size={18} /></span>
             <div>
@@ -183,12 +182,7 @@ export default function Feed({ publicacoes, robos, onViewRobot }: FeedProps) {
 
       {items.length > 0 && (
         <footer className="updates-feed__footer">
-          <span>Exibindo {visibleItems.length} {visibleItems.length === 1 ? "atualização recente" : "atualizações mais recentes"}.</span>
-          {items.length > RECENT_UPDATES_LIMIT && (
-            <button type="button" onClick={() => setShowCompleteHistory((current) => !current)}>
-              {showCompleteHistory ? <><ArrowLeft size={13} /> Mostrar somente as recentes</> : <>Ver todas as atualizações <ArrowRight size={13} /></>}
-            </button>
-          )}
+          <span>Exibindo {items.length} {items.length === 1 ? "atualização recente" : "atualizações mais recentes"}.</span>
         </footer>
       )}
     </section>

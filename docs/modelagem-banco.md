@@ -166,6 +166,8 @@ Nenhuma tabela foi criada. A tradução inicial, ainda dependente de confirmaç�
 
 ### `robos`
 
+A tabela única `robos` possui `product_type` para segregar os produtos `INTEGRADOR`, `CONSULTA_PROCESSUAL`, `PETICIONAMENTO` e `MOVIMENTO`, sem duplicação de schema. `command` armazena o comando técnico de execução. `tribunal` e `tribunal_system` são opcionais e uma constraint exige que permaneçam nulos em Integradores. O índice parcial `(product_type, nome) where deleted_at is null` atende as listagens por produto. Os registros anteriores à migration são preservados como `INTEGRADOR` e recebem Command vazio.
+
 Além dos campos existentes, armazena `court_name`, `ideal`, `max` e `version_checked_at`. `cliente_id` é obrigatório e o formulário seleciona um registro existente de `clientes`. `pacote` identifica o pacote no registry interno; `version_checked_at` registra somente verificações concluídas com sucesso.
 
 ### `alteracoes_robo`
@@ -367,6 +369,8 @@ A migration `20260808224500_allow_published_robot_documentation_view.sql` separa
 ## Importação e atualização em lote
 
 A planilha usa `robos.id` como chave de atualização e não cria unicidade artificial sobre nome ou CourtName. Updates enviam apenas colunas preenchidas. A estrutura do banco não muda e inserts/updates continuam sujeitos às policies existentes.
+
+O modelo de importação inclui `product_type` por meio da coluna visual Produto. A base exportada é segregada pelo produto da página atual, enquanto o modelo sem dados de robôs contém cabeçalhos, validações, instruções e Produto previamente preenchido com o contexto da página. A importação persiste o tipo selecionado na mesma tabela `robos`.
 ## Tarefas pessoais
 
 `personal_tasks` armazena a organização diária de cada usuário. `user_id` referencia `profiles.id`; `due_date`, `priority`, `status`, `created_at` e `completed_at` suportam os filtros e o resumo da página. Os índices `(user_id, due_date, created_at)` e `(user_id, status, due_date)` atendem às consultas pessoais sem varredura entre usuários. Um trigger preserva proprietário e criação, atualiza `updated_at` e mantém `completed_at` coerente com o status.

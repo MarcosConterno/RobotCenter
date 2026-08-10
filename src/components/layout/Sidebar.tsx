@@ -1,13 +1,15 @@
 "use client";
 
-import { Bot, ChevronRight, CircleHelp, GitFork, House, LayoutDashboard, PanelLeftClose, PanelLeftOpen, Settings2 } from "lucide-react";
+import { Bot, ChevronDown, ChevronRight, CircleHelp, GitFork, House, LayoutDashboard, PanelLeftClose, PanelLeftOpen, Settings2 } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 import { useAdminAccess } from "@/auth/AdminAccessProvider";
 import { useTutorial } from "@/tutorial/TutorialProvider";
+import { ROBOT_PRODUCTS } from "@/domain/robot-products";
 
 const navigation = [
   { href: "/minha-pagina", label: "Minha página", description: "Organização diária", icon: House, access: "my-page" },
@@ -24,6 +26,7 @@ interface SidebarProps {
 
 export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
+  const [robotsExpanded, setRobotsExpanded] = useState(() => pathname.startsWith("/robos"));
   const { canAccessRobots, canAccessFlows, canAccessSettings, canManageTutorials, status } = useAdminAccess();
   const tutorial = useTutorial();
   const visibleNavigation = navigation.filter((item) => (
@@ -61,6 +64,22 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           {(status === "loading" ? navigation.slice(0, 1) : visibleNavigation).map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            if (item.access === "robots") {
+              return <div key={item.href} className="sidebar-group">
+                <button type="button" aria-expanded={robotsExpanded} title={collapsed ? item.label : undefined} className={`sidebar-link sidebar-group-trigger${active ? " sidebar-link-active" : ""}`} data-tour="sidebar-robots" onClick={() => setRobotsExpanded((current) => !current)}>
+                  <span className="sidebar-link-icon"><Icon size={17} /></span>
+                  <span className="sidebar-link-copy"><span className="sidebar-link-title">{item.label}</span><span className="sidebar-link-description">Produtos de automação</span></span>
+                  <ChevronDown className={`sidebar-group-chevron${robotsExpanded ? " is-open" : ""}`} size={14} />
+                </button>
+                {!collapsed && robotsExpanded && <div className="sidebar-subnav">
+                  {ROBOT_PRODUCTS.map((product) => {
+                    const href = `/robos/${product.slug}`;
+                    const productActive = pathname === href;
+                    return <Link key={product.productType} href={href} className={`sidebar-sublink${productActive ? " is-active" : ""}`} aria-current={productActive ? "page" : undefined}><span aria-hidden="true" />{product.label}</Link>;
+                  })}
+                </div>}
+              </div>;
+            }
             return (
               <Link
                 key={item.href}

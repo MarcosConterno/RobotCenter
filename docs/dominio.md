@@ -4,6 +4,10 @@
 
 ### Robô
 
+Todo Robô pertence a exatamente um produto por `productType`: `INTEGRADOR`, `CONSULTA_PROCESSUAL`, `PETICIONAMENTO` ou `MOVIMENTO`. A classificação não cria entidades ou tabelas independentes; ela segrega as listagens que reutilizam os mesmos componentes e permissões. Robôs Integradores existentes são classificados como `INTEGRADOR`.
+
+Todos os Robôs possuem `command`, que registra o comando técnico de execução e pode permanecer vazio em registros legados. Consulta Processual, Peticionamento e Movimento podem informar `tribunal` e `tribunalSystem`; esses campos permanecem nulos em Robôs Integradores.
+
 Pode ser cadastrado individualmente ou importado em lote por administradores. O modelo Excel representa os mesmos dados do formulário: cliente, sistema, robô, CourtName, fila, stack, Ideal, Max, pacote, versão, descrição, ambiente, status, responsável, alterações e regras.
 
 Na importação, Cliente é identificado pelo nome. Um nome ainda não cadastrado cria um Cliente com tenant técnico único, e todos os Robôs subsequentes com o mesmo nome recebem o mesmo `clienteId`. Assim, o vínculo permanece estável para consultas e filtros por Cliente.

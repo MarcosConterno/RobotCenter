@@ -20,6 +20,7 @@ import {
   Pencil,
   Plus,
   Server,
+  Terminal,
   Trash2,
   Upload,
   UserRound,
@@ -33,6 +34,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useAdminAccess } from "@/auth/AdminAccessProvider";
 import { formatarData, formatarDataHora } from "@/domain/formatters";
 import type { Cliente, RegraRobo, Robo, RobotUploadedDocument } from "@/domain/entities";
+import { getRobotProductByType } from "@/domain/robot-products";
 import { createClient } from "@/lib/supabase/client";
 
 import styles from "./RobotDetails.module.css";
@@ -167,7 +169,7 @@ export default function RobotDetails({ robot, clientes = EMPTY_CLIENTES, robos =
         <div className={styles.identity}>
           <span className={styles.robotIcon}><Bot size={23} /></span>
           <div>
-            <span className={styles.eyebrow}>ROBÔ INTEGRADOR</span>
+            <span className={styles.eyebrow}>{getRobotProductByType(robot.productType).label.toLocaleUpperCase("pt-BR")}</span>
             <h1>{robot.nome}</h1>
             <p>{robot.courtName}</p>
           </div>
@@ -211,6 +213,9 @@ export default function RobotDetails({ robot, clientes = EMPTY_CLIENTES, robos =
               <Field icon={<Package size={16} />} label="Pacote" value={robot.pacote} />
               <Field icon={<Layers3 size={16} />} label="Stack" value={robot.stack} />
               <Field icon={<GitBranch size={16} />} label="Versão" value={robot.versao} />
+              <Field icon={<Terminal size={16} />} label="Command" value={robot.command} />
+              {robot.productType !== "INTEGRADOR" && <Field icon={<Building2 size={16} />} label="Tribunal" value={robot.tribunal} />}
+              {robot.productType !== "INTEGRADOR" && <Field icon={<Building2 size={16} />} label="Sistema Tribunal" value={robot.tribunalSystem} />}
               <Field icon={<CalendarClock size={16} />} label="Att Versão" value={robot.versionCheckedAt ? formatarDataHora(robot.versionCheckedAt) : "—"} />
               <Field icon={<Server size={16} />} label="Fila" value={robot.fila} />
               <Field icon={<Zap size={16} />} label="Disparo" value={robot.disparo === "Gatilho" ? "Por Gatilho" : robot.disparo ?? "Manual"} />

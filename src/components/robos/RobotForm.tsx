@@ -1,9 +1,10 @@
 "use client";
 
-import { Bot, FileText, GripVertical, Layers3, Paperclip, Plus, Save, Send, Trash2, Upload, X } from "lucide-react";
+import { Bot, FileText, GripVertical, Layers3, Paperclip, Plus, Save, Trash2, Upload, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { formatarData } from "@/domain/formatters";
-import { AMBIENTES_ROBO, TIPOS_DISPARO_ROBO, type AlteracaoRobo, type Cliente, type DadosFormularioRobo, type Robo } from "@/domain/entities";
+import { AMBIENTES_ROBO, TIPOS_DISPARO_ROBO, type AlteracaoRobo, type Cliente, type DadosFormularioRobo, type Robo, type TipoProdutoRobo } from "@/domain/entities";
+import { ROBOT_PRODUCTS } from "@/domain/robot-products";
 import { dadosFormularioRoboSchema, primeiraMensagemErro } from "@/domain/validation";
 import { PALETAS_BADGE_ROBO } from "@/domain/badge-colors";
 import { CORES_BADGE_ROBO, type CorBadgeRobo } from "@/domain/entities";
@@ -14,6 +15,7 @@ interface RobotFormProps {
   currentRobotId?: string;
   alteracoesExistentes?: AlteracaoRobo[];
   initialValues?: DadosFormularioRobo;
+  defaultProductType?: TipoProdutoRobo;
   mode: "create" | "edit";
   onCancel: () => void;
   onDelete?: () => void;
@@ -25,13 +27,14 @@ export default function RobotForm({
   robos,
   currentRobotId,
   alteracoesExistentes = [],
-  initialValues = FORMULARIO_ROBO_INICIAL,
+  initialValues,
+  defaultProductType = "INTEGRADOR",
   mode,
   onCancel,
   onDelete,
   onSubmit,
 }: RobotFormProps) {
-  const [form, setForm] = useState<DadosFormularioRobo>(initialValues);
+  const [form, setForm] = useState<DadosFormularioRobo>(() => initialValues ?? { ...FORMULARIO_ROBO_INICIAL, productType: defaultProductType });
   const [formError, setFormError] = useState("");
   const [rulesTab, setRulesTab] = useState<"documentacao" | "fora-documentacao">("documentacao");
   const [draggedRuleIndex, setDraggedRuleIndex] = useState<number | null>(null);
@@ -81,7 +84,7 @@ export default function RobotForm({
       }}
       style={formStyle}
     >
-      <FormSection icon={<Bot size={17} />} title="Informações gerais" description="Identificação e finalidade do robô.">
+      <FormSection icon={<Bot size={17} />} title="Identificação e status" description="Dados principais, responsável e disponibilidade do robô.">
         <div style={fieldsGridStyle}>
           <Field label="Responsável" placeholder="Nome da pessoa ou equipe responsável" value={form.responsavel} onChange={(v) => update("responsavel", v)} required />
           <div>
@@ -141,8 +144,18 @@ export default function RobotForm({
         </div>
       </FormSection>
 
-      <FormSection icon={<Layers3 size={17} />} title="Informações técnicas" description="Tecnologia e integração.">
+      <FormSection icon={<Layers3 size={17} />} title="Configuração e execução" description="Produto, tecnologia, capacidade e forma de disparo.">
         <div style={technicalFieldsGridStyle}>
+          <div>
+            <label style={labelStyle}>Produto</label>
+            <select value={form.productType} onChange={(event) => {
+              const productType = event.target.value as TipoProdutoRobo;
+              setForm((current) => ({ ...current, productType, tribunal: productType === "INTEGRADOR" ? null : current.tribunal, tribunalSystem: productType === "INTEGRADOR" ? null : current.tribunalSystem }));
+              setFormError("");
+            }} style={inputStyle}>
+              {ROBOT_PRODUCTS.map((product) => <option key={product.productType} value={product.productType}>{product.label}</option>)}
+            </select>
+          </div>
           <div>
             <label style={labelStyle}>Cliente</label>
             <select value={form.clienteId || ""} onChange={(event) => {
@@ -167,6 +180,11 @@ export default function RobotForm({
             <ColorPicker label="Cor do pacote" value={form.pacoteCor} onChange={(value) => update("pacoteCor", value)} />
           </div>
           <Field label="Versão" placeholder="Ex.: 1.0.0" value={form.versao} onChange={(v) => update("versao", v)} required />
+          <div style={fullWidthStyle}><Field label="Command" placeholder="Ex.: python main.py --tribunal tjsp" value={form.command} onChange={(value) => update("command", value)} /></div>
+          {form.productType !== "INTEGRADOR" && <>
+            <Field label="Tribunal" placeholder="Ex.: TJSP" value={form.tribunal ?? ""} onChange={(value) => update("tribunal", value || null)} />
+            <Field label="Sistema Tribunal" placeholder="Ex.: e-SAJ" value={form.tribunalSystem ?? ""} onChange={(value) => update("tribunalSystem", value || null)} />
+          </>}
           <div>
             <label style={labelStyle}>Disparo</label>
             <select value={form.disparo} onChange={(event) => update("disparo", event.target.value as DadosFormularioRobo["disparo"])} style={inputStyle}>
@@ -190,7 +208,7 @@ export default function RobotForm({
         </div>
       </FormSection>
 
-      <FormSection icon={<FileText size={17} />} title="Documentação da alteração" description="Registre a atualização e as regras funcionais do robô.">
+      {false && <FormSection icon={<FileText size={17} />} title="Documentação da alteração" description="Registre a atualização e as regras funcionais do robô.">
         <div style={stackedFieldsStyle}>
           <div>
             {alteracoesExistentes.length > 0 && (
@@ -327,7 +345,7 @@ export default function RobotForm({
             </div>
           </div>
         </div>
-      </FormSection>
+      </FormSection>}
 
       {formError && <p role="alert" style={errorStyle}>{formError}</p>}
 
@@ -346,12 +364,6 @@ export default function RobotForm({
             <Save size={15} />
             {mode === "create" ? "Cadastrar Robô" : "Salvar"}
           </button>
-          {mode === "edit" && (
-            <button type="submit" value="save-publish" style={publishButtonStyle}>
-              <Send size={15} />
-              Salvar e publicar
-            </button>
-          )}
         </div>
       </footer>
     </form>
@@ -494,6 +506,10 @@ const FORMULARIO_ROBO_INICIAL: DadosFormularioRobo = {
   stack: "",
   fila: "",
   versao: "",
+  command: "",
+  productType: "INTEGRADOR",
+  tribunal: null,
+  tribunalSystem: null,
   responsavel: "",
   disparo: "Manual",
   gatilhoDeRoboId: null,

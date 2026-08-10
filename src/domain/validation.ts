@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { AMBIENTES_ROBO, CORES_BADGE_ROBO, TIPOS_DISPARO_ROBO, TIPOS_USUARIO } from "@/domain/entities";
+import { AMBIENTES_ROBO, CORES_BADGE_ROBO, TIPOS_DISPARO_ROBO, TIPOS_PRODUTO_ROBO, TIPOS_USUARIO } from "@/domain/entities";
 
 const textoObrigatorio = (campo: string) =>
   z.string().trim().min(1, `${campo} é obrigatório.`);
@@ -24,6 +24,10 @@ export const dadosFormularioRoboSchema = z.object({
   stack: textoObrigatorio("Stack"),
   fila: textoObrigatorio("Fila"),
   versao: textoObrigatorio("Versão"),
+  command: z.string().trim().default(""),
+  productType: z.enum(TIPOS_PRODUTO_ROBO),
+  tribunal: z.string().trim().nullable().default(null),
+  tribunalSystem: z.string().trim().nullable().default(null),
   responsavel: textoObrigatorio("Responsável"),
   disparo: z.enum(TIPOS_DISPARO_ROBO).default("Manual"),
   gatilhoDeRoboId: z.string().uuid().nullable().default(null),
@@ -40,6 +44,9 @@ export const dadosFormularioRoboSchema = z.object({
 }).refine((dados) => dados.max >= dados.ideal, {
   message: "Max deve ser maior ou igual a Ideal.",
   path: ["max"],
+}).refine((dados) => dados.productType !== "INTEGRADOR" || (!dados.tribunal && !dados.tribunalSystem), {
+  message: "Robôs Integradores não utilizam Tribunal ou Sistema Tribunal.",
+  path: ["tribunal"],
 });
 
 export const dadosCadastroUsuarioSchema = z.object({

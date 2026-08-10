@@ -7,7 +7,11 @@
 .header span { color: var(--accent); font-size: 9px; font-weight: 800; letter-spacing: .12em; }
 .header h1 { margin: 4px 0 0; color: var(--text-strong); font-size: clamp(21px, 2.5vw, 28px); line-height: 1.15; }
 .header p { margin: 5px 0 0; color: var(--muted); font-size: 11.5px; }
+.formGuide { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: hidden; border: 1px solid var(--border); border-radius: 10px; background: var(--card); }
+.formGuide span { display: flex; min-height: 42px; align-items: center; gap: 8px; padding: 0 13px; border-right: 1px solid var(--separator); color: var(--muted); font-size: 11px; font-weight: 650; }
+.formGuide span:last-child { border-right: 0; }
+.formGuide strong { display: grid; width: 21px; height: 21px; place-items: center; border-radius: 50%; color: var(--accent); background: var(--accent-soft); font-size: 9px; }
 .message { margin: 24px; padding: 18px; border: 1px solid var(--border); border-radius: 12px; color: var(--muted); background: var(--card); }
 .error { color: var(--danger); }
 
-@media (max-width: 640px) { .routeContent { gap: 14px; } .header { align-items: flex-start; } }
+@media (max-width: 640px) { .routeContent { gap: 14px; } .header { align-items: flex-start; } .formGuide { grid-template-columns: 1fr; } .formGuide span { border-right: 0; border-bottom: 1px solid var(--separator); } .formGuide span:last-child { border-bottom: 0; } }

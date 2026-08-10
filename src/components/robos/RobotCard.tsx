@@ -6,6 +6,8 @@ import {
   Layers3,
   Package,
   Server,
+  Terminal,
+  Building2,
 } from "lucide-react";
 import type { CSSProperties } from "react";
 import type { Robo } from "@/domain/entities";
@@ -176,6 +178,14 @@ export default function RobotCard({
             {robot.stack}
           </span>
         </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, gridColumn: "1 / -1" }} title={robot.command || "Command não informado"}>
+          <Terminal size={14} style={{ flexShrink: 0 }} />
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{robot.command || "Command não informado"}</span>
+        </div>
+        {robot.productType !== "INTEGRADOR" && <>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}><Building2 size={14} style={{ flexShrink: 0 }} /><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{robot.tribunal || "Tribunal não informado"}</span></div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}><Building2 size={14} style={{ flexShrink: 0 }} /><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{robot.tribunalSystem || "Sistema não informado"}</span></div>
+        </>}
       </div>
       <span style={detailsHintStyle}>Detalhes</span>
     </div>

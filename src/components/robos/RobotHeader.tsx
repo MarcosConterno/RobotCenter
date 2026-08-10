@@ -4,6 +4,8 @@ import { ChevronDown, ChevronUp, FileUp, Filter, Plus, RefreshCw, Search, X } fr
 import { useState, type CSSProperties } from "react";
 
 interface RobotHeaderProps {
+  title: string;
+  description: string;
   pesquisa: string;
   onPesquisaChange: (value: string) => void;
   clienteId: string;
@@ -21,6 +23,12 @@ interface RobotHeaderProps {
   status: string;
   statusOptions: readonly string[];
   onStatusChange: (value: string) => void;
+  tribunal?: string;
+  tribunais?: readonly string[];
+  onTribunalChange?: (value: string) => void;
+  tribunalSystem?: string;
+  tribunalSystems?: readonly string[];
+  onTribunalSystemChange?: (value: string) => void;
   totalRobots: number;
   onNovoRobot: () => void;
   canCreate: boolean;
@@ -71,6 +79,8 @@ function FilterSelect({
 }
 
 export default function RobotHeader({
+  title,
+  description,
   pesquisa,
   onPesquisaChange,
   clienteId,
@@ -88,6 +98,12 @@ export default function RobotHeader({
   status,
   statusOptions,
   onStatusChange,
+  tribunal,
+  tribunais = [],
+  onTribunalChange,
+  tribunalSystem,
+  tribunalSystems = [],
+  onTribunalSystemChange,
   totalRobots,
   onNovoRobot,
   canCreate,
@@ -105,15 +121,17 @@ export default function RobotHeader({
     pacote !== "Todos" ||
     sistema !== "Todos" ||
     ambiente !== "Todos" ||
-    status !== "Todos";
+    status !== "Todos" ||
+    (tribunal !== undefined && tribunal !== "Todos") ||
+    (tribunalSystem !== undefined && tribunalSystem !== "Todos");
 
   return (
     <div style={headerContentStyle} data-tour="robots-header">
       <div className="robots-title-row" style={titleRowStyle}>
         <div>
           <span className="robots-page-eyebrow">ROBÔS</span>
-          <h1 style={pageTitleStyle}>Robôs Integradores</h1>
-          <p className="robots-page-subtitle">Veja todas as configurações e regras dos robôs.</p>
+          <h1 style={pageTitleStyle}>{title}</h1>
+          <p className="robots-page-subtitle">{description}</p>
         </div>
 
         <div className="robots-page-actions" style={actionsStyle}>
@@ -165,7 +183,7 @@ export default function RobotHeader({
             <input
               value={pesquisa}
               onChange={(event) => onPesquisaChange(event.target.value)}
-              placeholder="Pesquisar por nome, sistema ou pacote..."
+              placeholder="Pesquisar por nome, sistema, command ou pacote..."
               aria-label="Pesquisar robôs"
               style={inputStyle}
             />
@@ -222,6 +240,8 @@ export default function RobotHeader({
                 allOptionLabel="Todos os status"
                 onChange={onStatusChange}
               />
+              {tribunal !== undefined && onTribunalChange && <FilterSelect label="Tribunal" value={tribunal} options={tribunais} allOptionLabel="Todos os tribunais" onChange={onTribunalChange} />}
+              {tribunalSystem !== undefined && onTribunalSystemChange && <FilterSelect label="Sistema Tribunal" value={tribunalSystem} options={tribunalSystems} allOptionLabel="Todos os sistemas" onChange={onTribunalSystemChange} />}
             </div>
           </div>
         )}
