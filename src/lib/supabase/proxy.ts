@@ -64,7 +64,7 @@ export async function updateSession(request: NextRequest) {
       : roleCodes.has("admin") || roleCodes.has("master") || roleCodes.has("operador") || roleCodes.has("cliente") || roleCodes.has("suporte");
     if (!allowed) {
       const dashboardUrl = request.nextUrl.clone();
-      dashboardUrl.pathname = "/dashboard";
+      dashboardUrl.pathname = "/minha-pagina";
       dashboardUrl.search = "";
       return NextResponse.redirect(dashboardUrl);
     }

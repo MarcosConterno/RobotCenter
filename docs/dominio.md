@@ -162,3 +162,8 @@ Um Fluxo é a documentação visual de uma automação e pertence obrigatoriamen
 - Notas, textos, grupos e decisões documentam o processo, sem alterar Robôs.
 
 O papel Cliente edita apenas Fluxos do seu Cliente. Admin cria, edita, publica e exclui qualquer Fluxo. Operador e Suporte possuem somente visualização.
+## Minha página
+
+Uma Tarefa Pessoal pertence a exatamente um usuário e representa uma prioridade diária ou futura. Possui título, observação opcional, data, prioridade baixa/média/alta e estado pendente/concluído. A conclusão registra seu instante; a reabertura remove esse registro. Tarefas pessoais não pertencem a Cliente, Robô ou papel de acesso.
+
+A Visualização Pessoal permite habilitar a tabela consolidada de Robôs e escolher Fluxos como atalhos. A preferência não copia nem altera essas entidades: ela referencia os dados operacionais já autorizados para o usuário.

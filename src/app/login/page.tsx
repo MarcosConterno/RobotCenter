@@ -31,7 +31,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <p style={subtitleStyle}>Entre com seu email e senha.</p>
 
           <form action="/auth/login" method="post" style={formStyle}>
-          <input type="hidden" name="redirectTo" value="/dashboard" />
+          <input type="hidden" name="redirectTo" value="/minha-pagina" />
 
           <label style={fieldStyle}>
             <span style={labelStyle}>Email</span>

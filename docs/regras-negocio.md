@@ -227,3 +227,15 @@
 8. O modo de teste nunca cria ou atualiza `user_tutorial_progress`.
 9. Passos aceitam somente páginas e targets presentes no catálogo do código.
 10. Quando a versão publicada aumenta, a ausência de progresso nessa versão volta a destacar discretamente o botão Tutorial sem abrir o tour automaticamente.
+## Minha página e tarefas pessoais
+
+1. Todo usuário autenticado pode utilizar Minha página, independentemente de seu papel.
+2. O usuário consulta e altera exclusivamente tarefas cujo `user_id` corresponde à própria sessão.
+3. Concluir uma tarefa define `status = completed` e registra `completed_at`; reabrir restaura `pending` e limpa `completed_at`.
+3.1. Após concluir, a interface abre o filtro Concluídas; após reabrir, abre Pendentes. O filtro Hoje mostra somente tarefas ainda pendentes, sem alterar os totais do resumo diário.
+4. Tarefas pendentes com data anterior à data local atual são apresentadas como atrasadas.
+5. O resumo do dia considera apenas tarefas cuja data é hoje; Próximas considera tarefas futuras ainda pendentes.
+6. Minha página é o destino inicial após autenticação e ao acessar a raiz do sistema.
+7. Cada usuário decide se exibe a tabela de Robôs e quais Fluxos aparecem como atalhos.
+8. Selecionar um Fluxo não amplia permissões: se o usuário perder acesso ao Fluxo, o card deixa de ser resolvido pela consulta operacional.
+9. Preferências armazenam somente configuração e referências; os dados de Robôs e Fluxos não são duplicados.

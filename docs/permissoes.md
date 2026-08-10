@@ -124,3 +124,8 @@ A RPC transacional `update_role_permission_matrix(jsonb)` executa as inclusões 
 - Versões permitem leitura autorizada e inserção somente por Admin; trigger impede atualização ou exclusão.
 - A futura visualização publicada utilizará `read`, separada de `manage`, sem ampliar automaticamente o acesso ao rascunho.
 - A migration `20260808224500_allow_published_robot_documentation_view.sql` replica `read` somente para papéis que já possuem `robots.read`; ela não concede acesso adicional a Robôs.
+## Tarefas pessoais
+
+Todos os perfis autenticados possuem acesso funcional a Minha página, sem permissão RBAC adicional. `personal_tasks` concede `SELECT`, `INSERT`, `UPDATE` e `DELETE` somente a `authenticated`; cada policy exige `auth.uid() = user_id`. O trigger também torna `user_id` imutável após a criação e preenche o proprietário pela sessão. Usuários anônimos e usuários tentando operar tarefas de terceiros permanecem bloqueados pela RLS.
+
+`personal_page_preferences` e `personal_page_flows` repetem o isolamento por `auth.uid()`. A inserção de um atalho também exige que o Fluxo referenciado esteja visível à sessão pelas policies de `flows`. A configuração não concede `robots.read`, `flows.read` ou capacidades de escrita; os widgets continuam subordinados às permissões das entidades originais.

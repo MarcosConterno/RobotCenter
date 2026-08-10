@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, ChevronRight, CircleHelp, GitFork, LayoutDashboard, PanelLeftClose, PanelLeftOpen, Settings2 } from "lucide-react";
+import { Bot, ChevronRight, CircleHelp, GitFork, House, LayoutDashboard, PanelLeftClose, PanelLeftOpen, Settings2 } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import Image from "next/image";
 import Link from "next/link";
@@ -10,6 +10,7 @@ import { useAdminAccess } from "@/auth/AdminAccessProvider";
 import { useTutorial } from "@/tutorial/TutorialProvider";
 
 const navigation = [
+  { href: "/minha-pagina", label: "Minha página", description: "Organização diária", icon: House, access: "my-page" },
   { href: "/dashboard", label: "Dashboard", description: "Visão geral", icon: LayoutDashboard, access: "dashboard" },
   { href: "/robos", label: "Robôs", description: "Consulta e detalhes", icon: Bot, access: "robots" },
   { href: "/fluxos", label: "Fluxos", description: "Documentação visual", icon: GitFork, access: "flows" },
@@ -26,7 +27,8 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const { canAccessRobots, canAccessFlows, canAccessSettings, canManageTutorials, status } = useAdminAccess();
   const tutorial = useTutorial();
   const visibleNavigation = navigation.filter((item) => (
-    item.access === "dashboard"
+    item.access === "my-page"
+    || item.access === "dashboard"
     || (item.access === "robots" && canAccessRobots)
     || (item.access === "flows" && canAccessFlows)
     || (item.access === "settings" && (canAccessSettings || canManageTutorials))
@@ -44,7 +46,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         {collapsed ? <PanelLeftOpen size={14} /> : <PanelLeftClose size={14} />}
       </button>
       <div>
-        <Link href="/dashboard" className="sidebar-brand" aria-label="Robot Center — ir para a Dashboard">
+        <Link href="/minha-pagina" className="sidebar-brand" aria-label="Robot Center — ir para Minha página">
           <div className="sidebar-brand-icon">
             <Image src="/images/robot-center-system-logo-transparent.png" alt="" fill sizes="42px" priority />
           </div>

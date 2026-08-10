@@ -14,6 +14,70 @@ export type Database = {
   }
   public: {
     Tables: {
+      personal_page_flows: {
+        Row: { created_at: string; flow_id: string; user_id: string }
+        Insert: { created_at?: string; flow_id: string; user_id: string }
+        Update: { created_at?: string; flow_id?: string; user_id?: string }
+        Relationships: [
+          { foreignKeyName: "personal_page_flows_flow_id_fkey"; columns: ["flow_id"]; isOneToOne: false; referencedRelation: "flows"; referencedColumns: ["id"] },
+          { foreignKeyName: "personal_page_flows_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
+      }
+      personal_page_preferences: {
+        Row: { created_at: string; show_robot_table: boolean; updated_at: string; user_id: string }
+        Insert: { created_at?: string; show_robot_table?: boolean; updated_at?: string; user_id: string }
+        Update: { created_at?: string; show_robot_table?: boolean; updated_at?: string; user_id?: string }
+        Relationships: [
+          { foreignKeyName: "personal_page_preferences_user_id_fkey"; columns: ["user_id"]; isOneToOne: true; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
+      }
+      personal_tasks: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          due_date: string
+          id: string
+          note: string | null
+          priority: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          due_date: string
+          id?: string
+          note?: string | null
+          priority?: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          due_date?: string
+          id?: string
+          note?: string | null
+          priority?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personal_tasks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alteracoes_robo: {
         Row: {
           created_at: string
