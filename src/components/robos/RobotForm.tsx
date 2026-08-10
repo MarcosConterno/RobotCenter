@@ -1,13 +1,15 @@
 "use client";
 
-import { Bot, FileText, GripVertical, Layers3, Paperclip, Plus, Save, Trash2, Upload, X } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { ArrowLeft, ArrowRight, Bot, CheckCircle2, FileText, GripVertical, Layers3, Paperclip, Plus, Save, Trash2, Upload, X } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
 import { formatarData } from "@/domain/formatters";
 import { AMBIENTES_ROBO, TIPOS_DISPARO_ROBO, type AlteracaoRobo, type Cliente, type DadosFormularioRobo, type Robo, type TipoProdutoRobo } from "@/domain/entities";
 import { ROBOT_PRODUCTS } from "@/domain/robot-products";
 import { dadosFormularioRoboSchema, primeiraMensagemErro } from "@/domain/validation";
 import { PALETAS_BADGE_ROBO } from "@/domain/badge-colors";
 import { CORES_BADGE_ROBO, type CorBadgeRobo } from "@/domain/entities";
+import { createClient } from "@/lib/supabase/client";
+import type { RobotCatalogItem } from "@/domain/robot-catalog";
 
 interface RobotFormProps {
   clientes: Cliente[];
@@ -36,8 +38,22 @@ export default function RobotForm({
 }: RobotFormProps) {
   const [form, setForm] = useState<DadosFormularioRobo>(() => initialValues ?? { ...FORMULARIO_ROBO_INICIAL, productType: defaultProductType });
   const [formError, setFormError] = useState("");
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [rulesTab, setRulesTab] = useState<"documentacao" | "fora-documentacao">("documentacao");
   const [draggedRuleIndex, setDraggedRuleIndex] = useState<number | null>(null);
+  const [catalogs, setCatalogs] = useState<{ packages: RobotCatalogItem[]; stacks: RobotCatalogItem[]; queues: RobotCatalogItem[]; commands: RobotCatalogItem[] }>({ packages: [], stacks: [], queues: [], commands: [] });
+  useEffect(() => {
+    const supabase = createClient();
+    void Promise.all([
+      supabase.from("robot_packages").select("id,name,color,active").eq("active", true).order("name"),
+      supabase.from("robot_stacks").select("id,name,active").eq("active", true).order("name"),
+      supabase.from("robot_queues").select("id,name,active").eq("active", true).order("name"),
+      supabase.from("robot_commands").select("id,name,command,active").eq("active", true).order("name"),
+    ]).then(([packages, stacks, queues, commands]) => setCatalogs({
+      packages: (packages.data ?? []) as RobotCatalogItem[], stacks: (stacks.data ?? []) as RobotCatalogItem[],
+      queues: (queues.data ?? []) as RobotCatalogItem[], commands: (commands.data ?? []) as RobotCatalogItem[],
+    }));
+  }, []);
   const robosDoCliente = robos
     .filter((robo) => robo.clienteId === form.clienteId && robo.id !== currentRobotId && robo.ativo)
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
@@ -56,36 +72,69 @@ export default function RobotForm({
     setDraggedRuleIndex(null);
   }
 
+  function nextStep() {
+    if (step === 1 && (!form.nome.trim() || !form.responsavel.trim() || !form.descricao.trim())) {
+      setFormError("Preencha Nome do robô, Responsável e Descrição para continuar.");
+      return;
+    }
+    if (step === 2) {
+      const result = dadosFormularioRoboSchema.safeParse(form);
+      if (!result.success) { setFormError(primeiraMensagemErro(result.error)); return; }
+    }
+    setFormError("");
+    setStep((current) => Math.min(3, current + 1) as 1 | 2 | 3);
+  }
+
+  async function saveAndPublish() {
+    if (step !== 3) return;
+
+    const normalizedForm = {
+      ...form,
+      regras: form.regras
+        .map((regra) => ({ descricao: regra.descricao.trim() }))
+        .filter((regra) => regra.descricao.length > 0),
+      regrasForaDocumentacao: form.regrasForaDocumentacao
+        .map((regra) => ({ descricao: regra.descricao.trim() }))
+        .filter((regra) => regra.descricao.length > 0),
+      alteracoesRealizadas: form.alteracoesRealizadas
+        .map((alteracao) => ({ descricao: alteracao.descricao.trim() }))
+        .filter((alteracao) => alteracao.descricao.length > 0),
+    };
+    const result = dadosFormularioRoboSchema.safeParse(normalizedForm);
+
+    if (!result.success) {
+      setFormError(primeiraMensagemErro(result.error));
+      return;
+    }
+
+    await onSubmit(result.data as DadosFormularioRobo, true);
+  }
+
   return (
     <form
-      onSubmit={async (event) => {
+      className="robot-form"
+      onSubmit={(event) => {
         event.preventDefault();
-        const normalizedForm = {
-          ...form,
-          regras: form.regras
-            .map((regra) => ({ descricao: regra.descricao.trim() }))
-            .filter((regra) => regra.descricao.length > 0),
-          regrasForaDocumentacao: form.regrasForaDocumentacao
-            .map((regra) => ({ descricao: regra.descricao.trim() }))
-            .filter((regra) => regra.descricao.length > 0),
-          alteracoesRealizadas: form.alteracoesRealizadas
-            .map((alteracao) => ({ descricao: alteracao.descricao.trim() }))
-            .filter((alteracao) => alteracao.descricao.length > 0),
-        };
-        const result = dadosFormularioRoboSchema.safeParse(normalizedForm);
-
-        if (!result.success) {
-          setFormError(primeiraMensagemErro(result.error));
-          return;
-        }
-
-        const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
-        await onSubmit(result.data, submitter?.value === "save-publish");
       }}
       style={formStyle}
     >
-      <FormSection icon={<Bot size={17} />} title="Identificação e status" description="Dados principais, responsável e disponibilidade do robô.">
+      <nav className="robot-form-steps" aria-label="Etapas do cadastro">
+        {([1, 2, 3] as const).map((value) => <button key={value} type="button" className={step === value ? "is-active" : step > value ? "is-complete" : ""} onClick={() => value < step && setStep(value)}><strong>{step > value ? <CheckCircle2 size={13} /> : value}</strong><span>{value === 1 ? "Identificação" : value === 2 ? "Configuração" : "Revisar e salvar"}</span></button>)}
+      </nav>
+
+      {step === 1 && <FormSection icon={<Bot size={17} />} title="Identificação e status" description="Dados principais, responsável e disponibilidade do robô.">
         <div style={fieldsGridStyle}>
+          <Field label="Robô" placeholder="Nome do robô" value={form.nome} onChange={(v) => update("nome", v)} required />
+          <div>
+            <label style={labelStyle}>Produto</label>
+            <select value={form.productType} onChange={(event) => {
+              const productType = event.target.value as TipoProdutoRobo;
+              setForm((current) => ({ ...current, productType, clienteId: productType === "INTEGRADOR" ? current.clienteId : null, tribunal: productType === "INTEGRADOR" ? null : current.tribunal, tribunalSystem: productType === "INTEGRADOR" ? null : current.tribunalSystem }));
+              setFormError("");
+            }} style={inputStyle}>
+              {ROBOT_PRODUCTS.map((product) => <option key={product.productType} value={product.productType}>{product.label}</option>)}
+            </select>
+          </div>
           <Field label="Responsável" placeholder="Nome da pessoa ou equipe responsável" value={form.responsavel} onChange={(v) => update("responsavel", v)} required />
           <div>
             <label style={labelStyle}>Ambiente</label>
@@ -142,45 +191,38 @@ export default function RobotForm({
             {(form.uploadedDocumentationFile || form.uploadedDocumentationName) && <span style={manualSelectedStyle}><Paperclip size={12} /> {form.uploadedDocumentationFile?.name ?? form.uploadedDocumentationName}</span>}
           </div>
         </div>
-      </FormSection>
+      </FormSection>}
 
-      <FormSection icon={<Layers3 size={17} />} title="Configuração e execução" description="Produto, tecnologia, capacidade e forma de disparo.">
+      {step === 2 && <FormSection icon={<Layers3 size={17} />} title="Configuração e execução" description="Produto, tecnologia, capacidade e forma de disparo.">
         <div style={technicalFieldsGridStyle}>
-          <div>
-            <label style={labelStyle}>Produto</label>
-            <select value={form.productType} onChange={(event) => {
-              const productType = event.target.value as TipoProdutoRobo;
-              setForm((current) => ({ ...current, productType, tribunal: productType === "INTEGRADOR" ? null : current.tribunal, tribunalSystem: productType === "INTEGRADOR" ? null : current.tribunalSystem }));
-              setFormError("");
-            }} style={inputStyle}>
-              {ROBOT_PRODUCTS.map((product) => <option key={product.productType} value={product.productType}>{product.label}</option>)}
-            </select>
-          </div>
-          <div>
+          {form.productType === "INTEGRADOR" && <div>
             <label style={labelStyle}>Cliente</label>
             <select value={form.clienteId || ""} onChange={(event) => {
               const clienteId = event.target.value;
-              setForm((old) => ({ ...old, clienteId, gatilhoDeRoboId: null, gatilhoParaRoboId: null }));
+              setForm((old) => ({ ...old, clienteId: clienteId || null, gatilhoDeRoboId: null, gatilhoParaRoboId: null }));
               setFormError("");
             }} required style={inputStyle}>
               <option value="" disabled>Selecione um cliente</option>
               {clientes.map((cliente) => <option key={cliente.id} value={cliente.id}>{cliente.nome}</option>)}
             </select>
             {clientes.length === 0 && <span style={fieldHintStyle}>Cadastre um cliente antes de cadastrar o robô.</span>}
-          </div>
+          </div>}
           <Field label="Sistema" placeholder="Ex.: Legal One" value={form.sistema} onChange={(v) => update("sistema", v)} required />
-          <Field label="Robô" placeholder="Nome do robô" value={form.nome} onChange={(v) => update("nome", v)} required />
           <Field label="CourtName" placeholder="Ex.: TJSP" value={form.courtName} onChange={(v) => update("courtName", v)} required />
-          <Field label="Fila" placeholder="Ex.: AWS SQS" value={form.fila} onChange={(v) => update("fila", v)} required />
-          <Field label="Stack" placeholder="Ex.: .NET 8" value={form.stack} onChange={(v) => update("stack", v)} required />
+          <CatalogSelect label="Fila" value={form.fila} items={catalogs.queues} onChange={(v) => update("fila", v)} />
+          <CatalogSelect label="Stack" value={form.stack} items={catalogs.stacks} onChange={(v) => update("stack", v)} />
           <NumberField label="Ideal" value={form.ideal} onChange={(value) => update("ideal", value)} />
           <NumberField label="Max" value={form.max} onChange={(value) => update("max", value)} />
           <div>
-            <Field label="Pacote" placeholder="Ex.: Documentos" value={form.pacote} onChange={(v) => update("pacote", v)} required />
+            <CatalogSelect label="Pacote" value={form.pacote} items={catalogs.packages} onChange={(v) => {
+              update("pacote", v);
+              const packageItem = catalogs.packages.find((item) => item.name === v);
+              if (packageItem?.color) update("pacoteCor", packageItem.color);
+            }} />
             <ColorPicker label="Cor do pacote" value={form.pacoteCor} onChange={(value) => update("pacoteCor", value)} />
           </div>
           <Field label="Versão" placeholder="Ex.: 1.0.0" value={form.versao} onChange={(v) => update("versao", v)} required />
-          <div style={fullWidthStyle}><Field label="Command" placeholder="Ex.: python main.py --tribunal tjsp" value={form.command} onChange={(value) => update("command", value)} /></div>
+          <div style={fullWidthStyle}><CatalogSelect label="Command" value={form.command} items={catalogs.commands} optional commandValues onChange={(value) => update("command", value)} /></div>
           {form.productType !== "INTEGRADOR" && <>
             <Field label="Tribunal" placeholder="Ex.: TJSP" value={form.tribunal ?? ""} onChange={(value) => update("tribunal", value || null)} />
             <Field label="Sistema Tribunal" placeholder="Ex.: e-SAJ" value={form.tribunalSystem ?? ""} onChange={(value) => update("tribunalSystem", value || null)} />
@@ -206,7 +248,14 @@ export default function RobotForm({
             </select>
           </div>
         </div>
-      </FormSection>
+      </FormSection>}
+
+      {step === 3 && <FormSection icon={<CheckCircle2 size={17} />} title="Revisar e salvar" description="Confira os dados antes de publicar o robô.">
+        <div className="robot-form-review">
+          <ReviewGroup title="Identificação" items={[["Robô", form.nome], ["Responsável", form.responsavel], ["Ambiente", form.ambiente], ["Status", form.ativo ? "Ativo" : "Inativo"], ["Descrição", form.descricao]]} />
+          <ReviewGroup title="Configuração" items={[["Produto", ROBOT_PRODUCTS.find((item) => item.productType === form.productType)?.label ?? form.productType], ["Cliente", clientes.find((item) => item.id === form.clienteId)?.nome ?? "Não se aplica"], ["Sistema", form.sistema], ["Pacote", form.pacote], ["Stack", form.stack], ["Fila", form.fila], ["Command", form.command || "Não informado"], ["Versão", form.versao], ["Capacidade", `Ideal ${form.ideal} · Máx. ${form.max}`]]} />
+        </div>
+      </FormSection>}
 
       {false && <FormSection icon={<FileText size={17} />} title="Documentação da alteração" description="Registre a atualização e as regras funcionais do robô.">
         <div style={stackedFieldsStyle}>
@@ -360,10 +409,11 @@ export default function RobotForm({
         </div>
         <div style={rightActionsStyle}>
           <button type="button" onClick={onCancel} style={cancelButtonStyle}>Cancelar</button>
-          <button type="submit" value="save" style={submitButtonStyle}>
+          {step > 1 && <button type="button" onClick={() => setStep((current) => Math.max(1, current - 1) as 1 | 2 | 3)} style={cancelButtonStyle}><ArrowLeft size={15} /> Voltar</button>}
+          {step < 3 ? <button type="button" onClick={nextStep} style={submitButtonStyle}>Continuar <ArrowRight size={15} /></button> : <button type="button" onClick={saveAndPublish} style={submitButtonStyle}>
             <Save size={15} />
-            {mode === "create" ? "Cadastrar Robô" : "Salvar"}
-          </button>
+            {mode === "create" ? "Salvar e publicar" : "Salvar e publicar"}
+          </button>}
         </div>
       </footer>
     </form>
@@ -401,6 +451,23 @@ function NumberField({ label, value, onChange }: { label: string; value: number;
       <input type="number" min={0} step={1} value={value} onChange={(event) => onChange(Number(event.target.value))} required style={inputStyle} />
     </div>
   );
+}
+
+function ReviewGroup({ title, items }: { title: string; items: [string, string][] }) {
+  return <section><h3>{title}</h3><dl>{items.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></section>;
+}
+
+function CatalogSelect({ label, value, items, onChange, optional = false, commandValues = false }: { label: string; value: string; items: RobotCatalogItem[]; onChange: (value: string) => void; optional?: boolean; commandValues?: boolean }) {
+  const values = new Set(items.map((item) => commandValues ? item.command ?? "" : item.name));
+  return <div>
+    <label style={labelStyle}>{label}</label>
+    <select value={value} onChange={(event) => onChange(event.target.value)} required={!optional} style={inputStyle}>
+      <option value="">{optional ? "Nenhum" : `Selecione ${label.toLocaleLowerCase("pt-BR")}`}</option>
+      {value && !values.has(value) && <option value={value}>{value} (inativo)</option>}
+      {items.map((item) => <option key={item.id} value={commandValues ? item.command : item.name}>{commandValues ? `${item.name} — ${item.command}` : item.name}</option>)}
+    </select>
+    {items.length === 0 && <span style={fieldHintStyle}>Nenhum cadastro disponível. Solicite a criação ao administrador.</span>}
+  </div>;
 }
 
 const formStyle = { display: "flex", flexDirection: "column", gap: 16 } as const;
@@ -492,7 +559,7 @@ function ColorPicker({ label, value, onChange }: { label: string; value: CorBadg
 }
 
 const FORMULARIO_ROBO_INICIAL: DadosFormularioRobo = {
-  clienteId: "",
+  clienteId: null,
   nome: "",
   sistema: "",
   courtName: "",

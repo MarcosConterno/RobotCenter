@@ -11,7 +11,7 @@ export const regraRoboSchema = z.object({
 
 export const dadosFormularioRoboSchema = z.object({
   nome: textoObrigatorio("Nome"),
-  clienteId: z.string().uuid("Selecione um cliente."),
+  clienteId: z.string().uuid("Selecione um cliente.").nullable(),
   sistema: textoObrigatorio("Sistema"),
   courtName: textoObrigatorio("CourtName"),
   ideal: z.number().int().nonnegative("Ideal não pode ser negativo."),
@@ -47,6 +47,9 @@ export const dadosFormularioRoboSchema = z.object({
 }).refine((dados) => dados.productType !== "INTEGRADOR" || (!dados.tribunal && !dados.tribunalSystem), {
   message: "Robôs Integradores não utilizam Tribunal ou Sistema Tribunal.",
   path: ["tribunal"],
+}).refine((dados) => dados.productType !== "INTEGRADOR" || Boolean(dados.clienteId), {
+  message: "Selecione um cliente para o Robô Integrador.",
+  path: ["clienteId"],
 });
 
 export const dadosCadastroUsuarioSchema = z.object({

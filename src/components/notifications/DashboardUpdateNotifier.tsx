@@ -6,19 +6,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppData } from "@/data/AppDataProvider";
 import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/types/database.types";
+import { announceDashboardUnreadCount, DASHBOARD_UNREAD_STORAGE_KEY, readDashboardUnreadCount } from "@/domain/dashboard-notifications";
 
-const UNREAD_STORAGE_KEY = "robot-center:dashboard-unread-updates";
 const NOTIFICATION_PERMISSION_REQUESTED_KEY = "robot-center:notification-permission-requested";
 const FAVICON_SELECTOR = "link[rel='icon'], link[rel='shortcut icon']";
 const DEFAULT_FAVICON = "/images/robot-center-system-logo-transparent.png";
 
 type PublicationRow = Database["public"]["Tables"]["publicacoes"]["Row"];
-
-function readUnreadCount() {
-  const stored = window.sessionStorage.getItem(UNREAD_STORAGE_KEY);
-  const count = Number.parseInt(stored ?? "0", 10);
-  return Number.isFinite(count) && count > 0 ? count : 0;
-}
 
 function updateFavicon(hasUnreadUpdates: boolean) {
   const favicon = document.querySelector<HTMLLinkElement>(FAVICON_SELECTOR);
@@ -64,12 +58,15 @@ export default function DashboardUpdateNotifier() {
   }, [robos]);
 
   const clearUnreadUpdates = useCallback(() => {
-    window.sessionStorage.removeItem(UNREAD_STORAGE_KEY);
+    window.sessionStorage.removeItem(DASHBOARD_UNREAD_STORAGE_KEY);
     setUnreadCount(0);
+    announceDashboardUnreadCount(0);
   }, []);
 
   useEffect(() => {
-    setUnreadCount(readUnreadCount());
+    const count = readDashboardUnreadCount();
+    setUnreadCount(count);
+    announceDashboardUnreadCount(count);
   }, []);
 
   useEffect(() => {
@@ -130,7 +127,8 @@ export default function DashboardUpdateNotifier() {
           if (!dashboardIsVisible) {
             setUnreadCount((current) => {
               const next = current + 1;
-              window.sessionStorage.setItem(UNREAD_STORAGE_KEY, String(next));
+              window.sessionStorage.setItem(DASHBOARD_UNREAD_STORAGE_KEY, String(next));
+              announceDashboardUnreadCount(next);
               return next;
             });
           }

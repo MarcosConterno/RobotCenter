@@ -219,6 +219,8 @@ button {
 .sidebar-link:hover .sidebar-link-description, .sidebar-link-active .sidebar-link-description { color: #9aa9bc; }
 .sidebar-link-arrow { opacity: 0; transform: translateX(-3px); transition: opacity .18s ease, transform .18s ease; }
 .sidebar-link:hover .sidebar-link-arrow, .sidebar-link-active .sidebar-link-arrow { opacity: 1; transform: translateX(0); }
+.sidebar-dashboard-notification { position: absolute; top: 12px; right: 12px; width: 8px; height: 8px; border: 2px solid var(--chrome-bg); border-radius: 50%; background: #0a84ff; box-shadow: 0 0 0 3px rgba(10,132,255,.16), 0 0 10px rgba(10,132,255,.5); }
+.app-sidebar.is-collapsed .sidebar-dashboard-notification { top: 7px; right: 7px; }
 .sidebar-group-trigger { width: 100%; border: 0; text-align: left; cursor: pointer; }
 .sidebar-group-chevron { margin-left: auto; transition: transform .18s ease; }
 .sidebar-group-chevron.is-open { transform: rotate(180deg); }
@@ -974,6 +976,18 @@ button {
 [data-theme="dark"] .updates-feed__limit select { color-scheme: dark; color: var(--text-strong); background: var(--card); }
 [data-theme="dark"] .updates-feed__limit option { color: var(--text-strong); background: var(--card); }
 [data-theme="light"] .updates-feed__limit select { color-scheme: light; }
+
+.robot-form select { color-scheme: light; }
+.robot-form select option { color: var(--text); background: var(--surface); }
+[data-theme="dark"] .robot-form select { color-scheme: dark; color: var(--text-strong); background-color: var(--surface); }
+[data-theme="dark"] .robot-form select option { color: var(--text-strong); background: var(--card); }
+[data-theme="light"] .robot-form select { color-scheme: light; }
+.robot-form-steps { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); overflow: hidden; border: 1px solid var(--border); border-radius: 10px; background: var(--card); }
+.robot-form-steps button { display: flex; min-height: 44px; align-items: center; gap: 8px; border: 0; border-right: 1px solid var(--separator); padding: 0 13px; color: var(--muted); background: transparent; font-size: 11px; font-weight: 650; text-align: left; }
+.robot-form-steps button:last-child { border-right: 0; }.robot-form-steps button.is-active { color: var(--accent); background: var(--accent-soft); }.robot-form-steps button.is-complete { color: var(--success); cursor: pointer; }
+.robot-form-steps strong { display: grid; width: 22px; height: 22px; place-items: center; flex: 0 0 auto; border-radius: 50%; color: inherit; background: color-mix(in srgb,currentColor 12%,transparent); font-size: 9px; }
+.robot-form-review { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }.robot-form-review section { overflow: hidden; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }.robot-form-review h3 { margin: 0; border-bottom: 1px solid var(--separator); padding: 11px 13px; color: var(--text-strong); font-size: 12px; }.robot-form-review dl { margin: 0; padding: 5px 13px; }.robot-form-review dl div { display: grid; grid-template-columns: 110px minmax(0,1fr); gap: 10px; border-bottom: 1px solid var(--separator); padding: 8px 0; }.robot-form-review dl div:last-child { border-bottom: 0; }.robot-form-review dt { color: var(--muted); font-size: 10px; }.robot-form-review dd { overflow-wrap: anywhere; margin: 0; color: var(--text); font-size: 11px; }
+@media(max-width:640px){.robot-form-steps{grid-template-columns:1fr}.robot-form-steps button{border-right:0;border-bottom:1px solid var(--separator)}.robot-form-review{grid-template-columns:1fr}}
 
 .updates-feed__count {
   border: 1px solid var(--border);

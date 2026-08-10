@@ -92,12 +92,6 @@ export default function RobotFormRoute({ mode, robotId, defaultProductType = "IN
         <div><span>{product.label.toLocaleUpperCase("pt-BR")}</span><h1>{mode === "create" ? "Cadastrar novo robô" : `Editar ${robot?.nome}`}</h1><p>Configure identificação, execução e capacidade do robô.</p></div>
       </header>
 
-      <div className={styles.formGuide} aria-label="Etapas do cadastro">
-        <span><strong>1</strong> Identificação</span>
-        <span><strong>2</strong> Configuração</span>
-        <span><strong>3</strong> Revisar e salvar</span>
-      </div>
-
       <RobotForm
         clientes={clientes}
         robos={robos}

@@ -34,6 +34,28 @@ function gerarTenant(nome: string) {
     .replace(/^-|-$/g, "") || "cliente-importado";
 }
 
+async function garantirCadastrosDoRobo(dados: Pick<DadosFormularioRobo, "pacote" | "pacoteCor" | "stack" | "fila" | "command">) {
+  const supabase = createClient();
+  const [packagesResult, stacksResult, queuesResult, commandsResult] = await Promise.all([
+    supabase.from("robot_packages").select("id,name,color"), supabase.from("robot_stacks").select("id,name"),
+    supabase.from("robot_queues").select("id,name"), supabase.from("robot_commands").select("id,name,command"),
+  ]);
+  const errors = [packagesResult.error, stacksResult.error, queuesResult.error, commandsResult.error].filter(Boolean);
+  if (errors[0]) throw errors[0];
+  const key = (value: string) => normalizarIdentificador(value);
+  const existingPackage = packagesResult.data?.find((item) => key(item.name) === key(dados.pacote));
+  let packageId = existingPackage?.id;
+  let stackId = stacksResult.data?.find((item) => key(item.name) === key(dados.stack))?.id;
+  let queueId = queuesResult.data?.find((item) => key(item.name) === key(dados.fila))?.id;
+  let commandId = dados.command ? commandsResult.data?.find((item) => key(item.command) === key(dados.command))?.id : undefined;
+  if (!packageId) { const { data, error } = await supabase.from("robot_packages").insert({ name: dados.pacote, color: dados.pacoteCor }).select("id").single(); if (error) throw new Error(`Pacote não cadastrado e não foi possível criá-lo: ${error.message}`); packageId = data.id; }
+  else if (existingPackage && existingPackage.color !== dados.pacoteCor) { const { error } = await supabase.from("robot_packages").update({ color: dados.pacoteCor }).eq("id", packageId); if (error) throw error; }
+  if (!stackId) { const { data, error } = await supabase.from("robot_stacks").insert({ name: dados.stack }).select("id").single(); if (error) throw new Error(`Stack não cadastrada e não foi possível criá-la: ${error.message}`); stackId = data.id; }
+  if (!queueId) { const { data, error } = await supabase.from("robot_queues").insert({ name: dados.fila }).select("id").single(); if (error) throw new Error(`Fila não cadastrada e não foi possível criá-la: ${error.message}`); queueId = data.id; }
+  if (dados.command && !commandId) { const { data, error } = await supabase.from("robot_commands").insert({ name: dados.command, command: dados.command }).select("id").single(); if (error) throw new Error(`Command não cadastrado e não foi possível criá-lo: ${error.message}`); commandId = data.id; }
+  return { packageId, stackId, queueId, commandId: commandId ?? null };
+}
+
 async function enviarDocumentacaoUpadaRobo(roboId: string, arquivo?: File | null) {
   if (!arquivo) return null;
   if (arquivo.type !== "application/pdf") throw new Error("O manual deve ser um arquivo PDF.");
@@ -229,12 +251,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const { alteracoesRealizadas, uploadedDocumentationFile, ...cadastro } = dados;
     const supabase = createClient();
     const clienteCor = clientes.find((cliente) => cliente.id === cadastro.clienteId)?.cor ?? "azul";
+    const catalogIds = await garantirCadastrosDoRobo(cadastro);
     const { data: roboCriado, error: erroRobo } = await supabase.from("robos").insert({
       cliente_id: cadastro.clienteId, cliente_cor: clienteCor, nome: cadastro.nome, sistema: cadastro.sistema,
       court_name: cadastro.courtName, ideal: cadastro.ideal, max: cadastro.max, pacote: cadastro.pacote,
       pacote_cor: cadastro.pacoteCor, descricao: cadastro.descricao, ambiente: cadastro.ambiente,
       ativo: cadastro.ativo, stack: cadastro.stack, fila: cadastro.fila, versao: cadastro.versao,
       command: cadastro.command, product_type: cadastro.productType,
+      package_id: catalogIds.packageId, stack_id: catalogIds.stackId, queue_id: catalogIds.queueId, command_id: catalogIds.commandId,
       tribunal: cadastro.productType === "INTEGRADOR" ? null : cadastro.tribunal,
       tribunal_system: cadastro.productType === "INTEGRADOR" ? null : cadastro.tribunalSystem,
       responsavel: cadastro.responsavel,
@@ -279,12 +303,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
     const { alteracoesRealizadas, uploadedDocumentationFile, ...cadastro } = dados;
     const supabase = createClient();
+    const catalogIds = await garantirCadastrosDoRobo(cadastro);
     const { error } = await supabase.from("robos").update({
       cliente_id: cadastro.clienteId, nome: cadastro.nome,
       sistema: cadastro.sistema, court_name: cadastro.courtName, ideal: cadastro.ideal, max: cadastro.max,
       pacote: cadastro.pacote, pacote_cor: cadastro.pacoteCor, descricao: cadastro.descricao,
       ambiente: cadastro.ambiente, ativo: cadastro.ativo, stack: cadastro.stack, fila: cadastro.fila,
       versao: cadastro.versao, command: cadastro.command, product_type: cadastro.productType,
+      package_id: catalogIds.packageId, stack_id: catalogIds.stackId, queue_id: catalogIds.queueId, command_id: catalogIds.commandId,
       tribunal: cadastro.productType === "INTEGRADOR" ? null : cadastro.tribunal,
       tribunal_system: cadastro.productType === "INTEGRADOR" ? null : cadastro.tribunalSystem,
       responsavel: cadastro.responsavel,
@@ -433,14 +459,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       if (item.operacao === "Atualizar") {
         const atual = robos.find((robo) => robo.id === item.roboId);
         if (!atual || !item.roboId) throw new Error(`Linha ${item.linha}: robô não encontrado para atualização.`);
+        const productType = campos.productType ?? atual.productType;
         const clienteAtual = clientesAtualizados.find((cliente) => cliente.id === atual.clienteId);
         const cliente = campos.clienteNome ? await obterCliente(campos.clienteNome) : clienteAtual;
-        if (!cliente) throw new Error(`Linha ${item.linha}: cliente atual não encontrado.`);
+        if (productType === "INTEGRADOR" && !cliente) throw new Error(`Linha ${item.linha}: Robô Integrador exige Cliente.`);
         const proximoPacote = campos.pacote ?? atual.pacote;
         const chavePacote = normalizarIdentificador(proximoPacote);
         const pacoteCor = corPacotePorNome.get(chavePacote) ?? atual.pacoteCor;
         const patch: Database["public"]["Tables"]["robos"]["Update"] = {};
-        if (campos.clienteNome !== undefined) patch.cliente_id = cliente.id;
+        if (campos.clienteNome !== undefined || productType !== "INTEGRADOR") patch.cliente_id = cliente?.id ?? null;
         if (campos.nome !== undefined) patch.nome = campos.nome;
         if (campos.sistema !== undefined) patch.sistema = campos.sistema;
         if (campos.courtName !== undefined) patch.court_name = campos.courtName;
@@ -467,13 +494,19 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         if (campos.disparo !== undefined) patch.disparo = campos.disparo;
         if (campos.gatilhoDeRoboId !== undefined) patch.gatilho_de_robo_id = campos.gatilhoDeRoboId;
         if (campos.gatilhoParaRoboId !== undefined) patch.gatilho_para_robo_id = campos.gatilhoParaRoboId;
+        const catalogIds = await garantirCadastrosDoRobo({
+          pacote: campos.pacote ?? atual.pacote, pacoteCor, stack: campos.stack ?? atual.stack,
+          fila: campos.fila ?? atual.fila, command: campos.command ?? atual.command,
+        });
+        patch.package_id = catalogIds.packageId; patch.stack_id = catalogIds.stackId;
+        patch.queue_id = catalogIds.queueId; patch.command_id = catalogIds.commandId;
         const { error } = await supabase.from("robos").update(patch).eq("id", item.roboId);
         if (error) throw new Error(`Linha ${item.linha}: ${error.message}`);
         const atualizado: Robo = {
           ...atual,
           ...campos,
-          clienteId: cliente.id,
-          clienteCor: cliente.cor,
+          clienteId: cliente?.id ?? null,
+          clienteCor: cliente?.cor ?? atual.clienteCor,
           pacoteCor,
         };
         delete (atualizado as Robo & { clienteNome?: string }).clienteNome;
@@ -481,9 +514,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         continue;
       }
 
-      const cliente = await obterCliente(campos.clienteNome ?? "Cliente não informado");
+      const productType = campos.productType ?? "INTEGRADOR";
+      const cliente = campos.clienteNome ? await obterCliente(campos.clienteNome) : null;
+      if (productType === "INTEGRADOR" && !cliente) throw new Error(`Linha ${item.linha}: Robô Integrador exige Cliente.`);
       const cadastro: DadosFormularioRobo = {
-        clienteId: cliente.id,
+        clienteId: cliente?.id ?? null,
         nome: campos.nome ?? `Robô importado ${item.linha - 1}`,
         sistema: campos.sistema ?? "Não informado",
         courtName: campos.courtName ?? "Não informado",
@@ -495,7 +530,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         pacoteCor: campos.pacoteCor ?? "violeta",
         versao: campos.versao ?? "Não informado",
         command: campos.command ?? "",
-        productType: campos.productType ?? "INTEGRADOR",
+        productType,
         tribunal: campos.productType === "INTEGRADOR" ? null : campos.tribunal ?? null,
         tribunalSystem: campos.productType === "INTEGRADOR" ? null : campos.tribunalSystem ?? null,
         descricao: campos.descricao ?? "Não informado",
@@ -510,15 +545,17 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         regrasForaDocumentacao: campos.regrasForaDocumentacao ?? [],
       };
       const { alteracoesRealizadas, ...cadastroSemAlteracoes } = cadastro;
+      const catalogIds = await garantirCadastrosDoRobo(cadastro);
       const chavePacote = normalizarIdentificador(cadastro.pacote);
-      const clienteCor = cliente.cor;
+      const clienteCor = cliente?.cor ?? "azul";
       const pacoteCor = corPacotePorNome.get(chavePacote) ?? cadastro.pacoteCor;
       corPacotePorNome.set(chavePacote, pacoteCor);
       const { data: roboCriado, error: erroRobo } = await supabase.from("robos").insert({
-        cliente_id: cliente.id, cliente_cor: clienteCor, nome: cadastro.nome, sistema: cadastro.sistema, court_name: cadastro.courtName,
+        cliente_id: cliente?.id ?? null, cliente_cor: clienteCor, nome: cadastro.nome, sistema: cadastro.sistema, court_name: cadastro.courtName,
         ideal: cadastro.ideal, max: cadastro.max, pacote: cadastro.pacote, pacote_cor: pacoteCor, descricao: cadastro.descricao,
         ambiente: cadastro.ambiente, ativo: cadastro.ativo, stack: cadastro.stack, fila: cadastro.fila,
         versao: cadastro.versao, command: cadastro.command, product_type: cadastro.productType,
+        package_id: catalogIds.packageId, stack_id: catalogIds.stackId, queue_id: catalogIds.queueId, command_id: catalogIds.commandId,
         tribunal: cadastro.productType === "INTEGRADOR" ? null : cadastro.tribunal,
         tribunal_system: cadastro.productType === "INTEGRADOR" ? null : cadastro.tribunalSystem,
         responsavel: cadastro.responsavel,
@@ -545,7 +582,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         ...cadastroSemAlteracoes,
         clienteCor,
         pacoteCor,
-        clienteId: cliente.id,
+        clienteId: cliente?.id ?? null,
         id: roboCriado.id,
         ultimaPublicacaoEm: roboCriado.updated_at,
         alteracoes: alteracoesCriadas.map((alteracao) => ({ id: alteracao.id, descricao: alteracao.descricao, realizadaEm: alteracao.realizada_em })),

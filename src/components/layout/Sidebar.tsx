@@ -5,11 +5,12 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useAdminAccess } from "@/auth/AdminAccessProvider";
 import { useTutorial } from "@/tutorial/TutorialProvider";
 import { ROBOT_PRODUCTS } from "@/domain/robot-products";
+import { DASHBOARD_UNREAD_EVENT, readDashboardUnreadCount } from "@/domain/dashboard-notifications";
 
 const navigation = [
   { href: "/minha-pagina", label: "Minha página", description: "Organização diária", icon: House, access: "my-page" },
@@ -27,6 +28,13 @@ interface SidebarProps {
 export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const [robotsExpanded, setRobotsExpanded] = useState(() => pathname.startsWith("/robos"));
+  const [hasDashboardUpdates, setHasDashboardUpdates] = useState(false);
+  useEffect(() => {
+    const sync = (event?: Event) => setHasDashboardUpdates(event instanceof CustomEvent ? event.detail > 0 : readDashboardUnreadCount() > 0);
+    sync();
+    window.addEventListener(DASHBOARD_UNREAD_EVENT, sync);
+    return () => window.removeEventListener(DASHBOARD_UNREAD_EVENT, sync);
+  }, []);
   const { canAccessRobots, canAccessFlows, canAccessSettings, canManageTutorials, status } = useAdminAccess();
   const tutorial = useTutorial();
   const visibleNavigation = navigation.filter((item) => (
@@ -94,6 +102,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   <span className="sidebar-link-title">{item.label}</span>
                   <span className="sidebar-link-description">{item.description}</span>
                 </span>
+                {item.access === "dashboard" && hasDashboardUpdates && !active && <span className="sidebar-dashboard-notification" aria-label="Novas atualizações na Dashboard" />}
                 <ChevronRight className="sidebar-link-arrow" size={14} />
               </Link>
             );

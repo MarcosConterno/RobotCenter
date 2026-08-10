@@ -982,14 +982,39 @@ export type Database = {
           },
         ]
       }
+      robot_packages: {
+        Row: { id: string; name: string; color: string; active: boolean; created_at: string; updated_at: string; created_by: string | null; updated_by: string | null; deleted_at: string | null; deleted_by: string | null }
+        Insert: { id?: string; name: string; color?: string; active?: boolean; created_at?: string; updated_at?: string; created_by?: string | null; updated_by?: string | null; deleted_at?: string | null; deleted_by?: string | null }
+        Update: { id?: string; name?: string; color?: string; active?: boolean; created_at?: string; updated_at?: string; created_by?: string | null; updated_by?: string | null; deleted_at?: string | null; deleted_by?: string | null }
+        Relationships: []
+      }
+      robot_stacks: {
+        Row: { id: string; name: string; active: boolean; created_at: string; updated_at: string; created_by: string | null; updated_by: string | null; deleted_at: string | null; deleted_by: string | null }
+        Insert: { id?: string; name: string; active?: boolean; created_at?: string; updated_at?: string; created_by?: string | null; updated_by?: string | null }
+        Update: { id?: string; name?: string; active?: boolean; created_at?: string; updated_at?: string; created_by?: string | null; updated_by?: string | null }
+        Relationships: []
+      }
+      robot_queues: {
+        Row: { id: string; name: string; active: boolean; created_at: string; updated_at: string; created_by: string | null; updated_by: string | null }
+        Insert: { id?: string; name: string; active?: boolean; created_at?: string; updated_at?: string; created_by?: string | null; updated_by?: string | null }
+        Update: { id?: string; name?: string; active?: boolean; created_at?: string; updated_at?: string; created_by?: string | null; updated_by?: string | null }
+        Relationships: []
+      }
+      robot_commands: {
+        Row: { id: string; name: string; command: string; active: boolean; created_at: string; updated_at: string; created_by: string | null; updated_by: string | null }
+        Insert: { id?: string; name: string; command: string; active?: boolean; created_at?: string; updated_at?: string; created_by?: string | null; updated_by?: string | null }
+        Update: { id?: string; name?: string; command?: string; active?: boolean; created_at?: string; updated_at?: string; created_by?: string | null; updated_by?: string | null }
+        Relationships: []
+      }
       robos: {
         Row: {
           alteracao_realizada: string
           ambiente: string
           ativo: boolean
-          cliente_id: string
+          cliente_id: string | null
           cliente_cor: string
           command: string
+          command_id: string | null
           court_name: string
           created_at: string
           created_by: string | null
@@ -997,6 +1022,7 @@ export type Database = {
           deleted_by: string | null
           descricao: string
           fila: string
+          queue_id: string | null
           disparo: string
           gatilho_de_robo_id: string | null
           gatilho_para_robo_id: string | null
@@ -1007,11 +1033,13 @@ export type Database = {
           manual_path: string | null
           nome: string
           pacote: string
+          package_id: string | null
           pacote_cor: string
           product_type: string
           responsavel: string
           sistema: string
           stack: string
+          stack_id: string | null
           tribunal: string | null
           tribunal_system: string | null
           updated_at: string
@@ -1023,9 +1051,10 @@ export type Database = {
           alteracao_realizada?: string
           ambiente: string
           ativo?: boolean
-          cliente_id: string
+          cliente_id?: string | null
           cliente_cor?: string
           command?: string
+          command_id?: string | null
           court_name: string
           created_at?: string
           created_by?: string | null
@@ -1033,6 +1062,7 @@ export type Database = {
           deleted_by?: string | null
           descricao: string
           fila: string
+          queue_id?: string | null
           disparo?: string
           gatilho_de_robo_id?: string | null
           gatilho_para_robo_id?: string | null
@@ -1043,11 +1073,13 @@ export type Database = {
           manual_path?: string | null
           nome: string
           pacote: string
+          package_id?: string | null
           pacote_cor?: string
           product_type?: string
           responsavel: string
           sistema: string
           stack: string
+          stack_id?: string | null
           tribunal?: string | null
           tribunal_system?: string | null
           updated_at?: string
@@ -1062,6 +1094,7 @@ export type Database = {
           cliente_id?: string
           cliente_cor?: string
           command?: string
+          command_id?: string | null
           court_name?: string
           created_at?: string
           created_by?: string | null
@@ -1069,6 +1102,7 @@ export type Database = {
           deleted_by?: string | null
           descricao?: string
           fila?: string
+          queue_id?: string | null
           disparo?: string
           gatilho_de_robo_id?: string | null
           gatilho_para_robo_id?: string | null
@@ -1079,11 +1113,13 @@ export type Database = {
           manual_path?: string | null
           nome?: string
           pacote?: string
+          package_id?: string | null
           pacote_cor?: string
           product_type?: string
           responsavel?: string
           sistema?: string
           stack?: string
+          stack_id?: string | null
           tribunal?: string | null
           tribunal_system?: string | null
           updated_at?: string

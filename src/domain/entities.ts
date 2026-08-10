@@ -119,7 +119,7 @@ export interface RobotUploadedDocument {
 
 export interface Robo {
   id: string;
-  clienteId: string;
+  clienteId: string | null;
   clienteCor: CorBadgeRobo;
   nome: string;
   sistema: string;

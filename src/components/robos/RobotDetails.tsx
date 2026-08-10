@@ -207,7 +207,7 @@ export default function RobotDetails({ robot, clientes = EMPTY_CLIENTES, robos =
               <Field icon={<Bot size={16} />} label="Nome" value={robot.nome} />
               <Field icon={<Cpu size={16} />} label="Nome técnico" value={robot.courtName} />
               <Field icon={<GitBranch size={16} />} label="Sistema" value={robot.sistema} />
-              <Field icon={<Building2 size={16} />} label="Cliente" value={cliente?.nome ?? "Não informado"} />
+              <Field icon={<Building2 size={16} />} label="Cliente" value={cliente?.nome ?? (robot.productType === "INTEGRADOR" ? "Não informado" : "Não se aplica")} />
               <Field icon={<Boxes size={16} />} label="Ambiente" value={robot.ambiente} />
               <Field icon={<CirclePower size={16} />} label="Status" value={robot.ativo ? "Ativo" : "Inativo"} />
               <Field icon={<Package size={16} />} label="Pacote" value={robot.pacote} />

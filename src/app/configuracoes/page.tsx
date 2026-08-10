@@ -5,13 +5,14 @@ import { useCallback, useEffect, useState } from "react";
 
 import AppShell from "@/components/layout/AppShell";
 import SettingsNavigation from "@/components/settings/SettingsNavigation";
+import RobotCatalogSettings from "@/components/settings/RobotCatalogSettings";
 import { useAdminAccess } from "@/auth/AdminAccessProvider";
 import { useAppData } from "@/data/AppDataProvider";
 import { CORES_BADGE_ROBO, TIPOS_USUARIO, type CorBadgeRobo, type TipoUsuario, type Usuario } from "@/domain/entities";
 import { PALETAS_BADGE_ROBO } from "@/domain/badge-colors";
 import { dadosCadastroClienteSchema, dadosCadastroUsuarioSchema, primeiraMensagemErro } from "@/domain/validation";
 
-type CadastroAtivo = "usuarios" | "clientes" | "permissoes";
+type CadastroAtivo = "usuarios" | "clientes" | "cadastros" | "permissoes";
 
 interface PermissionRole { id: string; codigo: string; nome: string; descricao: string | null }
 interface PermissionItem { id: string; codigo: string; recurso: string; acao: string; descricao: string | null; roles: string[] }
@@ -24,7 +25,7 @@ export default function ConfiguracoesPage() {
     atualizarCliente,
     excluirCliente,
   } = useAppData();
-  const { isAdmin: adminAutorizado, isMaster, status: statusAutorizacao, error: erroAutorizacao } = useAdminAccess();
+  const { isAdmin: adminAutorizado, isMaster, permissions: accessPermissions, status: statusAutorizacao, error: erroAutorizacao } = useAdminAccess();
   const carregandoAutorizacao = statusAutorizacao === "loading";
   const [cadastroAtivo, setCadastroAtivo] = useState<CadastroAtivo>("usuarios");
   const [login, setLogin] = useState("");
@@ -70,7 +71,7 @@ export default function ConfiguracoesPage() {
 
   useEffect(() => {
     const requestedTab = new URLSearchParams(window.location.search).get("aba");
-    if (requestedTab === "usuarios" || requestedTab === "clientes" || requestedTab === "permissoes") setCadastroAtivo(requestedTab);
+    if (requestedTab === "usuarios" || requestedTab === "clientes" || requestedTab === "cadastros" || requestedTab === "permissoes") setCadastroAtivo(requestedTab);
   }, []);
 
   const carregarMetricasClientes = useCallback(async () => {
@@ -592,6 +593,8 @@ export default function ConfiguracoesPage() {
               {erroCliente && <p role="alert" style={formErrorStyle}>{erroCliente}</p>}
             </CadastroLista>
           </section>
+        ) : cadastroAtivo === "cadastros" ? (
+          <RobotCatalogSettings canManage={isMaster || accessPermissions.includes("robot_catalog.manage")} />
         ) : (
           <PermissionsPanel
             roles={permissionRoles}
@@ -746,7 +749,7 @@ function resourceLabel(resource: string) {
   const labels: Record<string, string> = {
     access_control: "Controle de acesso", clients: "Clientes", dashboard: "Dashboard", flows: "Fluxos",
     publications: "Publicações", robot_center_documentation: "Documentação Robot Center", robots: "Robôs",
-    settings: "Configurações", tutorials: "Tutoriais", users: "Usuários",
+    settings: "Configurações", robot_catalog: "Cadastros", tutorials: "Tutoriais", users: "Usuários",
   };
   return labels[resource] ?? resource.replaceAll("_", " ");
 }
