@@ -172,7 +172,7 @@ Uma Tarefa Pessoal pertence a exatamente um usuário e representa uma prioridade
 
 Na experiência de Minha página, o conceito passa a ser **ToDo**: aquilo que o usuário precisa fazer. A palavra Tarefa fica reservada para outro contexto futuro do sistema.
 
-Uma Reunião Pessoal é o registro livre do que foi conversado, com agenda, participantes, resumo e bloco de anotações. Uma Nota Pessoal é o conteúdo que o usuário deseja guardar sem transformá-lo em ação ou reunião. Reuniões e Notas podem originar um ToDo, mas não são alteradas pelo ToDo criado.
+Uma Reunião Pessoal é o registro livre do que foi conversado, com agenda, participantes, resumo e bloco de anotações formatável. Anotações de Reunião e conteúdos de Nota suportam negrito, tópicos, listas numeradas e checkboxes, preservando registros antigos em texto simples. Uma Nota Pessoal é o conteúdo que o usuário deseja guardar sem transformá-lo em ação ou reunião. Reuniões e Notas podem originar um ToDo, mas não são alteradas pelo ToDo criado.
 
 A Visualização Pessoal permite habilitar a tabela consolidada de Robôs e escolher Fluxos como atalhos. A preferência não copia nem altera essas entidades: ela referencia os dados operacionais já autorizados para o usuário.
 ## Remapeamento de usuários de Cliente

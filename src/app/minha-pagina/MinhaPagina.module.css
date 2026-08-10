@@ -147,6 +147,30 @@
 .documentFields input, .noteEditor input { width: 100%; height: 35px; box-sizing: border-box; border: 1px solid var(--border); border-radius: 7px; padding: 0 9px; outline: 0; color: var(--text); background: var(--surface); font-size: 10.5px; }
 .documentFields .wideField { grid-column: 1 / -1; }
 .documentFields .editorField { grid-column: 1 / -1; }
+.editorFieldLabel { display: block; margin-bottom: 6px; color: var(--muted); font-size: 9.5px; font-weight: 700; }
+.meetingEditorShell { overflow: visible; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.meetingEditorShell:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.meetingEditorToolbar { display: flex; min-height: 38px; align-items: center; gap: 3px; border-bottom: 1px solid var(--separator); padding: 0 8px; }
+.meetingEditorToolbar button { display: inline-flex; width: 29px; height: 29px; align-items: center; justify-content: center; border: 0; border-radius: 6px; color: var(--muted); background: transparent; }
+.meetingEditorToolbar button:hover, .meetingEditorToolbar button:focus-visible { outline: none; color: var(--accent); background: var(--accent-soft); }
+.meetingEditorToolbar > span { width: 1px; height: 18px; margin: 0 4px; background: var(--separator); }
+.meetingEditorBody { position: relative; }
+.meetingEditorContent { min-height: 270px; max-height: 430px; overflow-y: auto; padding: 13px 14px; outline: 0; color: var(--text); font-size: 11.5px; font-weight: 450; line-height: 1.65; }
+.meetingEditorContent:empty::before { color: var(--muted); content: attr(data-placeholder); pointer-events: none; }
+.meetingEditorContent ul, .meetingEditorContent ol { margin: 5px 0; padding-left: 24px; }
+.meetingEditorContent li { margin: 3px 0; padding-left: 2px; }
+.meetingEditorContent strong, .meetingEditorContent b { color: var(--text-strong); font-weight: 800; }
+.meetingEditorChecklist { display: flex; min-height: 25px; align-items: flex-start; gap: 8px; }
+.meetingEditorChecklist input { width: 15px; height: 15px; margin: 3px 0 0; accent-color: var(--accent); }
+.meetingEditorChecklist span { display: inline-block; min-width: 24px; flex: 1; }
+.meetingEditorSlashMenu { position: absolute; z-index: 4; bottom: 12px; left: 12px; width: min(300px, calc(100% - 24px)); overflow: hidden; border: 1px solid var(--border); border-radius: 10px; padding: 6px; background: var(--card); box-shadow: 0 14px 36px rgba(0,0,0,.24); }
+.meetingEditorSlashMenu > small { display: block; padding: 5px 7px 7px; color: var(--muted); font-size: 8px; font-weight: 800; letter-spacing: .08em; }
+.meetingEditorSlashMenu > button { display: flex; width: 100%; align-items: center; gap: 9px; border: 0; border-radius: 7px; padding: 7px; color: var(--text); background: transparent; text-align: left; }
+.meetingEditorSlashMenu > button:hover, .meetingEditorSlashMenu > button:focus-visible { outline: none; background: var(--surface-hover); }
+.meetingEditorSlashMenu > button > span { display: grid; width: 30px; height: 30px; flex: 0 0 auto; place-items: center; border: 1px solid var(--border); border-radius: 7px; color: var(--accent); background: var(--surface); }
+.meetingEditorSlashMenu strong { display: block; color: var(--text-strong); font-size: 10.5px; }
+.meetingEditorSlashMenu p { margin: 2px 0 0; color: var(--muted); font-size: 9px; }
+.meetingEditorNoCommand { margin: 0; padding: 9px; color: var(--muted); font-size: 9.5px; }
 .documentFields textarea, .noteEditor textarea { width: 100%; min-height: 310px; box-sizing: border-box; border: 1px solid var(--border); border-radius: 8px; padding: 11px; outline: 0; resize: vertical; color: var(--text); background: var(--surface); font: inherit; font-size: 10.5px; line-height: 1.55; }
 .documentFields input:focus, .documentFields textarea:focus, .noteEditor input:focus, .noteEditor textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .noteEditor { display: grid; gap: 12px; overflow-y: auto; padding: 16px 18px; }

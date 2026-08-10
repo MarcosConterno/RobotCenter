@@ -375,7 +375,7 @@ Na interface, essa entidade é denominada exclusivamente **ToDo**. `origin_meeti
 
 `personal_meetings` registra nome, data, horário, participantes, resumo e anotações livres. O índice `(user_id, meeting_date, meeting_time)` atende filtros cronológicos pessoais.
 
-`personal_notes` registra título e conteúdo livre. O índice `(user_id, updated_at desc)` atende listagem e busca pessoal ordenada pela edição mais recente.
+`personal_notes` registra título e conteúdo livre. O conteúdo permanece em coluna `text` e aceita tanto texto simples legado quanto a marcação controlada do editor rico da interface. O índice `(user_id, updated_at desc)` atende listagem e busca pessoal ordenada pela edição mais recente.
 
 `personal_page_preferences` mantém uma linha por usuário e controla a exibição da tabela de robôs. `personal_page_flows` é a relação N:N entre usuário e os fluxos escolhidos como atalhos, com FKs para `profiles` e `flows`. A exclusão de um fluxo remove somente seus atalhos por cascata; não altera outras preferências nem tarefas.
 ## Arquivamento de Cliente pelo Master

@@ -16,6 +16,8 @@ Não há endpoint administrativo para tarefas de terceiros.
 
 As abas usam diretamente a sessão autenticada do Supabase para CRUD em `personal_meetings` e `personal_notes`. Reuniões são consultadas em ordem de data/horário; Notas em ordem de `updated_at`. As consultas começam somente quando a respectiva aba é montada.
 
+`personal_meetings.notes` e `personal_notes.content` aceitam o texto simples legado e o HTML controlado produzido pelo editor. O editor oferece negrito, tópicos, listas numeradas e checkboxes; conteúdo colado é inserido como texto simples. As buscas e prévias de Notas extraem somente o texto visível. Essa evolução não altera o tipo `text` das colunas nem as policies de proprietário.
+
 Criar ToDo a partir de Reunião ou Nota persiste `origin_meeting_id` ou `origin_note_id`. O banco rejeita origem de outro proprietário e impede que as duas origens sejam preenchidas simultaneamente.
 
 ## Preferências e widgets

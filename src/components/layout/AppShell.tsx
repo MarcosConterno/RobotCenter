@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
+import DashboardUpdateNotifier from "@/components/notifications/DashboardUpdateNotifier";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 
@@ -44,41 +45,44 @@ export default function AppShell({
   }
 
   return (
-    <div
-      className={`app-shell${sidebarCollapsed ? " has-collapsed-sidebar" : ""}${sidebarReady ? " is-sidebar-ready" : ""}`}
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        background: "var(--bg)",
-      }}
-    >
-      <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
-
+    <>
+      <DashboardUpdateNotifier />
       <div
-        className="app-shell-content"
+        className={`app-shell${sidebarCollapsed ? " has-collapsed-sidebar" : ""}${sidebarReady ? " is-sidebar-ready" : ""}`}
         style={{
-          position: "relative",
-          flex: 1,
-          minWidth: 0,
           display: "flex",
-          flexDirection: "column",
+          minHeight: "100vh",
+          background: "var(--bg)",
         }}
       >
-        {!hideTopbar && (
-          <div className="app-shell-account-row">
-            <Topbar title={title} bare />
-          </div>
-        )}
+        <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
 
-        <main
-          className={`app-shell-main${hideTopbar ? " has-inline-account" : ""}`}
+        <div
+          className="app-shell-content"
           style={{
+            position: "relative",
             flex: 1,
+            minWidth: 0,
+            display: "flex",
+            flexDirection: "column",
           }}
         >
-          {children}
-        </main>
+          {!hideTopbar && (
+            <div className="app-shell-account-row">
+              <Topbar title={title} bare />
+            </div>
+          )}
+
+          <main
+            className={`app-shell-main${hideTopbar ? " has-inline-account" : ""}`}
+            style={{
+              flex: 1,
+            }}
+          >
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -250,6 +250,6 @@
 9. Preferências armazenam somente configuração e referências; os dados de Robôs e Fluxos não são duplicados.
 10. A navegação pessoal é composta por ToDo, Reuniões e Notas; cada área permanece simples e não representa projeto, equipe, CRM ou Kanban.
 11. Reuniões são filtradas por Hoje, Próximas e Anteriores e podem guardar texto livre sem estrutura obrigatória.
-12. Notas possuem título e conteúdo livre e são ordenadas pela edição mais recente.
+12. Notas possuem título e conteúdo livre formatável, com negrito, tópicos, listas numeradas e checkboxes, e são ordenadas pela edição mais recente.
 13. Um ToDo pode ter no máximo uma origem, Reunião ou Nota, e a origem deve pertencer ao mesmo usuário.
 14. Excluir Reunião ou Nota remove apenas a referência de origem do ToDo; o ToDo permanece.
