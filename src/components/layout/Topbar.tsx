@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, KeyRound, LogOut, X } from "lucide-react";
+import { BookOpen, ChevronDown, KeyRound, LogOut, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useState } from "react";
 
@@ -138,6 +138,9 @@ export default function Topbar({ title, bare = false }: TopbarProps) {
 
           {userMenuOpen && (
             <div className="topbar-user-dropdown" role="menu">
+              {roleName === "Master" && <button type="button" role="menuitem" onClick={() => { setUserMenuOpen(false); router.push("/documentacao"); }}>
+                <BookOpen size={15} /> Documentação
+              </button>}
               <button type="button" role="menuitem" onClick={openPasswordDialog}>
                 <KeyRound size={15} /> Trocar senha
               </button>

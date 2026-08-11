@@ -254,7 +254,14 @@ button {
 .sidebar-link:hover .sidebar-link-arrow, .sidebar-link-active .sidebar-link-arrow { opacity: 1; transform: translateX(0); }
 .sidebar-dashboard-notification { position: absolute; top: 12px; right: 12px; width: 8px; height: 8px; border: 2px solid var(--chrome-bg); border-radius: 50%; background: #0a84ff; box-shadow: 0 0 0 3px rgba(10,132,255,.16), 0 0 10px rgba(10,132,255,.5); }
 .app-sidebar.is-collapsed .sidebar-dashboard-notification { top: 7px; right: 7px; }
-.sidebar-group-trigger { width: 100%; border: 0; text-align: left; cursor: pointer; }
+.sidebar-group-trigger { width: 100%; border: 0; background: transparent; text-align: left; cursor: pointer; }
+.sidebar-group-trigger:not(.sidebar-link-active):hover {
+  color: inherit;
+  background: transparent;
+  border-color: transparent;
+}
+.sidebar-group-trigger:not(.sidebar-link-active):hover .sidebar-link-icon { background: var(--chrome-fill); }
+.sidebar-group-trigger:not(.sidebar-link-active):hover .sidebar-link-description { color: var(--chrome-muted); }
 .sidebar-group-chevron { margin-left: auto; transition: transform .18s ease; }
 .sidebar-group-chevron.is-open { transform: rotate(180deg); }
 .sidebar-subnav { display: grid; gap: 2px; margin: 3px 0 7px 20px; border-left: 1px solid rgba(71, 85, 105, .42); padding-left: 12px; }

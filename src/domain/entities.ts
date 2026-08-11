@@ -12,7 +12,7 @@ export const TIPOS_NODE_FLUXO = ["robot", "trigger", "system", "decision", "note
 export const STATUS_FLUXO = ["rascunho", "publicado"] as const;
 
 export type AmbienteRobo = (typeof AMBIENTES_ROBO)[number];
-export type TipoUsuario = (typeof TIPOS_USUARIO)[number];
+export type TipoUsuario = string;
 export type CorBadgeRobo = (typeof CORES_BADGE_ROBO)[number];
 export type CategoriaPublicacao = (typeof CATEGORIAS_PUBLICACAO)[number];
 export type TipoDisparoRobo = (typeof TIPOS_DISPARO_ROBO)[number];

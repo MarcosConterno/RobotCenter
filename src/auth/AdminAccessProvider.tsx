@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import type { TipoProdutoRobo } from "@/domain/entities";
 
 type AccessStatus = "loading" | "ready";
 
@@ -15,6 +16,7 @@ interface AdminAccessContextValue {
   canUpdateCapacity: boolean;
   canAccessSettings: boolean;
   canAccessRobots: boolean;
+  canAccessRobotProduct: (productType: TipoProdutoRobo) => boolean;
   canAccessFlows: boolean;
   canEditFlows: boolean;
   canCreateFlows: boolean;
@@ -76,14 +78,15 @@ export function AdminAccessProvider({ children }: { children: ReactNode }) {
       isHeadSector,
       isClient,
       isSupport,
-      canManageRobots: isAdmin,
-      canUpdateCapacity: isAdmin || isOperator,
-      canAccessSettings: isAdmin,
-      canAccessRobots: isAdmin || isHeadSector || isOperator || isClient || isSupport,
-      canAccessFlows: isAdmin || isOperator || isClient || isSupport,
-      canEditFlows: isAdmin || isClient,
-      canCreateFlows: isAdmin,
-      canDeleteFlows: isAdmin,
+      canManageRobots: permissions.some((permission) => ["robots.create", "robots.update", "robots.archive"].includes(permission)),
+      canUpdateCapacity: permissions.includes("robots.capacity.update"),
+      canAccessSettings: permissions.some((permission) => permission === "settings.read" || permission === "access_control.read" || permission.startsWith("users.") || permission.startsWith("clients.") || permission.startsWith("robot_catalog.")),
+      canAccessRobots: permissions.includes("robots.read"),
+      canAccessRobotProduct: (productType: TipoProdutoRobo) => permissions.includes(`robots.product.${({ INTEGRADOR: "integrador", CONSULTA_PROCESSUAL: "consulta_processual", PETICIONAMENTO: "peticionamento", MOVIMENTO: "movimento" } as const)[productType]}.read`),
+      canAccessFlows: permissions.includes("flows.read"),
+      canEditFlows: permissions.includes("flows.update"),
+      canCreateFlows: permissions.includes("flows.create"),
+      canDeleteFlows: permissions.includes("flows.delete"),
       canViewStackRequests: permissions.includes("stack_requests.read"),
       canCreateStackRequests: permissions.includes("stack_requests.create"),
       canManageStackRequests: permissions.some((permission) => ["stack_requests.update", "stack_requests.status", "stack_requests.complete", "stack_requests.cancel", "stack_requests.request_info"].includes(permission)),

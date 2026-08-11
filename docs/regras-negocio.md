@@ -10,6 +10,7 @@
 ## Robôs
 
 - O menu Robôs agrupa quatro listagens: Robôs Integradores, Consulta Processual, Peticionamento e Movimento.
+- O menu mostra somente os produtos autorizados ao perfil; a URL direta e a policy RLS repetem a mesma validação.
 - As quatro listagens utilizam a mesma entidade, formulário, filtros, cards e detalhe, segregados exclusivamente por `productType`.
 - Todo Robô possui Command. Registros Integradores legados podem mantê-lo vazio até a próxima atualização conhecida.
 - Tribunal e Sistema Tribunal são opcionais para Consulta Processual, Peticionamento e Movimento e não se aplicam a Integradores.

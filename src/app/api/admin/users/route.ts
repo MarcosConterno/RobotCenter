@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { TIPOS_USUARIO } from "@/domain/entities";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -9,7 +8,7 @@ const createUserSchema = z.object({
   login: z.string().trim().min(1, "Login é obrigatório."),
   email: z.string().trim().email("Informe um email válido."),
   password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres."),
-  tipo: z.enum(TIPOS_USUARIO),
+  tipo: z.string().trim().min(1).max(60),
   clientId: z.string().uuid().nullable().optional(),
 }).refine((data) => data.tipo !== "Cliente" || Boolean(data.clientId), {
   message: "O perfil Cliente exige a seleção de um cliente.",
@@ -20,7 +19,7 @@ const updateUserSchema = z.object({
   id: z.string().uuid(),
   login: z.string().trim().min(1, "Login é obrigatório."),
   email: z.string().trim().email("Informe um email válido."),
-  tipo: z.enum(TIPOS_USUARIO),
+  tipo: z.string().trim().min(1).max(60),
   clientId: z.string().uuid().nullable().optional(),
 }).refine((data) => data.tipo !== "Cliente" || Boolean(data.clientId), {
   message: "O perfil Cliente exige a seleção de um cliente.",
@@ -50,6 +49,11 @@ function roleCodes(roleRelation: unknown): string[] {
   return [];
 }
 
+function roleCodeFromName(name: string) {
+  return name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+}
+
 async function requireAdmin() {
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
@@ -74,7 +78,7 @@ export async function GET() {
     admin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
     admin
       .from("profiles")
-      .select("id, login, cliente_id, user_roles:user_roles!user_roles_user_id_fkey(roles(codigo))")
+      .select("id, login, cliente_id, user_roles:user_roles!user_roles_user_id_fkey(roles(codigo,nome))")
       .is("deleted_at", null)
       .eq("ativo", true),
   ]);
@@ -91,10 +95,10 @@ export async function GET() {
     authData.users.map((user): [string, string] => [user.id, user.email ?? ""]),
   );
   const users = (profiles ?? []).map((profile) => {
-    const assignments = profile.user_roles as unknown as Array<{ roles: { codigo?: string } | Array<{ codigo?: string }> | null }>;
+    const assignments = profile.user_roles as unknown as Array<{ roles: { codigo?: string; nome?: string } | Array<{ codigo?: string; nome?: string }> | null }>;
     const codes = assignments?.flatMap((assignment) => Array.isArray(assignment.roles) ? assignment.roles : [assignment.roles]).filter(Boolean).flatMap(roleCodes) ?? [];
-    const code = codes.find((item) => TIPOS_USUARIO.some((type) => type.toLowerCase().replaceAll(" ", "_") === item));
-    const tipo = TIPOS_USUARIO.find((item) => item.toLowerCase().replaceAll(" ", "_") === code) ?? "Operador";
+    const assignedRole = assignments?.flatMap((assignment) => Array.isArray(assignment.roles) ? assignment.roles : [assignment.roles]).find((role) => role && role.codigo !== "master");
+    const tipo = assignedRole?.nome ?? "Operador";
     return { id: profile.id, login: profile.login, email: emailById.get(profile.id) ?? "", tipo, clienteId: profile.cliente_id, isMaster: codes.includes("master") };
   });
 
@@ -116,7 +120,7 @@ export async function POST(request: Request) {
 
   const admin = createAdminClient();
   const { login, email, password, tipo, clientId = null } = parsed.data;
-  const roleCode = tipo.toLowerCase().replaceAll(" ", "_");
+  const roleCode = roleCodeFromName(tipo);
 
   const { data: role, error: roleError } = await admin
     .from("roles")
@@ -194,7 +198,7 @@ export async function PATCH(request: Request) {
   const targetIsMaster = Boolean(targetMasterRoles);
   if (targetIsMaster && !access.isMaster) return NextResponse.json({ error: "Somente Master pode alterar o usuário Master." }, { status: 403 });
   if (targetIsMaster && tipo !== "Admin") return NextResponse.json({ error: "O usuário Master deve manter também o perfil Admin." }, { status: 400 });
-  const { data: role, error: roleError } = await admin.from("roles").select("id").eq("codigo", tipo.toLowerCase().replaceAll(" ", "_")).eq("ativo", true).single();
+  const { data: role, error: roleError } = await admin.from("roles").select("id").eq("codigo", roleCodeFromName(tipo)).eq("ativo", true).single();
   if (roleError || !role) return NextResponse.json({ error: "Papel de usuário não encontrado." }, { status: 400 });
 
   if (clientId) {

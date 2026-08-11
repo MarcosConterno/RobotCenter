@@ -18,6 +18,16 @@ const permissionChangesSchema = z.object({
   })).max(500),
 });
 
+const createRoleSchema = z.object({
+  name: z.string().trim().min(3).max(60),
+  description: z.string().trim().max(240).nullable().optional(),
+});
+
+function roleCodeFromName(name: string) {
+  return name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+}
+
 async function getAccess() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -77,4 +87,32 @@ export async function PATCH(request: Request) {
   if (error) return NextResponse.json({ error: error.message || "Não foi possível salvar as permissões." }, { status: 400 });
 
   return NextResponse.json({ success: true }, { headers: { "Cache-Control": "no-store" } });
+}
+
+export async function POST(request: Request) {
+  const access = await getAccess();
+  if (!access.user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+  if (!access.isAdmin) return NextResponse.json({ error: "Acesso exclusivo de administradores." }, { status: 403 });
+
+  const parsed = createRoleSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: "Informe um nome válido para o perfil." }, { status: 400 });
+
+  const codigo = roleCodeFromName(parsed.data.name);
+  if (!codigo || ["master", "admin"].includes(codigo)) {
+    return NextResponse.json({ error: "Este nome de perfil é reservado." }, { status: 400 });
+  }
+
+  const admin = createAdminClient();
+  const { data: existing } = await admin.from("roles").select("id").eq("codigo", codigo).maybeSingle();
+  if (existing) return NextResponse.json({ error: "Já existe um perfil com este nome." }, { status: 409 });
+
+  const { data: role, error } = await admin.from("roles").insert({
+    codigo,
+    nome: parsed.data.name,
+    descricao: parsed.data.description ?? null,
+    ativo: true,
+  }).select("id,codigo,nome,descricao").single();
+  if (error || !role) return NextResponse.json({ error: error?.message ?? "Não foi possível criar o perfil." }, { status: 400 });
+
+  return NextResponse.json({ role }, { status: 201, headers: { "Cache-Control": "no-store" } });
 }

@@ -117,6 +117,8 @@ Versões publicadas permanecem no mesmo bucket privado, sob `<robo_id>/versions/
 
 ## Painel administrativo de permissões
 
+O **Controle de Acesso** apresenta recursos em cards e níveis Sem acesso, Somente leitura, Personalizado e Acesso total. A edição detalhada ocorre em drawer: fechar descarta, “Aplicar alterações” atualiza apenas o rascunho e somente “Salvar alterações” persiste a matriz. Os produtos de Robôs possuem permissões `robots.product.*.read`; menu, rota direta e `robos_select` exigem o produto correspondente, mantendo também `robots.read` e o escopo por Cliente.
+
 O painel **Configurações → Permissões** agrupa o catálogo de `permissions` pelo campo `recurso` e mostra quais registros ativos de `roles` estão relacionados por `role_permissions`. A descrição funcional é o título e o código técnico aparece como informação secundária. A API `/api/admin/permissions` repete a validação de Admin/Master no servidor e não confia na visibilidade da aba.
 
 Admin e Master podem editar a matriz completa de todos os demais perfis, inclusive o próprio perfil Admin e o recurso `access_control`. O perfil Master é imutável pela matriz e conserva todas as permissões ativas. Dev pode receber permissões de Solicitações de Stack pela matriz; Cliente e Suporte permanecem bloqueados no RPC e nas policies.

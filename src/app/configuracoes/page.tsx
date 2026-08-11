@@ -4,6 +4,7 @@ import { Bot, Clock3, FileText, GitFork, KeyRound, Pencil, Plus, Save, Search, S
 import { useCallback, useEffect, useState } from "react";
 
 import AppShell from "@/components/layout/AppShell";
+import AccessControlCenter from "@/components/settings/AccessControlCenter";
 import SettingsNavigation from "@/components/settings/SettingsNavigation";
 import RobotCatalogSettings from "@/components/settings/RobotCatalogSettings";
 import { useAdminAccess } from "@/auth/AdminAccessProvider";
@@ -124,7 +125,7 @@ export default function ConfiguracoesPage() {
   }, [adminAutorizado, cadastroAtivo, carregarMetricasClientes, clientMetricsLoaded, loadingClientMetrics]);
 
   useEffect(() => {
-    if (!adminAutorizado || cadastroAtivo !== "permissoes" || permissions.length) return;
+    if (!adminAutorizado || (permissionRoles.length && permissions.length)) return;
     setLoadingPermissions(true);
     setPermissionsError("");
     void fetch("/api/admin/permissions", { cache: "no-store" })
@@ -136,7 +137,7 @@ export default function ConfiguracoesPage() {
       })
       .catch((error) => setPermissionsError(error instanceof Error ? error.message : "Não foi possível carregar as permissões."))
       .finally(() => setLoadingPermissions(false));
-  }, [adminAutorizado, cadastroAtivo, permissions.length]);
+  }, [adminAutorizado, permissionRoles.length, permissions.length]);
 
   async function cadastrarUsuario(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -363,11 +364,11 @@ export default function ConfiguracoesPage() {
   return (
     <AppShell title="Configurações">
       <div className="settings-page" style={pageStyle}>
-        <header style={pageHeaderStyle}>
+        {cadastroAtivo !== "permissoes" && <header style={pageHeaderStyle}>
           <span style={pageEyebrowStyle}>CONFIGURAÇÕES</span>
           <h1 style={titleStyle}>Administração do sistema</h1>
           <p style={subtitleStyle}>Gerencie usuários, clientes e permissões de acesso do Robot Center.</p>
-        </header>
+        </header>}
 
         <SettingsNavigation active={cadastroAtivo} onSelect={setCadastroAtivo} />
 
@@ -425,7 +426,7 @@ export default function ConfiguracoesPage() {
                   onChange={(event) => { setTipoUsuario(event.target.value as TipoUsuario); setErroUsuario(""); setSucessoUsuario(""); }}
                   style={inputStyle}
                 >
-                  {TIPOS_USUARIO.map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
+                  {(permissionRoles.length ? permissionRoles.filter((role) => role.codigo !== "master").map((role) => role.nome) : [...TIPOS_USUARIO]).map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
                 </select>
               </label>
 
@@ -467,7 +468,7 @@ export default function ConfiguracoesPage() {
                       <input aria-label="Nome" value={usuarioEditandoLogin} onChange={(event) => setUsuarioEditandoLogin(event.target.value)} style={compactInputStyle} />
                       <input aria-label="Email" type="email" value={usuarioEditandoEmail} onChange={(event) => setUsuarioEditandoEmail(event.target.value)} style={compactInputStyle} />
                       <select aria-label="Tipo de usuário" value={usuarioEditandoTipo} onChange={(event) => setUsuarioEditandoTipo(event.target.value as TipoUsuario)} style={compactInputStyle}>
-                        {TIPOS_USUARIO.map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
+                        {(permissionRoles.length ? permissionRoles.filter((role) => role.codigo !== "master").map((role) => role.nome) : [...TIPOS_USUARIO]).map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
                       </select>
                       <select aria-label="Cliente vinculado" value={usuarioEditandoClienteId} onChange={(event) => setUsuarioEditandoClienteId(event.target.value)} required={usuarioEditandoTipo === "Cliente"} style={compactInputStyle}>
                         <option value="">Nenhum cliente</option>
@@ -596,12 +597,11 @@ export default function ConfiguracoesPage() {
         ) : cadastroAtivo === "cadastros" ? (
           <RobotCatalogSettings canManage={isMaster || accessPermissions.includes("robot_catalog.manage")} />
         ) : (
-          <PermissionsPanel
+          <AccessControlCenter
             roles={permissionRoles}
             permissions={permissions}
             loading={loadingPermissions}
             error={permissionsError}
-            isMaster={isMaster}
             onSaved={setPermissions}
           />
         )}

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { AMBIENTES_ROBO, CORES_BADGE_ROBO, TIPOS_DISPARO_ROBO, TIPOS_PRODUTO_ROBO, TIPOS_USUARIO } from "@/domain/entities";
+import { AMBIENTES_ROBO, CORES_BADGE_ROBO, TIPOS_DISPARO_ROBO, TIPOS_PRODUTO_ROBO } from "@/domain/entities";
 
 const textoObrigatorio = (campo: string) =>
   z.string().trim().min(1, `${campo} é obrigatório.`);
@@ -56,7 +56,7 @@ export const dadosCadastroUsuarioSchema = z.object({
   login: textoObrigatorio("Nome"),
   email: z.string().trim().email("Informe um email válido."),
   senha: z.string().min(6, "A senha deve ter pelo menos 6 caracteres."),
-  tipo: z.enum(TIPOS_USUARIO),
+  tipo: z.string().trim().min(1, "Selecione um perfil."),
   clienteId: z.string().uuid("Selecione um cliente válido.").nullable().optional(),
 }).refine((dados) => dados.tipo !== "Cliente" || Boolean(dados.clienteId), {
   message: "Usuário Cliente deve estar vinculado a um cliente.",

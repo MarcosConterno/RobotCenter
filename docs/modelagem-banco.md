@@ -293,6 +293,8 @@ O papel `master` é um vínculo adicional em `user_roles`, não uma coluna espec
 
 A matriz editável continua normalizada em `role_permissions`, sem novas colunas. A RPC `update_role_permission_matrix(jsonb)` recebe somente diferenças confirmadas pela interface e as aplica transacionalmente com `SECURITY INVOKER`. Policies permitem edição irrestrita ao Master e limitam Admin aos papéis Operador, Dev, Cliente e Suporte, excluindo o recurso `access_control`.
 
+As permissões `robots.product.integrador.read`, `robots.product.consulta_processual.read`, `robots.product.peticionamento.read` e `robots.product.movimento.read` segregam a leitura da tabela única `robos`. A policy `robos_select` exige `robots.read`, o produto correspondente e o escopo de Cliente. A migration concede inicialmente os quatro produtos a todos os perfis que já possuíam `robots.read`, preservando o acesso existente.
+
 A migration `20260809130000_add_dev_role.sql` adiciona o papel ativo `dev` e copia, no momento da criação, os vínculos de `role_permissions` do Operador. Os dois papéis permanecem independentes para futuras alterações da matriz. A função `private.can_access_cliente` e a policy `clientes_select` incluem Dev no mesmo escopo global de leitura do Operador.
 
 Os tipos do schema ficam em `src/types/database.types.ts`. Após aplicar as migrations no Supabase Cloud, esse arquivo deve ser regenerado pela CLI para refletir o schema remoto como fonte final.

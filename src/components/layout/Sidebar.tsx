@@ -35,7 +35,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
     window.addEventListener(DASHBOARD_UNREAD_EVENT, sync);
     return () => window.removeEventListener(DASHBOARD_UNREAD_EVENT, sync);
   }, []);
-  const { canAccessRobots, canAccessFlows, canAccessSettings, canManageTutorials, status } = useAdminAccess();
+  const { canAccessRobots, canAccessRobotProduct, canAccessFlows, canAccessSettings, canManageTutorials, status } = useAdminAccess();
   const tutorial = useTutorial();
   const visibleNavigation = navigation.filter((item) => (
     item.access === "my-page"
@@ -80,7 +80,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   <ChevronDown className={`sidebar-group-chevron${robotsExpanded ? " is-open" : ""}`} size={14} />
                 </button>
                 {!collapsed && robotsExpanded && <div className="sidebar-subnav">
-                  {ROBOT_PRODUCTS.map((product) => {
+                  {ROBOT_PRODUCTS.filter((product) => canAccessRobotProduct(product.productType)).map((product) => {
                     const href = `/robos/${product.slug}`;
                     const productActive = pathname === href;
                     return <Link key={product.productType} href={href} className={`sidebar-sublink${productActive ? " is-active" : ""}`} aria-current={productActive ? "page" : undefined}><span aria-hidden="true" />{product.label}</Link>;
@@ -152,7 +152,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           <div className="sidebar-footer-dot" />
           <div>
             <div className="sidebar-footer-title">Sistema operacional</div>
-            <div className="sidebar-footer-version">Versão 0.0.3</div>
+            <div className="sidebar-footer-version">Versão 1.0.0</div>
           </div>
         </div>
       </div>

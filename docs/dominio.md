@@ -6,6 +6,8 @@
 
 Todo Robô pertence a exatamente um produto por `productType`: `INTEGRADOR`, `CONSULTA_PROCESSUAL`, `PETICIONAMENTO` ou `MOVIMENTO`. A classificação não cria entidades ou tabelas independentes; ela segrega as listagens que reutilizam os mesmos componentes e permissões. Robôs Integradores existentes são classificados como `INTEGRADOR`.
 
+O acesso aos produtos pode ser configurado individualmente no Controle de Acesso. A autorização efetiva combina a permissão geral de leitura de Robôs, a permissão do produto e o escopo de Cliente do usuário.
+
 Todos os Robôs possuem `command`, que registra o comando técnico de execução e pode permanecer vazio em registros legados. Consulta Processual, Peticionamento e Movimento podem informar `tribunal` e `tribunalSystem`; esses campos permanecem nulos em Robôs Integradores.
 
 Stack é opcional no cadastro do Robô. Uma Solicitação de Stack pertence obrigatoriamente a um Robô já cadastrado e percorre os estados Solicitada, Em análise, Aguardando informação, Concluída ou Cancelada. A Stack gerada é informação da solicitação e não cria vínculo automático com o catálogo.

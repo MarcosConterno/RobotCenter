@@ -15,6 +15,13 @@ const PUBLIC_PATHS = [
   "/auth/update-password",
 ];
 
+function relationValues(value: unknown, key: "id" | "codigo"): string[] {
+  if (Array.isArray(value)) return value.flatMap((item) => relationValues(item, key));
+  if (!value || typeof value !== "object") return [];
+  const field = (value as Record<string, unknown>)[key];
+  return typeof field === "string" ? [field] : [];
+}
+
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
   const { url, publishableKey } = getSupabaseConfig();
@@ -52,16 +59,28 @@ export async function updateSession(request: NextRequest) {
     const userId = data?.claims?.sub;
     const { data: userRoles } = await supabase
       .from("user_roles")
-      .select("roles(codigo)")
+      .select("roles(id,codigo)")
       .eq("user_id", userId as string);
     const roleCodes = new Set((userRoles ?? []).flatMap((item) => {
       const relation = item.roles;
       if (Array.isArray(relation)) return relation.map((role) => role.codigo);
       return relation && typeof relation === "object" && "codigo" in relation ? [relation.codigo] : [];
     }));
+    const roleIds = [...new Set((userRoles ?? []).flatMap((item) => relationValues(item.roles, "id")))];
+    const { data: permissionMappings } = roleIds.length
+      ? await supabase.from("role_permissions").select("permissions(codigo)").in("role_id", roleIds)
+      : { data: [] };
+    const permissionCodes = new Set((permissionMappings ?? []).flatMap((item) => relationValues(item.permissions, "codigo")));
+    const productPermissionByPath: Record<string, string> = {
+      "/robos/integradores": "robots.product.integrador.read",
+      "/robos/consulta-processual": "robots.product.consulta_processual.read",
+      "/robos/peticionamento": "robots.product.peticionamento.read",
+      "/robos/movimento": "robots.product.movimento.read",
+    };
+    const requiredProductPermission = productPermissionByPath[request.nextUrl.pathname];
     const allowed = request.nextUrl.pathname.startsWith("/configuracoes")
       ? roleCodes.has("admin") || roleCodes.has("master")
-      : roleCodes.has("admin") || roleCodes.has("master") || roleCodes.has("head_setor") || roleCodes.has("operador") || roleCodes.has("cliente") || roleCodes.has("suporte");
+      : permissionCodes.has("robots.read") && (!requiredProductPermission || permissionCodes.has(requiredProductPermission));
     if (!allowed) {
       const dashboardUrl = request.nextUrl.clone();
       dashboardUrl.pathname = "/minha-pagina";

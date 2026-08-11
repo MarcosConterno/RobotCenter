@@ -29,7 +29,7 @@ export default function SettingsNavigation({ active, onSelect }: SettingsNavigat
     { id: "usuarios" as const, label: "Usuários", icon: Users, visible: true },
     { id: "clientes" as const, label: "Clientes", icon: Building2, visible: true },
     { id: "cadastros" as const, label: "Cadastros", icon: Boxes, visible: isAdmin },
-    { id: "permissoes" as const, label: "Permissões", icon: ShieldCheck, visible: isAdmin },
+    { id: "permissoes" as const, label: "Perfis e Permissões", icon: ShieldCheck, visible: isAdmin },
     { id: "tutoriais" as const, label: "Tutoriais", icon: BookOpen, visible: canManageTutorials },
   ].filter((item) => item.visible);
 
