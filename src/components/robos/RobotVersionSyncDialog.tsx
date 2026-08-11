@@ -121,7 +121,7 @@ export default function RobotVersionSyncDialog({ robots, onClose, onComplete }: 
         <p>Verifique a conexão e as variáveis da integração configuradas no servidor.</p>
         <div className={styles.footerActions}><button type="button" className={styles.secondaryButton} onClick={onClose}>Fechar</button><button type="button" className={styles.primaryButton} onClick={() => void run()}><RefreshCw size={15} /> Tentar novamente</button></div>
       </div> : <>
-        <div className={styles.connection}><Cloud size={14} /><span>Conexão com Notion</span><strong>{phase === "connecting" ? "Preparando..." : "Disponível"}</strong></div>
+        <div className={styles.connection}><Cloud size={14} /><span>Sincronização com Notion</span><strong>{phase === "connecting" ? "Preparando..." : phase === "running" ? "Consultando..." : "Concluída"}</strong></div>
         <div className={styles.progressSection}>
           <div><span>{processed} de {items.length} pacotes verificados</span><strong>{percentage}%</strong></div>
           <div className={styles.progressTrack}><span style={{ width: `${percentage}%` }} /></div>

@@ -4,12 +4,13 @@
 
 O servidor localiza todos os robôs ativos com o pacote exato, compara as versões atuais e atualiza `version_checked_at` em toda consulta bem-sucedida. `versao` recebe o valor encontrado, mas o resumo informa `unchanged` quando nenhum robô possuía valor diferente.
 
-O token nunca é enviado ao navegador. O servidor usa `NOTION_TOKEN` e `NOTION_DATA_SOURCE_ID`, chama a API de data sources do Notion com `Notion-Version: 2026-03-11` e não mantém cache da consulta. Se não houver versão, se o formato for inválido ou se linhas do mesmo pacote apresentarem versões divergentes, nada é alterado. O modal registra o erro individual e continua os demais pacotes.
+O token nunca é enviado ao navegador. O servidor usa `NOTION_TOKEN` e `NOTION_DATABASE_ID`, resolve automaticamente a única fonte de dados do database e chama a API de data sources do Notion com `Notion-Version: 2026-03-11`. O ID resolvido é reutilizado pela instância da função; as versões não recebem cache. Se não houver versão, se o formato for inválido ou se linhas do mesmo pacote apresentarem versões divergentes, nada é alterado. O modal registra o erro individual e continua os demais pacotes.
 
 ## Configuração do Notion
 
 - `NOTION_TOKEN`: segredo da integração interna, disponível somente no ambiente do servidor.
-- `NOTION_DATA_SOURCE_ID`: ID da fonte de dados que contém as colunas `Pacote` e `Ult. Vers`.
+- `NOTION_DATABASE_ID`: ID extraído do link do database. Para a base atual: `31b358d6d17b8073b972d6dccf95a659`.
+- `NOTION_DATA_SOURCE_ID`: configuração opcional. Use apenas quando o database possuir mais de uma fonte de dados; nesse caso, ela substitui a descoberta automática.
 - `Pacote`: propriedade do tipo Select, com o nome técnico exato do pacote.
 - `Ult. Vers`: propriedade do tipo Texto (rich text), com a versão que deve ser aplicada.
 

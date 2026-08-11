@@ -13,10 +13,50 @@ interface NotionPage {
   properties?: Record<string, { rich_text?: NotionRichTextItem[] }>;
 }
 
+let notionDataSourceIdPromise: Promise<string> | undefined;
+
+async function resolveNotionDataSourceId(token: string) {
+  const configuredDataSourceId = process.env.NOTION_DATA_SOURCE_ID?.trim();
+  if (configuredDataSourceId) return configuredDataSourceId;
+
+  const databaseId = process.env.NOTION_DATABASE_ID?.trim();
+  if (!databaseId) throw new Error("notion-not-configured");
+
+  notionDataSourceIdPromise ??= (async () => {
+    const response = await fetch(`https://api.notion.com/v1/databases/${encodeURIComponent(databaseId)}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Notion-Version": notionApiVersion,
+      },
+      cache: "no-store",
+      signal: AbortSignal.timeout(15_000),
+    });
+
+    if (!response.ok) {
+      console.error("[api/admin/robot-versions] notion database lookup failed", { status: response.status });
+      throw new Error(response.status === 401 || response.status === 403 ? "notion-unauthorized" : "notion-database-unavailable");
+    }
+
+    const payload = await response.json() as { data_sources?: Array<{ id?: unknown }> };
+    const ids = (payload.data_sources ?? []).flatMap((source) => typeof source.id === "string" && source.id.trim() ? [source.id.trim()] : []);
+    const [dataSourceId] = ids;
+    if (!dataSourceId) throw new Error("notion-data-source-not-found");
+    if (ids.length > 1) throw new Error("notion-multiple-data-sources");
+    return dataSourceId;
+  })();
+
+  try {
+    return await notionDataSourceIdPromise;
+  } catch (error) {
+    notionDataSourceIdPromise = undefined;
+    throw error;
+  }
+}
+
 async function getNotionPackageVersion(packageName: string) {
   const token = process.env.NOTION_TOKEN?.trim();
-  const dataSourceId = process.env.NOTION_DATA_SOURCE_ID?.trim();
-  if (!token || !dataSourceId) throw new Error("notion-not-configured");
+  if (!token) throw new Error("notion-not-configured");
+  const dataSourceId = await resolveNotionDataSourceId(token);
 
   const response = await fetch(`https://api.notion.com/v1/data_sources/${encodeURIComponent(dataSourceId)}/query`, {
     method: "POST",
@@ -95,6 +135,9 @@ export async function POST(request: Request) {
     const messages: Record<string, { message: string; status: number }> = {
       "notion-not-configured": { message: "A integração com o Notion não está configurada no servidor.", status: 503 },
       "notion-unauthorized": { message: "O Notion recusou a integração. Verifique o token e o compartilhamento da base.", status: 502 },
+      "notion-database-unavailable": { message: "Não foi possível localizar o database configurado no Notion.", status: 502 },
+      "notion-data-source-not-found": { message: "O database do Notion não possui uma fonte de dados acessível.", status: 404 },
+      "notion-multiple-data-sources": { message: "O database possui mais de uma fonte de dados. Configure NOTION_DATA_SOURCE_ID.", status: 409 },
       "package-not-found": { message: "Pacote não encontrado no Notion ou sem valor em Ult. Vers.", status: 404 },
       "ambiguous-version": { message: "O pacote possui versões diferentes no Notion.", status: 409 },
       "invalid-version": { message: "A versão cadastrada no Notion é inválida.", status: 422 },
