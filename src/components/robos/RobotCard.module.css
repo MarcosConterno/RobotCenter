@@ -1,0 +1,78 @@
+.descriptionHint {
+  position: relative;
+  outline: none;
+}
+
+.descriptionHint::before,
+.descriptionHint::after {
+  position: absolute;
+  z-index: 20;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease,
+    visibility 150ms ease;
+}
+
+.descriptionHint::before {
+  content: "";
+  top: calc(100% + 3px);
+  left: 18px;
+  width: 9px;
+  height: 9px;
+  background: #111315;
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  transform: translateY(-3px) rotate(45deg);
+}
+
+.descriptionHint::after {
+  content: attr(data-description);
+  top: calc(100% + 8px);
+  left: 0;
+  width: max-content;
+  max-width: min(360px, calc(100vw - 48px));
+  padding: 9px 11px;
+  color: var(--text-strong);
+  background: rgba(10, 12, 14, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 9px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  white-space: normal;
+  transform: translateY(-3px);
+}
+
+.descriptionHint:hover::before,
+.descriptionHint:hover::after,
+.descriptionHint:focus-visible::before,
+.descriptionHint:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+.descriptionHint:hover::before,
+.descriptionHint:focus-visible::before {
+  transform: translateY(0) rotate(45deg);
+}
+
+.descriptionHint:hover::after,
+.descriptionHint:focus-visible::after {
+  transform: translateY(0);
+}
+
+.descriptionHint:focus-visible {
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .descriptionHint::before,
+  .descriptionHint::after {
+    transition: none;
+  }
+}

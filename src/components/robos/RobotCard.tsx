@@ -1,7 +1,7 @@
 import {
   Cpu,
-  CalendarClock,
   FileCheck2,
+  FileText,
   GitBranch,
   Layers3,
   Package,
@@ -9,9 +9,9 @@ import {
   Terminal,
   Building2,
 } from "lucide-react";
-import type { CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { Robo } from "@/domain/entities";
-import { formatarDataHora } from "@/domain/formatters";
+import styles from "./RobotCard.module.css";
 
 interface RobotCardProps {
   robot: Robo;
@@ -30,11 +30,28 @@ export default function RobotCard({
   selected = false,
   onClick,
 }: RobotCardProps) {
+  const descriptionRef = useRef<HTMLSpanElement>(null);
+  const [isDescriptionTruncated, setIsDescriptionTruncated] = useState(false);
   const hasDocumentation = Boolean(
     robot.uploadedDocumentationPath
     || robot.uploadedDocuments?.length
     || robot.robotCenterDocumentation?.status === "published",
   );
+
+  useEffect(() => {
+    const descriptionElement = descriptionRef.current;
+    if (!descriptionElement) return;
+
+    const updateTruncation = () => {
+      setIsDescriptionTruncated(descriptionElement.scrollWidth > descriptionElement.clientWidth);
+    };
+
+    updateTruncation();
+    const resizeObserver = new ResizeObserver(updateTruncation);
+    resizeObserver.observe(descriptionElement);
+
+    return () => resizeObserver.disconnect();
+  }, [robot.descricao]);
 
   return (
     <div
@@ -134,6 +151,24 @@ export default function RobotCard({
       </div>
 
       <div
+        className={isDescriptionTruncated ? styles.descriptionHint : undefined}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          color: "var(--muted)",
+          fontSize: 12.5,
+        }}
+        data-description={isDescriptionTruncated ? robot.descricao || "Descrição não informada" : undefined}
+        tabIndex={isDescriptionTruncated ? 0 : undefined}
+      >
+        <FileText size={14} style={{ flexShrink: 0 }} />
+        <span ref={descriptionRef} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {robot.descricao || "Descrição não informada"}
+        </span>
+      </div>
+
+      <div
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
@@ -159,9 +194,9 @@ export default function RobotCard({
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <CalendarClock size={14} style={{ flexShrink: 0 }} />
+          <Layers3 size={14} style={{ flexShrink: 0 }} />
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            Att Versão: {robot.versionCheckedAt ? formatarDataHora(robot.versionCheckedAt) : "—"}
+            {robot.stack}
           </span>
         </div>
 
@@ -169,13 +204,6 @@ export default function RobotCard({
           <Server size={14} style={{ flexShrink: 0 }} />
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {robot.fila}
-          </span>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <Layers3 size={14} style={{ flexShrink: 0 }} />
-          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {robot.stack}
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, gridColumn: "1 / -1" }} title={robot.command || "Command não informado"}>
