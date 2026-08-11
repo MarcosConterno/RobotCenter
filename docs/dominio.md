@@ -159,6 +159,12 @@ O Robô possui uma forma de disparo controlada: Agendado, Manual ou por Gatilho.
 
 ## Importação segura
 
+## Exclusão de Robô
+
+A exclusão permanente de um Robô é uma operação exclusiva do Master e não equivale ao arquivamento. O cadastro deixa de existir em `robos`; configurações estritamente pertencentes a ele são removidas, enquanto Fluxos, solicitações de Stack e documentação histórica continuam existentes sem referência ao cadastro excluído. Uma cópia de auditoria privada é registrada antes da remoção.
+
+## Importação segura
+
 O UUID é a identidade estável do Robô na planilha. `DadosImportacaoRobo` separa a operação dos campos presentes na linha, permitindo atualização parcial sem transformar células vazias em novos valores.
 
 ## Fluxos por Cliente

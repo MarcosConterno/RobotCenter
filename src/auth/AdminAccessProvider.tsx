@@ -45,6 +45,7 @@ const PUBLIC_PATHS = new Set([
 
 export function AdminAccessProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const isPublicPath = PUBLIC_PATHS.has(pathname);
   const [roles, setRoles] = useState<string[]>([]);
   const [permissions, setPermissions] = useState<string[]>([]);
   const [status, setStatus] = useState<AccessStatus>("loading");
@@ -54,7 +55,7 @@ export function AdminAccessProvider({ children }: { children: ReactNode }) {
   const [displayName, setDisplayName] = useState("");
 
   useEffect(() => {
-    if (PUBLIC_PATHS.has(pathname)) {
+    if (isPublicPath) {
       setRoles([]);
       setPermissions([]);
       setClientId(null);
@@ -90,7 +91,7 @@ export function AdminAccessProvider({ children }: { children: ReactNode }) {
         if (active) setStatus("ready");
       });
     return () => { active = false; };
-  }, [pathname]);
+  }, [isPublicPath]);
 
   const value = useMemo(() => {
     const isMaster = roles.includes("master");

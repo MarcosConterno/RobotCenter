@@ -141,6 +141,12 @@ A permissão `access_control.read` é concedida apenas ao Master. As policies de
 
 A RPC transacional `update_role_permission_matrix(jsonb)` executa as inclusões e remoções em `role_permissions` com `SECURITY INVOKER`, portanto mantém a RLS da sessão. Master altera qualquer papel/recurso. Admin não altera os papéis `admin`/`master` nem o recurso `access_control`. Falha em qualquer item desfaz a operação completa.
 
+## Exclusão permanente de Robôs
+
+Somente o papel Master pode executar `DELETE` em `public.robos`. A interface apresenta a ação apenas ao Master, aguarda a confirmação do banco e não remove o item localmente quando a operação falha. Admin, Cliente, Operador, Dev e Suporte permanecem bloqueados pela policy `robos_delete_master`.
+
+O trigger `robos_audit_master_delete` repete a validação de Master e grava uma cópia integral do registro em `private.robot_deletion_audit` antes da exclusão. A tabela de auditoria não possui acesso para `anon` ou `authenticated`.
+
 - A rota de administração valida sessão e papel Admin no servidor.
 - A raiz documental exige permissão de leitura e acesso ao cliente do Robô. Fora do Admin, somente registros com status `published` ficam visíveis.
 - O rascunho exige papel Admin e permissão de gerenciamento.

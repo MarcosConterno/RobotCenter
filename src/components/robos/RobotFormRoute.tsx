@@ -1,8 +1,10 @@
 "use client";
 
-import { ArrowLeft, Bot } from "lucide-react";
+import * as Dialog from "@radix-ui/react-dialog";
+import { AlertTriangle, ArrowLeft, Bot, LoaderCircle, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { useAdminAccess } from "@/auth/AdminAccessProvider";
 import { useAppData } from "@/data/AppDataProvider";
@@ -41,7 +43,10 @@ function getFormData(robot: Robo): DadosFormularioRobo {
 
 export default function RobotFormRoute({ mode, robotId, defaultProductType = "INTEGRADOR" }: { mode: "create" | "edit"; robotId?: string; defaultProductType?: TipoProdutoRobo }) {
   const router = useRouter();
-  const { isAdmin, isClient, canEditClientRobots, clientId, status: accessStatus } = useAdminAccess();
+  const { isAdmin, isMaster, isClient, canEditClientRobots, clientId, status: accessStatus } = useAdminAccess();
+  const [deleteError, setDeleteError] = useState("");
+  const [deletingRobot, setDeletingRobot] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const {
     robos,
     clientes,
@@ -62,6 +67,9 @@ export default function RobotFormRoute({ mode, robotId, defaultProductType = "IN
   );
 
   if (accessStatus === "loading" || carregandoRobos) return <div className={styles.message}>Carregando formulário...</div>;
+  if (mode === "edit" && !robot && deletingRobot) {
+    return <div className={`${styles.message} ${styles.redirectMessage}`} role="status"><LoaderCircle size={17} /> Robô excluído. Redirecionando...</div>;
+  }
   if (!canEditRobot) return <div className={`${styles.message} ${styles.error}`}>Acesso negado. Sua conta não possui autorização para editar este robô.</div>;
   if (mode === "edit" && !robot) return <div className={`${styles.message} ${styles.error}`}>Robô não encontrado ou acesso não autorizado.</div>;
 
@@ -78,10 +86,19 @@ export default function RobotFormRoute({ mode, robotId, defaultProductType = "IN
     router.push(`/robos/${savedRobot.id}`);
   }
 
-  function deleteRobot() {
+  async function deleteRobot() {
     if (!robot) return;
-    excluirRobo(robot.id);
-    router.push(getRobotProductPath(robot.productType));
+    setDeleteError("");
+    setDeletingRobot(true);
+    try {
+      await excluirRobo(robot.id);
+      setDeleteDialogOpen(false);
+      router.replace(getRobotProductPath(robot.productType));
+      router.refresh();
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : "Não foi possível excluir o robô.");
+      setDeletingRobot(false);
+    }
   }
 
   const backHref = robot ? `/robos/${robot.id}` : getRobotProductPath(defaultProductType);
@@ -110,9 +127,44 @@ export default function RobotFormRoute({ mode, robotId, defaultProductType = "IN
         mode={mode}
         clientScoped={!isAdmin}
         onCancel={() => router.push(backHref)}
-        onDelete={mode === "edit" && isAdmin ? deleteRobot : undefined}
+        onDelete={mode === "edit" && isMaster ? () => { setDeleteError(""); setDeleteDialogOpen(true); } : undefined}
+        deletePending={deletingRobot}
         onSubmit={saveRobot}
       />
+      {deleteError ? <p className={styles.error} role="alert">{deleteError}</p> : null}
+
+      <Dialog.Root open={deleteDialogOpen} onOpenChange={(open) => { if (!deletingRobot) setDeleteDialogOpen(open); }}>
+        <Dialog.Portal>
+          <Dialog.Overlay className={styles.dialogOverlay} />
+          <Dialog.Content
+            className={styles.dialogContent}
+            onEscapeKeyDown={(event) => { if (deletingRobot) event.preventDefault(); }}
+            onPointerDownOutside={(event) => { if (deletingRobot) event.preventDefault(); }}
+          >
+            <div className={styles.dialogIcon} aria-hidden="true"><AlertTriangle size={22} /></div>
+            <div className={styles.dialogBody}>
+              <Dialog.Title className={styles.dialogTitle}>Excluir robô permanentemente?</Dialog.Title>
+              <Dialog.Description className={styles.dialogDescription}>
+                Você está prestes a excluir <strong>{robot?.nome}</strong>. O cadastro será removido do banco e esta ação não poderá ser desfeita.
+              </Dialog.Description>
+              <div className={styles.dialogWarning}>
+                Fluxos, solicitações e documentação histórica serão preservados sem vínculo com este robô.
+              </div>
+            </div>
+            <Dialog.Close className={styles.dialogClose} aria-label="Fechar confirmação" disabled={deletingRobot}>
+              <X size={17} />
+            </Dialog.Close>
+            {deleteError ? <p className={styles.dialogError} role="alert">{deleteError}</p> : null}
+            <div className={styles.dialogActions}>
+              <Dialog.Close className={styles.dialogCancel} disabled={deletingRobot}>Cancelar</Dialog.Close>
+              <button className={styles.dialogDelete} type="button" onClick={() => void deleteRobot()} disabled={deletingRobot}>
+                <Trash2 size={15} />
+                {deletingRobot ? "Excluindo..." : "Excluir permanentemente"}
+              </button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   );
 }

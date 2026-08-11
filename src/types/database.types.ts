@@ -946,7 +946,7 @@ export type Database = {
           deleted_by: string | null
           id: string
           current_version_id: string | null
-          robo_id: string
+          robo_id: string | null
           status: string
           updated_at: string
           updated_by: string | null
@@ -958,7 +958,7 @@ export type Database = {
           deleted_by?: string | null
           id?: string
           current_version_id?: string | null
-          robo_id: string
+          robo_id?: string | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -970,7 +970,7 @@ export type Database = {
           deleted_by?: string | null
           id?: string
           current_version_id?: string | null
-          robo_id?: string
+          robo_id?: string | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -1282,9 +1282,9 @@ export type Database = {
         ]
       }
       stack_requests: {
-        Row: { completed_at: string | null; created_at: string; created_by: string; generated_stack: string | null; id: string; job: string; queue_id: string | null; requested_at: string; robot_id: string; status: string; suggested_stack_name: string; type: string; updated_at: string; updated_by: string | null }
-        Insert: { completed_at?: string | null; created_at?: string; created_by?: string; generated_stack?: string | null; id?: string; job: string; queue_id?: string | null; requested_at?: string; robot_id: string; status?: string; suggested_stack_name: string; type: string; updated_at?: string; updated_by?: string | null }
-        Update: { completed_at?: string | null; created_at?: string; created_by?: string; generated_stack?: string | null; id?: string; job?: string; queue_id?: string | null; requested_at?: string; robot_id?: string; status?: string; suggested_stack_name?: string; type?: string; updated_at?: string; updated_by?: string | null }
+        Row: { completed_at: string | null; created_at: string; created_by: string; generated_stack: string | null; id: string; job: string; queue_id: string | null; requested_at: string; robot_id: string | null; status: string; suggested_stack_name: string; type: string; updated_at: string; updated_by: string | null }
+        Insert: { completed_at?: string | null; created_at?: string; created_by?: string; generated_stack?: string | null; id?: string; job: string; queue_id?: string | null; requested_at?: string; robot_id?: string | null; status?: string; suggested_stack_name: string; type: string; updated_at?: string; updated_by?: string | null }
+        Update: { completed_at?: string | null; created_at?: string; created_by?: string; generated_stack?: string | null; id?: string; job?: string; queue_id?: string | null; requested_at?: string; robot_id?: string | null; status?: string; suggested_stack_name?: string; type?: string; updated_at?: string; updated_by?: string | null }
         Relationships: [
           { foreignKeyName: "stack_requests_created_by_fkey"; columns: ["created_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
           { foreignKeyName: "stack_requests_queue_id_fkey"; columns: ["queue_id"]; isOneToOne: false; referencedRelation: "robot_queues"; referencedColumns: ["id"] },

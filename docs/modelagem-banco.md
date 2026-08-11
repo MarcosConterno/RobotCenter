@@ -372,6 +372,10 @@ A migration `20260808224500_allow_published_robot_documentation_view.sql` separa
 ## Disparo e relacionamentos entre robôs
 
 `robos.disparo` aceita `Agendado`, `Manual` ou `Gatilho`. `gatilho_de_robo_id` e `gatilho_para_robo_id` são chaves estrangeiras opcionais para `robos.id`, indexadas para futuras consultas de fluxo. Um trigger impede autorreferência, robôs excluídos e relações entre clientes diferentes.
+
+## Exclusão permanente de Robôs
+
+`private.robot_deletion_audit` preserva `robot_id`, o snapshot JSON completo, autor e instante antes de cada exclusão física. Alterações, publicações, regras e metadados de anexos usam cascata porque pertencem ao Robô. `flow_nodes.robot_id`, `stack_requests.robot_id`, `robot_center_documentations.robo_id` e os gatilhos entre Robôs usam `ON DELETE SET NULL` para preservar históricos independentes.
 ## Distribuição automática de cores
 
 `clientes.cor` guarda a cor visual única do cadastro do cliente. `robos.pacote_cor` é sincronizada por nome normalizado de pacote: o trigger `robos_set_package_color` reutiliza a cor existente ou escolhe a próxima opção da paleta para pacotes inéditos. A migration preserva os registros e não altera as policies RLS.

@@ -8,7 +8,7 @@ import type { Robo } from "@/domain/entities";
 import { createClient } from "@/lib/supabase/client";
 
 type Status = "SOLICITADA" | "EM_ANALISE" | "AGUARDANDO_INFORMACAO" | "CONCLUIDA" | "CANCELADA";
-interface Item { id: string; robot_id: string; suggested_stack_name: string; status: Status; generated_stack: string | null; requested_at: string; completed_at: string | null }
+interface Item { id: string; robot_id: string | null; suggested_stack_name: string; status: Status; generated_stack: string | null; requested_at: string; completed_at: string | null }
 const LABELS: Record<Status, string> = { SOLICITADA: "Solicitadas", EM_ANALISE: "Em análise", AGUARDANDO_INFORMACAO: "Aguardando informação", CONCLUIDA: "Concluídas", CANCELADA: "Canceladas" };
 const RESULT_OPTIONS = [3, 5, 10, 20, 50] as const;
 

@@ -239,6 +239,8 @@
 13. Eventos recebidos em sequência são agrupados por 300 ms. Respostas de carregamentos anteriores não substituem o estado de uma solicitação mais recente, e os canais são removidos quando o provider é desmontado.
 14. Somente Master pode arquivar um Cliente que possua usuários ativos vinculados; todos devem ser reatribuídos a outro Cliente ou desvinculados na mesma transação.
 15. A reatribuição não contorna o bloqueio de Robôs ativos e não altera o papel dos usuários.
+16. Somente Master pode excluir fisicamente um Robô, mediante confirmação explícita e com auditoria privada obrigatória.
+17. A exclusão remove regras, alterações, publicações e metadados de anexos pertencentes ao Robô. Nós de Fluxo, solicitações de Stack e documentação publicada são preservados sem vínculo com o Robô removido.
 
 ## Tutorial e onboarding
 

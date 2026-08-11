@@ -21,7 +21,8 @@ interface RobotFormProps {
   mode: "create" | "edit";
   clientScoped?: boolean;
   onCancel: () => void;
-  onDelete?: () => void;
+  onDelete?: () => void | Promise<void>;
+  deletePending?: boolean;
   onSubmit: (data: DadosFormularioRobo, publish: boolean) => void | Promise<void>;
 }
 
@@ -36,6 +37,7 @@ export default function RobotForm({
   clientScoped = false,
   onCancel,
   onDelete,
+  deletePending = false,
   onSubmit,
 }: RobotFormProps) {
   const [form, setForm] = useState<DadosFormularioRobo>(() => initialValues ?? { ...FORMULARIO_ROBO_INICIAL, productType: defaultProductType });
@@ -404,9 +406,9 @@ export default function RobotForm({
       <footer style={actionsStyle}>
         <div>
           {mode === "edit" && onDelete && (
-            <button type="button" onClick={onDelete} style={deleteButtonStyle}>
+            <button type="button" onClick={() => void onDelete()} disabled={deletePending} style={deleteButtonStyle}>
               <Trash2 size={15} />
-              Excluir robô
+              {deletePending ? "Excluindo..." : "Excluir robô"}
             </button>
           )}
         </div>

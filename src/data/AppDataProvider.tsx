@@ -109,7 +109,7 @@ interface AppDataContextValue {
   importarRobos: (dados: DadosImportacaoRobo[]) => Promise<Robo[]>;
   atualizarRobo: (id: string, dados: DadosFormularioRobo) => Promise<Robo | null>;
   atualizarCapacidadeRobo: (id: string, ideal: number, max: number) => Promise<Robo | null>;
-  excluirRobo: (id: string) => void;
+  excluirRobo: (id: string) => Promise<void>;
   publicarAlteracoes: (id: string, robotAtualizado?: Robo, descricaoPublicacao?: string) => Promise<Robo | null>;
   cadastrarUsuario: (dados: DadosCadastroUsuario) => void;
   cadastrarCliente: (dados: DadosCadastroCliente) => Promise<Cliente>;
@@ -372,7 +372,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     return atualizado;
   }
 
-  function excluirRobo(id: string) {
+  async function excluirRobo(id: string) {
+    const { data, error } = await createClient()
+      .from("robos")
+      .delete()
+      .eq("id", id)
+      .select("id")
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) throw new Error("O robô não foi excluído. Confirme se a sessão possui o papel Master.");
     setRobos((atuais) => atuais.filter((robo) => robo.id !== id));
   }
 
