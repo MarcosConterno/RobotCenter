@@ -26,9 +26,10 @@ export default function ConfiguracoesPage() {
     atualizarCliente,
     excluirCliente,
   } = useAppData();
-  const { isAdmin: adminAutorizado, isMaster, permissions: accessPermissions, status: statusAutorizacao, error: erroAutorizacao } = useAdminAccess();
+  const { isAdmin: adminAutorizado, isMaster, isClient, permissions: accessPermissions, status: statusAutorizacao, error: erroAutorizacao } = useAdminAccess();
   const carregandoAutorizacao = statusAutorizacao === "loading";
   const [cadastroAtivo, setCadastroAtivo] = useState<CadastroAtivo>("usuarios");
+  const cadastroVisivel: CadastroAtivo = isClient ? "clientes" : cadastroAtivo;
   const [login, setLogin] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -121,8 +122,8 @@ export default function ConfiguracoesPage() {
   }, [adminAutorizado, carregarUsuarios]);
 
   useEffect(() => {
-    if (adminAutorizado && cadastroAtivo === "clientes" && !clientMetricsLoaded && !loadingClientMetrics) void carregarMetricasClientes();
-  }, [adminAutorizado, cadastroAtivo, carregarMetricasClientes, clientMetricsLoaded, loadingClientMetrics]);
+    if (adminAutorizado && cadastroVisivel === "clientes" && !clientMetricsLoaded && !loadingClientMetrics) void carregarMetricasClientes();
+  }, [adminAutorizado, cadastroVisivel, carregarMetricasClientes, clientMetricsLoaded, loadingClientMetrics]);
 
   useEffect(() => {
     if (!adminAutorizado || (permissionRoles.length && permissions.length)) return;
@@ -364,15 +365,15 @@ export default function ConfiguracoesPage() {
   return (
     <AppShell title="Configurações">
       <div className="settings-page" style={pageStyle}>
-        {cadastroAtivo !== "permissoes" && <header style={pageHeaderStyle}>
+        {cadastroVisivel !== "permissoes" && <header style={pageHeaderStyle}>
           <span style={pageEyebrowStyle}>CONFIGURAÇÕES</span>
           <h1 style={titleStyle}>Administração do sistema</h1>
           <p style={subtitleStyle}>Gerencie usuários, clientes e permissões de acesso do Robot Center.</p>
         </header>}
 
-        <SettingsNavigation active={cadastroAtivo} onSelect={setCadastroAtivo} />
+        <SettingsNavigation active={cadastroVisivel} onSelect={setCadastroAtivo} />
 
-        {cadastroAtivo === "usuarios" ? (
+        {cadastroVisivel === "usuarios" ? (
           <section style={sectionStyle} aria-label="Cadastro de usuários">
             <div style={sectionHeadingStyle}>
               <div>
@@ -503,7 +504,7 @@ export default function ConfiguracoesPage() {
               {sucessoUsuario && <p role="status" style={formSuccessStyle}>{sucessoUsuario}</p>}
             </CadastroLista>
           </section>
-        ) : cadastroAtivo === "clientes" ? (
+        ) : cadastroVisivel === "clientes" ? (
           <section style={sectionStyle} aria-label="Cadastro de clientes">
             <div style={sectionHeadingStyle}>
               <div>
@@ -594,7 +595,7 @@ export default function ConfiguracoesPage() {
               {erroCliente && <p role="alert" style={formErrorStyle}>{erroCliente}</p>}
             </CadastroLista>
           </section>
-        ) : cadastroAtivo === "cadastros" ? (
+        ) : cadastroVisivel === "cadastros" ? (
           <RobotCatalogSettings canManage={isMaster || accessPermissions.includes("robot_catalog.manage")} />
         ) : (
           <AccessControlCenter

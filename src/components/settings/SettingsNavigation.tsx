@@ -14,7 +14,7 @@ interface SettingsNavigationProps {
 
 export default function SettingsNavigation({ active, onSelect }: SettingsNavigationProps) {
   const router = useRouter();
-  const { isAdmin, canManageTutorials } = useAdminAccess();
+  const { isAdmin, isClient, canManageTutorials } = useAdminAccess();
 
   function navigate(section: SettingsSection) {
     if (section === "tutoriais") {
@@ -26,7 +26,7 @@ export default function SettingsNavigation({ active, onSelect }: SettingsNavigat
   }
 
   const items = [
-    { id: "usuarios" as const, label: "Usuários", icon: Users, visible: true },
+    { id: "usuarios" as const, label: "Usuários", icon: Users, visible: !isClient },
     { id: "clientes" as const, label: "Clientes", icon: Building2, visible: true },
     { id: "cadastros" as const, label: "Cadastros", icon: Boxes, visible: isAdmin },
     { id: "permissoes" as const, label: "Perfis e Permissões", icon: ShieldCheck, visible: isAdmin },
