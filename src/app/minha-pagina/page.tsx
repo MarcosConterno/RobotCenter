@@ -13,6 +13,8 @@ import MeetingsPanel from "@/components/personal/MeetingsPanel";
 import NotesPanel from "@/components/personal/NotesPanel";
 import { useAppData } from "@/data/AppDataProvider";
 import { useFlowsData } from "@/data/FlowsDataProvider";
+import { PALETAS_BADGE_ROBO } from "@/domain/badge-colors";
+import type { CorBadgeRobo } from "@/domain/entities";
 import { formatarData } from "@/domain/formatters";
 import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/types/database.types";
@@ -20,7 +22,7 @@ import type { Database } from "@/types/database.types";
 import styles from "./MinhaPagina.module.css";
 
 type Todo = Database["public"]["Tables"]["personal_tasks"]["Row"] & {
-  clientes: { nome: string } | null;
+  clientes: { nome: string; cor: CorBadgeRobo } | null;
   personal_meetings: { name: string; meeting_date: string } | null;
   personal_notes: { title: string } | null;
 };
@@ -38,6 +40,7 @@ const filters: Array<{ id: Filter; label: string }> = [
 ];
 
 const priorityLabels: Record<Priority, string> = { urgent: "Urgente", high: "Alta", medium: "Média", low: "Baixa" };
+const priorityOrder: Record<Priority, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
 const statusLabels: Record<TodoStatus, string> = {
   open_task: "Abrir Tarefa",
   budget: "Orçamento",
@@ -119,7 +122,7 @@ export default function MinhaPaginaPage() {
     setError("");
     const { data, error: queryError } = await createClient()
       .from("personal_tasks")
-      .select("*,clientes(nome),personal_meetings(name,meeting_date),personal_notes(title)")
+      .select("*,clientes(nome,cor),personal_meetings(name,meeting_date),personal_notes(title)")
       .order("due_date", { ascending: true })
       .order("created_at", { ascending: true });
     if (queryError) setError(databaseMessage(queryError.message));
@@ -156,6 +159,11 @@ export default function MinhaPaginaPage() {
     if (filter === "pending") return task.status !== "completed";
     if (filter === "upcoming") return task.status !== "completed" && task.due_date > today;
     return task.status === "completed";
+  }).sort((first, second) => {
+    const priorityDifference = priorityOrder[first.priority as Priority] - priorityOrder[second.priority as Priority];
+    if (priorityDifference !== 0) return priorityDifference;
+    const dateDifference = first.due_date.localeCompare(second.due_date);
+    return dateDifference !== 0 ? dateDifference : first.created_at.localeCompare(second.created_at);
   }), [filter, tasks, today]);
 
   const todayTasks = tasks.filter((task) => task.due_date === today);
@@ -365,8 +373,9 @@ export default function MinhaPaginaPage() {
                 return (
                   <article key={task.id} className={`${styles.task}${completed ? ` ${styles.completed}` : ""}${overdue ? ` ${styles.overdue}` : ""}`}>
                     <button className={styles.checkbox} type="button" aria-label={completed ? `Reabrir ToDo ${task.title}` : `Concluir ToDo ${task.title}`} onClick={() => void toggleTask(task)}>{completed ? <Check size={14} /> : <Circle size={16} />}</button>
-                    <div className={styles.taskMain}><button type="button" className={styles.taskCopy} onClick={() => openTaskNote(task)} aria-label={`Abrir nota do ToDo ${task.title}`}><strong>{task.title}</strong>{task.note && <span>{richTextToPlainText(task.note)}</span>}{task.clientes && <span className={styles.taskClient}>Cliente: {task.clientes.nome}</span>}</button>{task.personal_meetings && <button type="button" className={styles.originLink} onClick={() => openTodoOrigin(task)}><FileText size={11} />Origem: Reunião — {task.personal_meetings.name} · {formatTaskDate(task.personal_meetings.meeting_date)}</button>}{task.personal_notes && <button type="button" className={styles.originLink} onClick={() => openTodoOrigin(task)}><FileText size={11} />Origem: Nota — {task.personal_notes.title}</button>}</div>
+                    <div className={styles.taskMain}><button type="button" className={styles.taskCopy} onClick={() => openTaskNote(task)} aria-label={`Abrir nota do ToDo ${task.title}`}><strong>{task.title}</strong>{task.note && <span>{richTextToPlainText(task.note)}</span>}</button>{task.personal_meetings && <button type="button" className={styles.originLink} onClick={() => openTodoOrigin(task)}><FileText size={11} />Origem: Reunião — {task.personal_meetings.name} · {formatTaskDate(task.personal_meetings.meeting_date)}</button>}{task.personal_notes && <button type="button" className={styles.originLink} onClick={() => openTodoOrigin(task)}><FileText size={11} />Origem: Nota — {task.personal_notes.title}</button>}</div>
                     <time dateTime={task.due_date}><Clock3 size={12} />{overdue ? "Atrasada · " : ""}{formatTaskDate(task.due_date)}</time>
+                    {task.clientes ? <span className={styles.clientBadge} style={{ color: PALETAS_BADGE_ROBO[task.clientes.cor].texto, background: PALETAS_BADGE_ROBO[task.clientes.cor].fundo, borderColor: PALETAS_BADGE_ROBO[task.clientes.cor].borda }}>{task.clientes.nome}</span> : <span className={styles.clientEmpty}>—</span>}
                     <span className={`${styles.status} ${styles[task.status as TodoStatus]}`}>{statusLabels[task.status as TodoStatus]}</span>
                     <span className={`${styles.priority} ${styles[task.priority as Priority]}`}>{priorityLabels[task.priority as Priority]}</span>
                     <div className={styles.actions}><button type="button" aria-label={`Editar ToDo ${task.title}`} onClick={() => startEdit(task)}><Pencil size={14} /></button><button type="button" aria-label={`Excluir ToDo ${task.title}`} onClick={() => setTaskToDelete(task)}><Trash2 size={14} /></button></div>
