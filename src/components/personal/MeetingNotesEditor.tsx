@@ -178,7 +178,14 @@ export default function MeetingNotesEditor({
 
   return (
     <div className={styles.meetingEditorShell}>
-      <div className={styles.meetingEditorToolbar} role="toolbar" aria-label="Formatação das anotações">
+      <div
+        className={styles.meetingEditorToolbar}
+        role="toolbar"
+        aria-label="Formatação das anotações"
+        onMouseDown={(event) => {
+          if ((event.target as Element).closest("button")) event.preventDefault();
+        }}
+      >
         <button type="button" onClick={() => runDocumentCommand("bold")} title="Negrito (Ctrl+B)" aria-label="Negrito"><Bold size={15} /></button>
         <span aria-hidden="true" />
         <button type="button" onClick={() => runEditorCommand("bullets")} title="Tópicos" aria-label="Criar tópicos"><List size={15} /></button>
