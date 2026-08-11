@@ -1,10 +1,11 @@
 "use client";
 
-import { LayoutDashboard, TableProperties } from "lucide-react";
+import { BarChart3, LayoutDashboard, TableProperties } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import Feed from "@/components/dashboard/Feed";
+import DashboardCharts from "@/components/dashboard/DashboardCharts";
 import { useAdminAccess } from "@/auth/AdminAccessProvider";
 import RobotsOverviewTable from "@/components/dashboard/RobotsOverviewTable";
 import StatsCards from "@/components/dashboard/StatsCards";
@@ -18,7 +19,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { robos, publicacoes, clientes, atualizarCapacidadeRobo } = useAppData();
   const { canUpdateCapacity } = useAdminAccess();
-  const [activeTab, setActiveTab] = useState<"overview" | "robots">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "robots" | "charts">("overview");
 
   function openRobotDetails(robot: Robo, tab?: "stackRequests") {
     router.push(`/robos/${robot.id}${tab ? `?tab=${tab}` : ""}`);
@@ -58,6 +59,17 @@ export default function DashboardPage() {
               <TableProperties size={15} />
               Tabela de robôs
             </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "charts"}
+              aria-controls="dashboard-charts-panel"
+              className={activeTab === "charts" ? "is-active" : ""}
+              onClick={() => setActiveTab("charts")}
+            >
+              <BarChart3 size={15} />
+              Gráficos
+            </button>
           </nav>
 
           {activeTab === "overview" ? (
@@ -66,9 +78,13 @@ export default function DashboardPage() {
               <StackRequestsDashboard robots={robos} onOpenRobot={openRobotDetails} />
               <Feed publicacoes={publicacoes} robos={robos} onViewRobot={openRobotDetails} />
             </div>
-          ) : (
+          ) : activeTab === "robots" ? (
             <div id="dashboard-robots-panel" role="tabpanel" className="dashboard-tab-panel">
               <RobotsOverviewTable robos={robos} clientes={clientes} onViewRobot={openRobotDetails} canEditCapacity={canUpdateCapacity} onUpdateCapacity={atualizarCapacidadeRobo} />
+            </div>
+          ) : (
+            <div id="dashboard-charts-panel" role="tabpanel" className="dashboard-tab-panel">
+              <DashboardCharts robots={robos} clients={clientes} />
             </div>
           )}
         </div>

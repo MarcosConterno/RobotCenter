@@ -255,6 +255,17 @@
 9. Passos aceitam somente páginas e targets presentes no catálogo do código.
 10. Quando a versão publicada aumenta, a ausência de progresso nessa versão volta a destacar discretamente o botão Tutorial sem abrir o tour automaticamente.
 11. O tutorial padrão inclui Minha página, ToDo, Reuniões, Notas e personalização; a navegação entre as abas é somente visual e não modifica dados pessoais.
+## Dashboard gráfica
+
+1. A Dashboard possui as visões Visão geral, Tabela de robôs e Gráficos.
+2. A visão Gráficos utiliza exclusivamente os Robôs já autorizados para a sessão e não amplia o escopo da RLS.
+3. Cliente, CourtName, Sistema e Stack são filtros combináveis; limpar filtros restaura o conjunto autorizado completo.
+4. Indicadores de total, ativos e capacidade, assim como distribuições por Cliente, CourtName, Sistema e Stack, são recalculados sobre o mesmo recorte filtrado.
+5. Valores vazios são agrupados como Não informado. Categorias além das sete maiores aparecem em Outros no modo compacto, e a opção Ver todos expande o quadro sem consolidação.
+6. Cada quadro permite alternar independentemente entre Barras, Pizza e Rosca sem alterar o recorte dos filtros.
+7. Os filtros principais são Cliente, CourtName, Sistema e Stack; Mais filtros apresenta os demais campos funcionais do cadastro, incluindo os quatro produtos, capacidades e documentação.
+8. A Dashboard é visível a todos os papéis ativos. Usuário Cliente visualiza somente Robôs cujo `cliente_id` corresponde ao vínculo ativo do próprio profile.
+
 ## Minha página e tarefas pessoais
 
 1. Todo usuário autenticado pode utilizar Minha página, independentemente de seu papel.

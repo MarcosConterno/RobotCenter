@@ -182,6 +182,10 @@ Um Fluxo é a documentação visual de uma automação e pertence obrigatoriamen
 - Notas, textos, grupos e decisões documentam o processo, sem alterar Robôs.
 
 O papel Cliente edita apenas Fluxos do seu Cliente. Admin cria, edita, publica e exclui qualquer Fluxo. Operador e Suporte possuem somente visualização.
+## Dashboard gráfica
+
+A visão gráfica da Dashboard é uma projeção em memória do cadastro autorizado de Robôs. Ela não cria entidade persistente: agrupa o conjunto visível por Cliente, CourtName, Sistema e Stack. Os filtros são cumulativos e não substituem as policies de acesso do banco. Cada agrupamento pode ser visualizado em Barras, Pizza ou Rosca, com expansão de todas as categorias.
+
 ## Minha página
 
 Uma Tarefa Pessoal pertence a exatamente um usuário e representa uma prioridade diária ou futura. Possui título, observação opcional, data, prioridade baixa/média/alta e estado pendente/concluído. A conclusão registra seu instante; a reabertura remove esse registro. Tarefas pessoais não pertencem a Cliente, Robô ou papel de acesso.

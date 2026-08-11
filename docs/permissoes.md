@@ -147,6 +147,10 @@ Somente o papel Master pode executar `DELETE` em `public.robos`. A interface apr
 
 O trigger `robos_audit_master_delete` repete a validação de Master e grava uma cópia integral do registro em `private.robot_deletion_audit` antes da exclusão. A tabela de auditoria não possui acesso para `anon` ou `authenticated`.
 
+## Dashboard para todos os perfis
+
+Todos os papéis ativos recebem `dashboard.read`, `robots.read` e leitura dos quatro produtos para consultar a Dashboard. Master, Admin, Head de Setor, Operador, Dev e Suporte possuem escopo interno global. O papel Cliente continua condicionado a `private.can_access_cliente`, que exige `profiles.cliente_id` ativo e igual ao `robos.cliente_id`. Filtros da interface nunca ampliam esse conjunto.
+
 - A rota de administração valida sessão e papel Admin no servidor.
 - A raiz documental exige permissão de leitura e acesso ao cliente do Robô. Fora do Admin, somente registros com status `published` ficam visíveis.
 - O rascunho exige papel Admin e permissão de gerenciamento.
