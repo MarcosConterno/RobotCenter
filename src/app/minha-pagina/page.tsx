@@ -236,7 +236,10 @@ export default function MinhaPaginaPage() {
     setError("");
     setInlineSaving(savingKey);
     setTasks((current) => current.map((item) => item.id === task.id ? { ...item, [field]: value } : item));
-    const { error: mutationError } = await createClient().from("personal_tasks").update({ [field]: value }).eq("id", task.id);
+    const payload = field === "status"
+      ? { status: value as TodoStatus }
+      : { priority: value as Priority };
+    const { error: mutationError } = await createClient().from("personal_tasks").update(payload).eq("id", task.id);
     setInlineSaving((current) => current === savingKey ? null : current);
     if (mutationError) {
       setTasks((current) => current.map((item) => item.id === task.id ? { ...item, [field]: previousValue } : item));
