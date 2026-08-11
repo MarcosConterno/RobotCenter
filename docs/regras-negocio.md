@@ -265,6 +265,8 @@
 6. Cada quadro permite alternar independentemente entre Barras, Pizza e Rosca sem alterar o recorte dos filtros.
 7. Os filtros principais são Cliente, CourtName, Sistema e Stack; Mais filtros apresenta os demais campos funcionais do cadastro, incluindo os quatro produtos, capacidades e documentação.
 8. A Dashboard é visível a todos os papéis ativos. Usuário Cliente visualiza somente Robôs cujo `cliente_id` corresponde ao vínculo ativo do próprio profile.
+9. Os quatro quadros iniciais são apenas uma configuração padrão. Cada usuário pode adicionar, configurar ou remover quadros e salvar seu layout individual.
+10. Cada quadro escolhe independentemente contexto e visualização. O limite é de 20 quadros e a preferência não armazena dados dos Robôs, somente a configuração visual.
 
 ## Minha página e tarefas pessoais
 

@@ -6,6 +6,12 @@
 .heading h2 { font-size: 16px; }
 .heading p, .chart p { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
 .resultCount { padding: 6px 10px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-2); background: var(--surface); font-size: 10.5px; white-space: nowrap; }
+.headerActions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.addChartButton, .saveLayoutButton { display: inline-flex; height: 34px; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--border); border-radius: 8px; padding: 0 11px; font-size: 10.5px; font-weight: 750; cursor: pointer; }
+.addChartButton { color: var(--accent); background: var(--accent-soft); }
+.saveLayoutButton { border-color: var(--accent); color: var(--on-accent); background: var(--accent); }
+.addChartButton:disabled, .saveLayoutButton:disabled { cursor: not-allowed; opacity: .5; }
+.layoutMessage { padding: 9px 12px; border: 1px solid var(--border); border-radius: 9px; color: var(--text-2); background: var(--surface); font-size: 10.5px; }
 .filters { display: grid; grid-template-columns: auto repeat(4, minmax(120px, 1fr)) auto auto; align-items: end; gap: 10px; padding: 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); }
 .filtersTitle { display: flex; min-height: 36px; align-items: center; gap: 7px; padding: 0 5px; color: var(--text-2); font-size: 11px; font-weight: 750; }
 .filtersTitle svg { color: var(--accent); }
@@ -25,8 +31,15 @@
 .chart { overflow: hidden; min-height: 280px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); box-shadow: var(--shadow); }
 .chart > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--separator); }
 .chart h3 { font-size: 13px; }
-.chart > header > span { display: grid; min-width: 28px; height: 28px; place-items: center; border-radius: 8px; color: var(--accent); background: var(--accent-soft); font-size: 10px; font-weight: 800; }
-.chartToolbar { display: flex; gap: 4px; padding: 10px 18px 0; }
+.cardHeaderActions { display: flex; align-items: center; gap: 6px; }
+.cardHeaderActions > span { display: grid; min-width: 28px; height: 28px; place-items: center; border-radius: 8px; color: var(--accent); background: var(--accent-soft); font-size: 10px; font-weight: 800; }
+.cardHeaderActions button { display: grid; width: 28px; height: 28px; place-items: center; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); background: var(--surface); cursor: pointer; }
+.cardHeaderActions button:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-soft); }
+.chartToolbar { display: flex; align-items: end; justify-content: space-between; gap: 10px; padding: 10px 18px 0; }
+.chartToolbar > label { display: grid; flex: 1; gap: 5px; color: var(--muted); font-size: 9px; font-weight: 700; }
+.chartToolbar select { width: 100%; max-width: 230px; height: 30px; border: 1px solid var(--border); border-radius: 7px; outline: none; padding: 0 8px; color: var(--text); background: var(--surface); font-size: 10px; }
+.chartToolbar select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.chartToolbar > div { display: flex; gap: 4px; }
 .chartToolbar button { display: inline-flex; height: 28px; align-items: center; gap: 5px; border: 1px solid var(--border); border-radius: 7px; padding: 0 8px; color: var(--muted); background: var(--surface); font-size: 9.5px; font-weight: 700; cursor: pointer; }
 .chartToolbar button:hover, .chartToolbar button.activeMode { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
 .bars { display: grid; gap: 13px; padding: 17px 18px 20px; }
@@ -61,8 +74,8 @@
 .empty span { font-size: 10.5px; }
 
 @media (max-width: 1180px) { .filters { grid-template-columns: repeat(3, minmax(0, 1fr)); } .filtersTitle { grid-column: 1 / -1; } .moreFilters { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (max-width: 760px) { .header { align-items: flex-start; flex-direction: column; } .chartGrid { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .header { align-items: flex-start; flex-direction: column; } .headerActions { width: 100%; flex-wrap: wrap; justify-content: flex-start; } .chartGrid { grid-template-columns: 1fr; } }
 @media (max-width: 650px) { .moreFilters { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 520px) { .filters, .moreFilters { grid-template-columns: 1fr; } .filtersTitle { grid-column: auto; } .clearButton, .moreButton { width: 100%; } }
-@media (max-width: 460px) { .radialLayout { grid-template-columns: 1fr; } .radialGraphic { width: 190px; } }
+@media (max-width: 460px) { .chartToolbar { align-items: stretch; flex-direction: column; } .chartToolbar select { max-width: none; } .radialLayout { grid-template-columns: 1fr; } .radialGraphic { width: 190px; } }
 @media (prefers-reduced-motion: reduce) { .barTrack span, .radialGraphic path { transition: none; } }

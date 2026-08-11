@@ -186,6 +186,8 @@ O papel Cliente edita apenas Fluxos do seu Cliente. Admin cria, edita, publica e
 
 A visão gráfica da Dashboard é uma projeção em memória do cadastro autorizado de Robôs. Ela não cria entidade persistente: agrupa o conjunto visível por Cliente, CourtName, Sistema e Stack. Os filtros são cumulativos e não substituem as policies de acesso do banco. Cada agrupamento pode ser visualizado em Barras, Pizza ou Rosca, com expansão de todas as categorias.
 
+Os quadros são modulares. O conjunto inicial possui quatro exemplos, mas o usuário pode removê-los, criar até 20 quadros e escolher qualquer contexto suportado do cadastro de Robôs. A preferência de estrutura é persistida individualmente no Supabase; os valores agregados continuam calculados em tempo real sobre os registros autorizados.
+
 ## Minha página
 
 Uma Tarefa Pessoal pertence a exatamente um usuário e representa uma prioridade diária ou futura. Possui título, observação opcional, data, prioridade baixa/média/alta e estado pendente/concluído. A conclusão registra seu instante; a reabertura remove esse registro. Tarefas pessoais não pertencem a Cliente, Robô ou papel de acesso.

@@ -151,6 +151,8 @@ O trigger `robos_audit_master_delete` repete a validação de Master e grava uma
 
 Todos os papéis ativos recebem `dashboard.read`, `robots.read` e leitura dos quatro produtos para consultar a Dashboard. Master, Admin, Head de Setor, Operador, Dev e Suporte possuem escopo interno global. O papel Cliente continua condicionado a `private.can_access_cliente`, que exige `profiles.cliente_id` ativo e igual ao `robos.cliente_id`. Filtros da interface nunca ampliam esse conjunto.
 
+As preferências modulares dos gráficos pertencem ao próprio usuário. `dashboard_chart_preferences` aplica RLS por `auth.uid()` em todas as operações; o papel administrativo não recebe exceção para ler layouts de terceiros.
+
 - A rota de administração valida sessão e papel Admin no servidor.
 - A raiz documental exige permissão de leitura e acesso ao cliente do Robô. Fora do Admin, somente registros com status `published` ficam visíveis.
 - O rascunho exige papel Admin e permissão de gerenciamento.

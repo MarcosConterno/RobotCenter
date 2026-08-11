@@ -201,6 +201,14 @@ export type Database = {
           },
         ]
       }
+      dashboard_chart_preferences: {
+        Row: { cards: Json; created_at: string; updated_at: string; user_id: string }
+        Insert: { cards?: Json; created_at?: string; updated_at?: string; user_id: string }
+        Update: { cards?: Json; created_at?: string; updated_at?: string; user_id?: string }
+        Relationships: [
+          { foreignKeyName: "dashboard_chart_preferences_user_id_fkey"; columns: ["user_id"]; isOneToOne: true; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
+      }
       flow_edges: {
         Row: {
           condition: string
