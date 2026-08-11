@@ -8,6 +8,7 @@ import { useAdminAccess } from "@/auth/AdminAccessProvider";
 import AppShell from "@/components/layout/AppShell";
 import Topbar from "@/components/layout/Topbar";
 import RobotsOverviewTable from "@/components/dashboard/RobotsOverviewTable";
+import MeetingNotesEditor, { richTextToPlainText } from "@/components/personal/MeetingNotesEditor";
 import MeetingsPanel from "@/components/personal/MeetingsPanel";
 import NotesPanel from "@/components/personal/NotesPanel";
 import { useAppData } from "@/data/AppDataProvider";
@@ -19,10 +20,12 @@ import type { Database } from "@/types/database.types";
 import styles from "./MinhaPagina.module.css";
 
 type Todo = Database["public"]["Tables"]["personal_tasks"]["Row"] & {
+  clientes: { nome: string } | null;
   personal_meetings: { name: string; meeting_date: string } | null;
   personal_notes: { title: string } | null;
 };
-type Priority = "low" | "medium" | "high";
+type Priority = "urgent" | "high" | "medium" | "low";
+type TodoStatus = "open_task" | "budget" | "todo" | "waiting_server_update" | "waiting_stack" | "testing" | "waiting_dev" | "waiting_client" | "in_progress" | "completed";
 type Filter = "today" | "pending" | "upcoming" | "completed";
 type WorkspaceTab = "todo" | "meetings" | "notes";
 type TodoOrigin = { id: string; label: string; date?: string; type: "meeting" | "note" };
@@ -34,7 +37,19 @@ const filters: Array<{ id: Filter; label: string }> = [
   { id: "completed", label: "Concluídas" },
 ];
 
-const priorityLabels: Record<Priority, string> = { low: "Baixa", medium: "Média", high: "Alta" };
+const priorityLabels: Record<Priority, string> = { urgent: "Urgente", high: "Alta", medium: "Média", low: "Baixa" };
+const statusLabels: Record<TodoStatus, string> = {
+  open_task: "Abrir Tarefa",
+  budget: "Orçamento",
+  todo: "A Fazer",
+  waiting_server_update: "Aguardando Att Servidores",
+  waiting_stack: "Aguardando Stack",
+  testing: "Testando",
+  waiting_dev: "Aguardando Dev",
+  waiting_client: "Aguardando Cliente",
+  in_progress: "Em andamento",
+  completed: "Concluído",
+};
 
 function localDateKey(date = new Date()) {
   const year = date.getFullYear();
@@ -82,9 +97,15 @@ export default function MinhaPaginaPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
-  const [note, setNote] = useState("");
   const [dueDate, setDueDate] = useState(localDateKey());
   const [priority, setPriority] = useState<Priority>("medium");
+  const [status, setStatus] = useState<TodoStatus>("todo");
+  const [clientId, setClientId] = useState("");
+  const [noteTask, setNoteTask] = useState<Todo | null>(null);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<Todo | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [todoOrigin, setTodoOrigin] = useState<TodoOrigin | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -98,7 +119,7 @@ export default function MinhaPaginaPage() {
     setError("");
     const { data, error: queryError } = await createClient()
       .from("personal_tasks")
-      .select("*,personal_meetings(name,meeting_date),personal_notes(title)")
+      .select("*,clientes(nome),personal_meetings(name,meeting_date),personal_notes(title)")
       .order("due_date", { ascending: true })
       .order("created_at", { ascending: true });
     if (queryError) setError(databaseMessage(queryError.message));
@@ -131,23 +152,24 @@ export default function MinhaPaginaPage() {
   useEffect(() => { void loadPreferences(); }, [loadPreferences]);
 
   const visibleTasks = useMemo(() => tasks.filter((task) => {
-    if (filter === "today") return task.due_date === today && task.status === "pending";
-    if (filter === "pending") return task.status === "pending";
-    if (filter === "upcoming") return task.status === "pending" && task.due_date > today;
+    if (filter === "today") return task.due_date === today && task.status !== "completed";
+    if (filter === "pending") return task.status !== "completed";
+    if (filter === "upcoming") return task.status !== "completed" && task.due_date > today;
     return task.status === "completed";
   }), [filter, tasks, today]);
 
   const todayTasks = tasks.filter((task) => task.due_date === today);
   const todayCompleted = todayTasks.filter((task) => task.status === "completed").length;
   const progress = todayTasks.length ? Math.round((todayCompleted / todayTasks.length) * 100) : 0;
-  const upcomingTasks = tasks.filter((task) => task.status === "pending" && task.due_date > today).slice(0, 4);
+  const upcomingTasks = tasks.filter((task) => task.status !== "completed" && task.due_date > today).slice(0, 4);
 
   function resetForm() {
     setEditingId(null);
     setTitle("");
-    setNote("");
     setDueDate(today);
     setPriority("medium");
+    setStatus("todo");
+    setClientId("");
     setTodoOrigin(null);
     setFormOpen(false);
   }
@@ -155,9 +177,10 @@ export default function MinhaPaginaPage() {
   function startEdit(task: Todo) {
     setEditingId(task.id);
     setTitle(task.title);
-    setNote(task.note ?? "");
     setDueDate(task.due_date);
     setPriority(task.priority as Priority);
+    setStatus(task.status as TodoStatus);
+    setClientId(task.client_id ?? "");
     setTodoOrigin(task.origin_meeting_id && task.personal_meetings ? { id: task.origin_meeting_id, label: task.personal_meetings.name, date: task.personal_meetings.meeting_date, type: "meeting" } : task.origin_note_id && task.personal_notes ? { id: task.origin_note_id, label: task.personal_notes.title, type: "note" } : null);
     setFormOpen(true);
   }
@@ -168,7 +191,7 @@ export default function MinhaPaginaPage() {
     setSaving(true);
     setError("");
     const supabase = createClient();
-    const payload = { title: title.trim(), note: note.trim() || null, due_date: dueDate, priority, origin_meeting_id: todoOrigin?.type === "meeting" ? todoOrigin.id : null, origin_note_id: todoOrigin?.type === "note" ? todoOrigin.id : null };
+    const payload = { title: title.trim(), due_date: dueDate, priority, status, client_id: clientId || null, origin_meeting_id: todoOrigin?.type === "meeting" ? todoOrigin.id : null, origin_note_id: todoOrigin?.type === "note" ? todoOrigin.id : null };
     let mutationError;
     if (editingId) {
       ({ error: mutationError } = await supabase.from("personal_tasks").update(payload).eq("id", editingId));
@@ -184,7 +207,7 @@ export default function MinhaPaginaPage() {
   }
 
   async function toggleTask(task: Todo) {
-    const status = task.status === "completed" ? "pending" : "completed";
+    const status: TodoStatus = task.status === "completed" ? "todo" : "completed";
     setTasks((current) => current.map((item) => item.id === task.id
       ? { ...item, status, completed_at: status === "completed" ? new Date().toISOString() : null }
       : item));
@@ -194,15 +217,35 @@ export default function MinhaPaginaPage() {
       await loadTasks();
       return;
     }
-    if (status === "pending") setFilter("pending");
+    setFilter(status === "completed" ? "completed" : "pending");
+  }
+
+  function openTaskNote(task: Todo) {
+    setNoteTask(task);
+    setNoteDraft(task.note ?? "");
+  }
+
+  async function saveTaskNote(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!noteTask) return;
+    setNoteSaving(true);
+    setError("");
+    const note = noteDraft.trim() || null;
+    const { error: mutationError } = await createClient().from("personal_tasks").update({ note }).eq("id", noteTask.id);
+    setNoteSaving(false);
+    if (mutationError) { setError(databaseMessage(mutationError.message)); return; }
+    setTasks((current) => current.map((item) => item.id === noteTask.id ? { ...item, note } : item));
+    setNoteTask(null);
   }
 
   async function deleteTask(task: Todo) {
-    if (!window.confirm(`Excluir o ToDo “${task.title}”?`)) return;
+    setDeleting(true);
     const previous = tasks;
     setTasks((current) => current.filter((item) => item.id !== task.id));
     const { error: mutationError } = await createClient().from("personal_tasks").delete().eq("id", task.id);
-    if (mutationError) { setTasks(previous); setError(databaseMessage(mutationError.message)); }
+    setDeleting(false);
+    if (mutationError) { setTasks(previous); setError(databaseMessage(mutationError.message)); return; }
+    setTaskToDelete(null);
   }
 
   function createTodoFromOrigin(origin: TodoOrigin) {
@@ -299,9 +342,10 @@ export default function MinhaPaginaPage() {
                   <button type="button" aria-label="Fechar formulário" onClick={resetForm}><X size={16} /></button>
                 </div>
                 <label className={styles.titleField}><span>Título</span><input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={160} required autoFocus placeholder="O que precisa ser feito?" /></label>
-                <label><span>Observação <small>opcional</small></span><input value={note} onChange={(event) => setNote(event.target.value)} maxLength={500} placeholder="Adicione um contexto breve" /></label>
                 <label><span>Data</span><input type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} required /></label>
-                <label><span>Prioridade</span><select value={priority} onChange={(event) => setPriority(event.target.value as Priority)}><option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option></select></label>
+                <label><span>Status</span><select value={status} onChange={(event) => setStatus(event.target.value as TodoStatus)}>{Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+                <label><span>Prioridade</span><select value={priority} onChange={(event) => setPriority(event.target.value as Priority)}><option value="urgent">Urgente</option><option value="high">Alta</option><option value="medium">Média</option><option value="low">Baixa</option></select></label>
+                <label><span>Cliente <small>opcional</small></span><select value={clientId} onChange={(event) => setClientId(event.target.value)}><option value="">Sem cliente</option>{clientes.map((cliente) => <option key={cliente.id} value={cliente.id}>{cliente.nome}</option>)}</select></label>
                 {todoOrigin && <div className={styles.todoOriginForm}><FileText size={13} /><span>Origem: {todoOrigin.type === "meeting" ? "Reunião" : "Nota"} — {todoOrigin.label}</span><button type="button" aria-label="Remover origem" onClick={() => setTodoOrigin(null)}><X size={13} /></button></div>}
                 <button className={styles.saveButton} disabled={saving} type="submit"><Check size={14} />{saving ? "Salvando..." : "Salvar"}</button>
               </form>
@@ -321,10 +365,11 @@ export default function MinhaPaginaPage() {
                 return (
                   <article key={task.id} className={`${styles.task}${completed ? ` ${styles.completed}` : ""}${overdue ? ` ${styles.overdue}` : ""}`}>
                     <button className={styles.checkbox} type="button" aria-label={completed ? `Reabrir ToDo ${task.title}` : `Concluir ToDo ${task.title}`} onClick={() => void toggleTask(task)}>{completed ? <Check size={14} /> : <Circle size={16} />}</button>
-                    <div className={styles.taskCopy}><strong>{task.title}</strong>{task.note && <span>{task.note}</span>}{task.personal_meetings && <button type="button" className={styles.originLink} onClick={() => openTodoOrigin(task)}><FileText size={11} />Origem: Reunião — {task.personal_meetings.name} · {formatTaskDate(task.personal_meetings.meeting_date)}</button>}{task.personal_notes && <button type="button" className={styles.originLink} onClick={() => openTodoOrigin(task)}><FileText size={11} />Origem: Nota — {task.personal_notes.title}</button>}</div>
+                    <div className={styles.taskMain}><button type="button" className={styles.taskCopy} onClick={() => openTaskNote(task)} aria-label={`Abrir nota do ToDo ${task.title}`}><strong>{task.title}</strong>{task.note && <span>{richTextToPlainText(task.note)}</span>}{task.clientes && <span className={styles.taskClient}>Cliente: {task.clientes.nome}</span>}</button>{task.personal_meetings && <button type="button" className={styles.originLink} onClick={() => openTodoOrigin(task)}><FileText size={11} />Origem: Reunião — {task.personal_meetings.name} · {formatTaskDate(task.personal_meetings.meeting_date)}</button>}{task.personal_notes && <button type="button" className={styles.originLink} onClick={() => openTodoOrigin(task)}><FileText size={11} />Origem: Nota — {task.personal_notes.title}</button>}</div>
                     <time dateTime={task.due_date}><Clock3 size={12} />{overdue ? "Atrasada · " : ""}{formatTaskDate(task.due_date)}</time>
+                    <span className={`${styles.status} ${styles[task.status as TodoStatus]}`}>{statusLabels[task.status as TodoStatus]}</span>
                     <span className={`${styles.priority} ${styles[task.priority as Priority]}`}>{priorityLabels[task.priority as Priority]}</span>
-                    <div className={styles.actions}><button type="button" aria-label={`Editar ToDo ${task.title}`} onClick={() => startEdit(task)}><Pencil size={14} /></button><button type="button" aria-label={`Excluir ToDo ${task.title}`} onClick={() => void deleteTask(task)}><Trash2 size={14} /></button></div>
+                    <div className={styles.actions}><button type="button" aria-label={`Editar ToDo ${task.title}`} onClick={() => startEdit(task)}><Pencil size={14} /></button><button type="button" aria-label={`Excluir ToDo ${task.title}`} onClick={() => setTaskToDelete(task)}><Trash2 size={14} /></button></div>
                   </article>
                 );
               })}
@@ -343,6 +388,10 @@ export default function MinhaPaginaPage() {
             </section>
           </aside>
         </div>}
+
+        {noteTask && <div className={styles.modalBackdrop} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setNoteTask(null); }}><form className={styles.documentModal} onSubmit={saveTaskNote}><header><div><span>NOTA DO TODO</span><h2>{noteTask.title}</h2><p>Registre detalhes, listas e checkpoints deste ToDo.</p></div><button type="button" aria-label="Fechar" onClick={() => setNoteTask(null)}><X size={18} /></button></header><div className={styles.noteEditor}><div><span className={styles.editorFieldLabel}>Conteúdo</span><MeetingNotesEditor value={noteDraft} onChange={setNoteDraft} ariaLabel={`Nota do ToDo ${noteTask.title}`} placeholder="Escreva sua nota ou digite / para inserir um bloco..." /></div></div><footer><span /><button type="button" className={styles.secondaryButton} onClick={() => setNoteTask(null)}>Cancelar</button><button type="submit" className={styles.primaryButton} disabled={noteSaving}>{noteSaving ? "Salvando..." : "Salvar nota"}</button></footer></form></div>}
+
+        {taskToDelete && <div className={styles.modalBackdrop} role="presentation" onMouseDown={(event) => { if (!deleting && event.target === event.currentTarget) setTaskToDelete(null); }}><section className={styles.confirmDialog} role="alertdialog" aria-modal="true" aria-labelledby="delete-todo-title" aria-describedby="delete-todo-description"><header><span className={styles.confirmIcon}><Trash2 size={18} /></span><div><small>EXCLUIR TODO</small><h2 id="delete-todo-title">Excluir “{taskToDelete.title}”?</h2></div><button type="button" aria-label="Fechar" disabled={deleting} onClick={() => setTaskToDelete(null)}><X size={18} /></button></header><p id="delete-todo-description">Este ToDo e sua nota serão removidos permanentemente. Reuniões, Notas e Clientes relacionados não serão alterados.</p><footer><button type="button" className={styles.secondaryButton} disabled={deleting} onClick={() => setTaskToDelete(null)}>Cancelar</button><button type="button" className={styles.confirmDeleteButton} disabled={deleting} onClick={() => void deleteTask(taskToDelete)}><Trash2 size={14} />{deleting ? "Excluindo..." : "Excluir ToDo"}</button></footer></section></div>}
 
         {activeTab === "meetings" && <MeetingsPanel userId={userId} initialMeetingId={requestedMeetingId} onInitialMeetingOpened={() => setRequestedMeetingId(null)} onCreateTodo={createTodoFromOrigin} />}
         {activeTab === "notes" && <NotesPanel userId={userId} initialNoteId={requestedNoteId} onInitialNoteOpened={() => setRequestedNoteId(null)} onCreateTodo={createTodoFromOrigin} />}

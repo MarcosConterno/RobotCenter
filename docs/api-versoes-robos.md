@@ -1,16 +1,16 @@
 # API de atualização manual de versões
 
-`POST /api/admin/robot-versions` recebe `packageName` e `version` após a consulta feita pelo conector local. O endpoint exige sessão Supabase válida e papel `admin` ou `master`; a visibilidade do botão no frontend não é considerada autorização.
+`POST /api/admin/robot-versions` recebe somente `packageName`. O endpoint exige sessão Supabase válida e papel `admin` ou `master`; a visibilidade do botão no frontend não é considerada autorização. Depois da autorização, a própria API consulta no Notion a linha cuja propriedade select `Pacote` corresponde exatamente ao pacote recebido e lê a propriedade rich text `Ult. Vers`.
 
 O servidor localiza todos os robôs ativos com o pacote exato, compara as versões atuais e atualiza `version_checked_at` em toda consulta bem-sucedida. `versao` recebe o valor encontrado, mas o resumo informa `unchanged` quando nenhum robô possuía valor diferente.
 
-Falhas do registry não chegam a este endpoint. Se a persistência de um pacote falhar, o modal registra erro individual e continua os demais.
+O token nunca é enviado ao navegador. O servidor usa `NOTION_TOKEN` e `NOTION_DATA_SOURCE_ID`, chama a API de data sources do Notion com `Notion-Version: 2026-03-11` e não mantém cache da consulta. Se não houver versão, se o formato for inválido ou se linhas do mesmo pacote apresentarem versões divergentes, nada é alterado. O modal registra o erro individual e continua os demais pacotes.
 
-## Conector local
+## Configuração do Notion
 
-`tools/robot-version-connector/server.mjs` escuta somente em `127.0.0.1`, consulta o registry usando o login local do npm e a rota disponível no computador — rede corporativa direta ou VPN — e aceita apenas origens declaradas em `ROBOT_CENTER_ORIGINS`. Seus endpoints são:
+- `NOTION_TOKEN`: segredo da integração interna, disponível somente no ambiente do servidor.
+- `NOTION_DATA_SOURCE_ID`: ID da fonte de dados que contém as colunas `Pacote` e `Ult. Vers`.
+- `Pacote`: propriedade do tipo Select, com o nome técnico exato do pacote.
+- `Ult. Vers`: propriedade do tipo Texto (rich text), com a versão que deve ser aplicada.
 
-- `GET /health`: valida acesso ao registry antes da execução.
-- `POST /versions`: recebe no máximo 500 nomes válidos e transmite NDJSON com os estados `checking`, `success` ou `error`.
-
-O conector não recebe credenciais do navegador, não lê dados do Supabase e não altera robôs.
+A fonte de dados deve ser compartilhada com a integração do Notion e a integração precisa apenas da capacidade de leitura de conteúdo. O conector local legado não participa mais do fluxo da aplicação.

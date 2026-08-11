@@ -45,6 +45,7 @@ export type Database = {
       }
       personal_tasks: {
         Row: {
+          client_id: string | null
           completed_at: string | null
           created_at: string
           due_date: string
@@ -59,6 +60,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          client_id?: string | null
           completed_at?: string | null
           created_at?: string
           due_date: string
@@ -73,6 +75,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          client_id?: string | null
           completed_at?: string | null
           created_at?: string
           due_date?: string
@@ -87,6 +90,7 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          { foreignKeyName: "personal_tasks_client_id_fkey"; columns: ["client_id"]; isOneToOne: false; referencedRelation: "clientes"; referencedColumns: ["id"] },
           { foreignKeyName: "personal_tasks_origin_meeting_id_fkey"; columns: ["origin_meeting_id"]; isOneToOne: false; referencedRelation: "personal_meetings"; referencedColumns: ["id"] },
           { foreignKeyName: "personal_tasks_origin_note_id_fkey"; columns: ["origin_note_id"]; isOneToOne: false; referencedRelation: "personal_notes"; referencedColumns: ["id"] },
           {

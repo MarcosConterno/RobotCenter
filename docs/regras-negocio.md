@@ -36,8 +36,9 @@
 8. A busca considera nome, sistema, pacote, stack e fila.
 9. Os filtros de Sistema, Pacote, Ambiente e Status são independentes.
 10. A atualização manual de versões é exclusiva de Master e Admin e consulta cada valor distinto de `pacote` uma única vez, usando a rede corporativa direta ou a VPN disponível no computador do usuário.
-11. Uma consulta bem-sucedida atualiza `version_checked_at` em todos os robôs vinculados ao pacote; `versao` só muda quando o valor encontrado for diferente.
-12. Falhas de registry não alteram `versao` nem `version_checked_at` e não interrompem os demais pacotes.
+11. Uma consulta bem-sucedida ao Notion atualiza `version_checked_at` em todos os robôs vinculados ao pacote; `versao` só muda quando `Ult. Vers` for diferente.
+12. Falhas do Notion, pacote ausente, versão inválida ou múltiplas versões divergentes não alteram `versao` nem `version_checked_at` e não interrompem os demais pacotes.
+13. O pacote é localizado por correspondência exata entre `robos.pacote` e a propriedade select `Pacote`; a versão é lida exclusivamente da propriedade rich text `Ult. Vers`.
 13. Master e Admin podem criar, editar e excluir logicamente requisitos funcionais e regras fora da documentação diretamente nos detalhes do robô, sem abrir o formulário completo de edição.
 14. Um robô pode possuir vários anexos privados em PDF, DOCX ou XLSX, com até 20 MB por arquivo.
 
@@ -278,7 +279,7 @@
 
 1. Todo usuário autenticado pode utilizar Minha página, independentemente de seu papel.
 2. O usuário consulta e altera exclusivamente tarefas cujo `user_id` corresponde à própria sessão.
-3. Concluir uma tarefa define `status = completed` e registra `completed_at`; reabrir restaura `pending` e limpa `completed_at`.
+3. Novos ToDos iniciam com `status = todo` (A Fazer). Concluir define `status = completed` e registra `completed_at`; reabrir restaura `todo` e limpa `completed_at`.
 3.1. Após concluir, a interface abre o filtro Concluídas; após reabrir, abre Pendentes. O filtro Hoje mostra somente tarefas ainda pendentes, sem alterar os totais do resumo diário.
 4. Tarefas pendentes com data anterior à data local atual são apresentadas como atrasadas.
 5. O resumo do dia considera apenas tarefas cuja data é hoje; Próximas considera tarefas futuras ainda pendentes.
@@ -291,6 +292,10 @@
 12. Notas possuem título e conteúdo livre formatável, com negrito, tópicos, listas numeradas e checkboxes, e são ordenadas pela edição mais recente.
 13. Um ToDo pode ter no máximo uma origem, Reunião ou Nota, e a origem deve pertencer ao mesmo usuário.
 14. Excluir Reunião ou Nota remove apenas a referência de origem do ToDo; o ToDo permanece.
+15. O status do ToDo deve ser um dos dez estados operacionais documentados; somente `completed` representa conclusão.
+16. A prioridade deve ser urgente, alta, média ou baixa, exibida respectivamente em vermelho, roxo, amarelo e verde.
+17. O Cliente é opcional e deve referenciar um cadastro visível ao usuário. A associação não amplia acesso ao Cliente nem compartilha o ToDo.
+18. Clicar no conteúdo do ToDo abre sua nota formatável, persistida no próprio registro.
 # Edição individual de Robôs por Cliente
 
 - O padrão de todo usuário Cliente é somente leitura.

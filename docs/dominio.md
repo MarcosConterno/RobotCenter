@@ -24,7 +24,7 @@ Cada Cliente possui a configuração visual `cor`, selecionada entre seis paleta
 
 Automação cadastrada e gerenciada pelo sistema. Possui identificação, sistema, pacote, ambiente, estado operacional, configuração técnica, responsável textual, versão, documentação da última alteração e regras funcionais.
 
-O campo `pacote` também identifica o pacote consultado no registry NPM interno. `versionCheckedAt` registra a última verificação concluída com sucesso; falhas de rede ou pacote não encontrado preservam tanto esse instante quanto a versão existente.
+O campo `pacote` também identifica a opção correspondente na propriedade `Pacote` da fonte de dados de versões do Notion. `versionCheckedAt` registra a última verificação concluída com sucesso; falhas de integração, pacote não encontrado ou versão ambígua preservam tanto esse instante quanto a versão existente.
 
 ### Sistema
 
@@ -190,7 +190,7 @@ Os quadros são modulares. O conjunto inicial possui quatro exemplos, mas o usu�
 
 ## Minha página
 
-Uma Tarefa Pessoal pertence a exatamente um usuário e representa uma prioridade diária ou futura. Possui título, observação opcional, data, prioridade baixa/média/alta e estado pendente/concluído. A conclusão registra seu instante; a reabertura remove esse registro. Tarefas pessoais não pertencem a Cliente, Robô ou papel de acesso.
+Uma Tarefa Pessoal pertence a exatamente um usuário e representa uma prioridade diária ou futura. Possui título, nota opcional formatável, data, prioridade urgente/alta/média/baixa e status entre Abrir Tarefa, Orçamento, A Fazer, Aguardando Att Servidores, Aguardando Stack, Testando, Aguardando Dev, Aguardando Cliente, Em andamento e Concluído. Novos ToDos iniciam em A Fazer. A conclusão registra seu instante; qualquer reabertura remove esse registro. O vínculo com Cliente é opcional e não altera o proprietário nem o escopo pessoal do ToDo.
 
 Na experiência de Minha página, o conceito passa a ser **ToDo**: aquilo que o usuário precisa fazer. A palavra Tarefa fica reservada para outro contexto futuro do sistema.
 

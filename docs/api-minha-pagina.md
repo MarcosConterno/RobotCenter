@@ -6,7 +6,9 @@ A rota de interface `/minha-pagina` está disponível para qualquer sessão aute
 
 ## Tarefas pessoais
 
-A interface consulta `personal_tasks` ordenando por `due_date` e `created_at`. Criação e edição persistem `title`, `note`, `due_date` e `priority`; conclusão e reabertura alteram `status`. O banco deriva o proprietário da sessão e mantém `created_at`, `updated_at` e `completed_at` pelo trigger de auditoria.
+A interface consulta `personal_tasks` com os relacionamentos opcionais de Cliente, Reunião e Nota, ordenando por `due_date` e `created_at`. Criação e edição persistem `title`, `due_date`, `priority`, `status`, `client_id` e origens opcionais. O bloco de nota persiste separadamente `note`, aceitando o formato rico controlado já usado em Notas e Reuniões. O banco deriva o proprietário da sessão e mantém `created_at`, `updated_at` e `completed_at` pelo trigger de auditoria.
+
+Novos ToDos usam `status = todo`. Os estados aceitos são `open_task`, `budget`, `todo`, `waiting_server_update`, `waiting_stack`, `testing`, `waiting_dev`, `waiting_client`, `in_progress` e `completed`. As prioridades aceitas são `urgent`, `high`, `medium` e `low`. A FK opcional `client_id` usa `on delete set null` para preservar o ToDo.
 
 Embora a criação envie o identificador da sessão para satisfazer o tipo gerado, esse valor não é uma autorização: o trigger o substitui por `auth.uid()` e a policy de inserção valida o resultado. Consulta, alteração e exclusão continuam limitadas pelas policies de proprietário.
 

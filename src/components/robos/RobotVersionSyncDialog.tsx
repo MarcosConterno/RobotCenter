@@ -1,18 +1,11 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, LoaderCircle, MinusCircle, Package, RefreshCw, Wifi, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Cloud, LoaderCircle, MinusCircle, Package, RefreshCw, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { Robo } from "@/domain/entities";
 
 import styles from "./RobotVersionSyncDialog.module.css";
-
-const CONNECTOR_URL = "http://127.0.0.1:47831";
-type LoopbackRequestInit = RequestInit & { targetAddressSpace: "loopback" };
-
-function fetchConnector(path: string, init: RequestInit = {}) {
-  return fetch(`${CONNECTOR_URL}${path}`, { ...init, targetAddressSpace: "loopback" } as LoopbackRequestInit);
-}
 
 type ItemStatus = "pending" | "checking" | "updated" | "unchanged" | "error";
 interface SyncItem {
@@ -63,15 +56,15 @@ export default function RobotVersionSyncDialog({ robots, onClose, onComplete }: 
     setItems((current) => current.map((item) => item.packageName === packageName ? { ...item, ...patch } : item));
   }
 
-  async function applyVersion(packageName: string, version: string) {
+  async function syncPackage(packageName: string) {
     const response = await fetch("/api/admin/robot-versions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ packageName, version }),
+      body: JSON.stringify({ packageName }),
     });
-    const payload = await response.json() as { status?: "updated" | "unchanged"; error?: string };
-    if (!response.ok || !payload.status) throw new Error(payload.error ?? "Não foi possível salvar a versão.");
-    return payload.status;
+    const payload = await response.json() as { status?: "updated" | "unchanged"; version?: string; error?: string };
+    if (!response.ok || !payload.status || !payload.version) throw new Error(payload.error ?? "Não foi possível sincronizar a versão.");
+    return { status: payload.status, version: payload.version };
   }
 
   async function run() {
@@ -84,45 +77,19 @@ export default function RobotVersionSyncDialog({ robots, onClose, onComplete }: 
       return;
     }
     try {
-      const health = await fetchConnector("/health", { cache: "no-store", signal: AbortSignal.timeout(15_000) });
-      if (!health.ok) throw new Error("registry-unavailable");
       setPhase("running");
-      const response = await fetchConnector("/versions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ packages }),
-      });
-      if (!response.ok || !response.body) throw new Error("connector-unavailable");
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        buffer += decoder.decode(value, { stream: !done });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          const result = JSON.parse(line) as { packageName: string; status: "checking" | "success" | "error"; version?: string };
-          if (result.status === "checking") {
-            patchItem(result.packageName, { status: "checking", message: "Consultando..." });
-          } else if (result.status === "error" || !result.version) {
-            patchItem(result.packageName, { status: "error", message: "Não foi possível consultar." });
-          } else {
-            try {
-              const status = await applyVersion(result.packageName, result.version);
-              patchItem(result.packageName, {
-                status,
-                foundVersion: result.version,
-                message: status === "updated" ? "Atualizado" : "Já está atualizado",
-              });
-            } catch {
-              patchItem(result.packageName, { status: "error", foundVersion: result.version, message: "Não foi possível salvar." });
-            }
-          }
+      for (const packageName of packages) {
+        patchItem(packageName, { status: "checking", message: "Consultando o Notion..." });
+        try {
+          const result = await syncPackage(packageName);
+          patchItem(packageName, {
+            status: result.status,
+            foundVersion: result.version,
+            message: result.status === "updated" ? "Atualizado" : "Já está atualizado",
+          });
+        } catch (error) {
+          patchItem(packageName, { status: "error", message: error instanceof Error ? error.message : "Não foi possível consultar o Notion." });
         }
-        if (done) break;
       }
       setPhase("completed");
       onComplete();
@@ -143,18 +110,18 @@ export default function RobotVersionSyncDialog({ robots, onClose, onComplete }: 
         <div className={styles.headingIcon}><RefreshCw size={19} className={busy ? styles.spinning : undefined} /></div>
         <div className={styles.headingText}>
           <h2 id="version-sync-title">{phase === "completed" ? "Atualização concluída" : "Atualizando versões"}</h2>
-          <p>Consultando os pacotes dos robôs no registry interno.</p>
+          <p>Lendo no Notion a versão correspondente de cada pacote.</p>
         </div>
         <button type="button" className={styles.closeButton} disabled={busy} aria-label="Fechar" onClick={onClose}><X size={18} /></button>
       </header>
 
       {phase === "unavailable" ? <div className={styles.unavailable}>
         <span><AlertTriangle size={22} /></span>
-        <h3>Não foi possível acessar o registry interno.</h3>
-        <p>Verifique o acesso à rede corporativa ou à VPN e confirme que o conector local está iniciado.</p>
+        <h3>Não foi possível concluir a consulta ao Notion.</h3>
+        <p>Verifique a conexão e as variáveis da integração configuradas no servidor.</p>
         <div className={styles.footerActions}><button type="button" className={styles.secondaryButton} onClick={onClose}>Fechar</button><button type="button" className={styles.primaryButton} onClick={() => void run()}><RefreshCw size={15} /> Tentar novamente</button></div>
       </div> : <>
-        <div className={styles.connection}><Wifi size={14} /><span>Conexão com registry</span><strong>{phase === "connecting" ? "Validando..." : "Disponível"}</strong></div>
+        <div className={styles.connection}><Cloud size={14} /><span>Conexão com Notion</span><strong>{phase === "connecting" ? "Preparando..." : "Disponível"}</strong></div>
         <div className={styles.progressSection}>
           <div><span>{processed} de {items.length} pacotes verificados</span><strong>{percentage}%</strong></div>
           <div className={styles.progressTrack}><span style={{ width: `${percentage}%` }} /></div>

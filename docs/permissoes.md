@@ -87,7 +87,7 @@ A escrita individual do Cliente consulta `profiles.pode_editar_robos_cliente` di
 
 As permissões RBAC são `flows.read`, `flows.create`, `flows.update`, `flows.delete` e `flows.publish`. As policies de `flow_nodes`, `flow_edges` e `flow_versions` herdam o cliente consultando o Fluxo relacionado. `client_id` recebido da interface nunca é suficiente para autorizar uma operação.
 
-A sincronização manual de versões exige sessão válida e papel `admin` ou `master` na API. O conector local apenas consulta o registry; somente a API autenticada altera `robos.versao` e `robos.version_checked_at`. As policies existentes de `robos` permanecem como defesa adicional.
+A sincronização manual de versões exige sessão válida e papel `admin` ou `master` na API. O token do Notion existe apenas no ambiente do servidor e nunca é enviado ao navegador. Somente a API autenticada consulta a fonte de dados e altera `robos.versao` e `robos.version_checked_at`; as policies existentes de `robos` permanecem como defesa adicional.
 
 A fila de uma conexão é armazenada em `flow_edges.queue` e segue exatamente a mesma RLS da Edge. A adição dessa propriedade não amplia os grants nem altera o escopo por Cliente.
 
@@ -165,7 +165,7 @@ As preferências modulares dos gráficos pertencem ao próprio usuário. `dashbo
 - A migration `20260808224500_allow_published_robot_documentation_view.sql` replica `read` somente para papéis que já possuem `robots.read`; ela não concede acesso adicional a Robôs.
 ## Tarefas pessoais
 
-Todos os perfis autenticados possuem acesso funcional a Minha página, sem permissão RBAC adicional. `personal_tasks` concede `SELECT`, `INSERT`, `UPDATE` e `DELETE` somente a `authenticated`; cada policy exige `auth.uid() = user_id`. O trigger também torna `user_id` imutável após a criação e preenche o proprietário pela sessão. Usuários anônimos e usuários tentando operar tarefas de terceiros permanecem bloqueados pela RLS.
+Todos os perfis autenticados possuem acesso funcional a Minha página, sem permissão RBAC adicional. `personal_tasks` concede `SELECT`, `INSERT`, `UPDATE` e `DELETE` somente a `authenticated`; cada policy exige `auth.uid() = user_id`. O trigger também torna `user_id` imutável após a criação e preenche o proprietário pela sessão. `client_id` é apenas uma referência opcional: a lista e o relacionamento continuam sujeitos às policies de `clientes` e não concedem acesso adicional nem tornam o ToDo compartilhado. Usuários anônimos e usuários tentando operar ToDos de terceiros permanecem bloqueados pela RLS.
 
 `personal_page_preferences` e `personal_page_flows` repetem o isolamento por `auth.uid()`. A inserção de um atalho também exige que o Fluxo referenciado esteja visível à sessão pelas policies de `flows`. A configuração não concede `robots.read`, `flows.read` ou capacidades de escrita; os widgets continuam subordinados às permissões das entidades originais.
 

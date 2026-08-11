@@ -6,6 +6,50 @@ export const runtime = "nodejs";
 
 const packagePattern = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/i;
 const versionPattern = /^[0-9a-z][0-9a-z._+-]*$/i;
+const notionApiVersion = "2026-03-11";
+
+interface NotionRichTextItem { plain_text?: unknown }
+interface NotionPage {
+  properties?: Record<string, { rich_text?: NotionRichTextItem[] }>;
+}
+
+async function getNotionPackageVersion(packageName: string) {
+  const token = process.env.NOTION_TOKEN?.trim();
+  const dataSourceId = process.env.NOTION_DATA_SOURCE_ID?.trim();
+  if (!token || !dataSourceId) throw new Error("notion-not-configured");
+
+  const response = await fetch(`https://api.notion.com/v1/data_sources/${encodeURIComponent(dataSourceId)}/query`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "Notion-Version": notionApiVersion,
+    },
+    body: JSON.stringify({
+      filter: { property: "Pacote", select: { equals: packageName } },
+      page_size: 100,
+    }),
+    cache: "no-store",
+    signal: AbortSignal.timeout(15_000),
+  });
+
+  if (!response.ok) {
+    console.error("[api/admin/robot-versions] notion query failed", { status: response.status });
+    throw new Error(response.status === 401 || response.status === 403 ? "notion-unauthorized" : "notion-unavailable");
+  }
+
+  const payload = await response.json() as { results?: NotionPage[] };
+  const versions = [...new Set((payload.results ?? []).flatMap((page) => {
+    const value = page.properties?.["Ult. Vers"]?.rich_text?.[0]?.plain_text;
+    return typeof value === "string" && value.trim() ? [value.trim()] : [];
+  }))];
+
+  if (!versions.length) throw new Error("package-not-found");
+  if (versions.length > 1) throw new Error("ambiguous-version");
+  const version = versions[0];
+  if (version.length > 100 || !versionPattern.test(version)) throw new Error("invalid-version");
+  return version;
+}
 
 function roleCodes(value: unknown): string[] {
   if (Array.isArray(value)) return value.flatMap(roleCodes);
@@ -33,16 +77,30 @@ export async function POST(request: Request) {
   }
 
   let packageName = "";
-  let version = "";
   try {
-    const body = await request.json() as { packageName?: unknown; version?: unknown };
+    const body = await request.json() as { packageName?: unknown };
     packageName = typeof body.packageName === "string" ? body.packageName.trim() : "";
-    version = typeof body.version === "string" ? body.version.trim() : "";
   } catch {
     return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
   }
-  if (!packagePattern.test(packageName) || version.length > 100 || !versionPattern.test(version)) {
-    return NextResponse.json({ error: "Pacote ou versão inválidos." }, { status: 400 });
+  if (!packagePattern.test(packageName)) {
+    return NextResponse.json({ error: "Pacote inválido." }, { status: 400 });
+  }
+
+  let version: string;
+  try {
+    version = await getNotionPackageVersion(packageName);
+  } catch (error) {
+    const code = error instanceof Error ? error.message : "notion-unavailable";
+    const messages: Record<string, { message: string; status: number }> = {
+      "notion-not-configured": { message: "A integração com o Notion não está configurada no servidor.", status: 503 },
+      "notion-unauthorized": { message: "O Notion recusou a integração. Verifique o token e o compartilhamento da base.", status: 502 },
+      "package-not-found": { message: "Pacote não encontrado no Notion ou sem valor em Ult. Vers.", status: 404 },
+      "ambiguous-version": { message: "O pacote possui versões diferentes no Notion.", status: 409 },
+      "invalid-version": { message: "A versão cadastrada no Notion é inválida.", status: 422 },
+    };
+    const failure = messages[code] ?? { message: "Não foi possível consultar o Notion.", status: 502 };
+    return NextResponse.json({ error: failure.message }, { status: failure.status });
   }
 
   const { data: robots, error: selectError } = await supabase
