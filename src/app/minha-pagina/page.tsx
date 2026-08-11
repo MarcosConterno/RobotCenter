@@ -109,6 +109,7 @@ export default function MinhaPaginaPage() {
   const [noteSaving, setNoteSaving] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<Todo | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [inlineSaving, setInlineSaving] = useState<string | null>(null);
   const [todoOrigin, setTodoOrigin] = useState<TodoOrigin | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -226,6 +227,21 @@ export default function MinhaPaginaPage() {
       return;
     }
     setFilter(status === "completed" ? "completed" : "pending");
+  }
+
+  async function updateTaskInline(task: Todo, field: "status" | "priority", value: TodoStatus | Priority) {
+    if (task[field] === value) return;
+    const previousValue = task[field];
+    const savingKey = `${task.id}:${field}`;
+    setError("");
+    setInlineSaving(savingKey);
+    setTasks((current) => current.map((item) => item.id === task.id ? { ...item, [field]: value } : item));
+    const { error: mutationError } = await createClient().from("personal_tasks").update({ [field]: value }).eq("id", task.id);
+    setInlineSaving((current) => current === savingKey ? null : current);
+    if (mutationError) {
+      setTasks((current) => current.map((item) => item.id === task.id ? { ...item, [field]: previousValue } : item));
+      setError(databaseMessage(mutationError.message));
+    }
   }
 
   function openTaskNote(task: Todo) {
@@ -376,8 +392,26 @@ export default function MinhaPaginaPage() {
                     <div className={styles.taskMain}><button type="button" className={styles.taskCopy} onClick={() => openTaskNote(task)} aria-label={`Abrir nota do ToDo ${task.title}`}><strong>{task.title}</strong>{task.note && <span>{richTextToPlainText(task.note)}</span>}</button>{task.personal_meetings && <button type="button" className={styles.originLink} onClick={() => openTodoOrigin(task)}><FileText size={11} />Origem: Reunião — {task.personal_meetings.name} · {formatTaskDate(task.personal_meetings.meeting_date)}</button>}{task.personal_notes && <button type="button" className={styles.originLink} onClick={() => openTodoOrigin(task)}><FileText size={11} />Origem: Nota — {task.personal_notes.title}</button>}</div>
                     <time dateTime={task.due_date}><Clock3 size={12} />{overdue ? "Atrasada · " : ""}{formatTaskDate(task.due_date)}</time>
                     {task.clientes ? <span className={styles.clientBadge} style={{ color: PALETAS_BADGE_ROBO[task.clientes.cor].texto, background: PALETAS_BADGE_ROBO[task.clientes.cor].fundo, borderColor: PALETAS_BADGE_ROBO[task.clientes.cor].borda }}>{task.clientes.nome}</span> : <span className={styles.clientEmpty}>—</span>}
-                    <span className={`${styles.status} ${styles[task.status as TodoStatus]}`}>{statusLabels[task.status as TodoStatus]}</span>
-                    <span className={`${styles.priority} ${styles[task.priority as Priority]}`}>{priorityLabels[task.priority as Priority]}</span>
+                    <select
+                      className={`${styles.inlineBadgeSelect} ${styles.status} ${styles[task.status as TodoStatus]}`}
+                      value={task.status}
+                      disabled={inlineSaving === `${task.id}:status`}
+                      aria-label={`Alterar status de ${task.title}`}
+                      title="Clique para alterar o status"
+                      onChange={(event) => void updateTaskInline(task, "status", event.target.value as TodoStatus)}
+                    >
+                      {Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                    </select>
+                    <select
+                      className={`${styles.inlineBadgeSelect} ${styles.priority} ${styles[task.priority as Priority]}`}
+                      value={task.priority}
+                      disabled={inlineSaving === `${task.id}:priority`}
+                      aria-label={`Alterar prioridade de ${task.title}`}
+                      title="Clique para alterar a prioridade"
+                      onChange={(event) => void updateTaskInline(task, "priority", event.target.value as Priority)}
+                    >
+                      {Object.entries(priorityLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                    </select>
                     <div className={styles.actions}><button type="button" aria-label={`Editar ToDo ${task.title}`} onClick={() => startEdit(task)}><Pencil size={14} /></button><button type="button" aria-label={`Excluir ToDo ${task.title}`} onClick={() => setTaskToDelete(task)}><Trash2 size={14} /></button></div>
                   </article>
                 );

@@ -1,6 +1,6 @@
 "use client";
 
-import { Bold, List, ListChecks, ListOrdered, type LucideIcon } from "lucide-react";
+import { List, ListChecks, ListOrdered, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from "react";
 
 import styles from "@/app/minha-pagina/MinhaPagina.module.css";
@@ -186,8 +186,6 @@ export default function MeetingNotesEditor({
           if ((event.target as Element).closest("button")) event.preventDefault();
         }}
       >
-        <button type="button" onClick={() => runDocumentCommand("bold")} title="Negrito (Ctrl+B)" aria-label="Negrito"><Bold size={15} /></button>
-        <span aria-hidden="true" />
         <button type="button" onClick={() => runEditorCommand("bullets")} title="Tópicos" aria-label="Criar tópicos"><List size={15} /></button>
         <button type="button" onClick={() => runEditorCommand("checklist")} title="Checkbox" aria-label="Criar checkbox"><ListChecks size={15} /></button>
         <button type="button" onClick={() => runEditorCommand("ordered")} title="Lista numerada" aria-label="Criar lista numerada"><ListOrdered size={15} /></button>
