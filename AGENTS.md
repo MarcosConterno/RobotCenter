@@ -120,6 +120,8 @@ Sempre prefira que o usuário execute os comandos manualmente.
 Antes de solicitar qualquer comando, identifique qual terminal o usuário está utilizando.
 No ambiente atual o terminal é:
 
+leitura, interpretação e busca de conteudo, solicite se pode rodar.
+
 Git Bash (MINGW64)
 
 Nunca utilize comandos de PowerShell.
