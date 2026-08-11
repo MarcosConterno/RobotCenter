@@ -418,10 +418,16 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }
 
   async function cadastrarCliente(dados: DadosCadastroCliente) {
-    const supabase = createClient();
-    const { data, error } = await supabase.from("clientes").insert({ nome: dados.nome.trim(), tenant: dados.tenant.trim(), cor: dados.cor }).select("id,nome,tenant,cor").single();
-    if (error) throw error;
-    const cliente = data as Cliente;
+    const response = await fetch("/api/admin/clients", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(dados),
+    });
+    const payload = await response.json() as Cliente | { error?: string };
+    if (!response.ok) {
+      throw new Error("error" in payload && payload.error ? payload.error : "Não foi possível cadastrar o cliente.");
+    }
+    const cliente = payload as Cliente;
     setClientes((atuais) => [...atuais, cliente]);
     return cliente;
   }

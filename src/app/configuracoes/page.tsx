@@ -367,10 +367,10 @@ export default function ConfiguracoesPage() {
       await carregarMetricasClientes();
       setNomeCliente("");
       setTenant("");
-    setCorCliente(CORES_BADGE_ROBO[(clientes.length + 1) % CORES_BADGE_ROBO.length]);
+      setCorCliente(CORES_BADGE_ROBO[(clientes.length + 1) % CORES_BADGE_ROBO.length]);
       setErroCliente("");
-    } catch {
-      setErroCliente("Não foi possível cadastrar o cliente.");
+    } catch (createError) {
+      setErroCliente(createError instanceof Error ? createError.message : "Não foi possível cadastrar o cliente.");
     }
   }
 
@@ -1204,7 +1204,7 @@ const colorOptionsStyle: React.CSSProperties = {
   minHeight: 36,
   alignItems: "center",
   gap: 7,
-  flexWrap: "wrap",
+  flexWrap: "nowrap",
 };
 
 const colorButtonStyle: React.CSSProperties = {
