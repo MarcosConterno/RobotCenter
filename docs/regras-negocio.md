@@ -66,6 +66,12 @@
 2. A tabela da Dashboard e a tela de Robôs usam a mesma fonte compartilhada.
 3. A Visão Geral é a aba inicial; a tabela é exibida somente após selecionar sua aba.
 
+## Documentação técnica do sistema
+
+1. A central de documentação do sistema é acessível somente aos papéis Master e Admin.
+2. Os documentos são lidos dos arquivos Markdown versionados no repositório e apresentados em abas dentro da aplicação.
+3. A autorização da rota é validada no servidor por meio de `user_roles`; a presença do item no menu não concede acesso.
+
 ## Usuários
 
 1. Login é obrigatório.

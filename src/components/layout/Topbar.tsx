@@ -35,6 +35,7 @@ export default function Topbar({ title, bare = false }: TopbarProps) {
   const roleName = roles.includes("master")
     ? ROLE_LABELS.master
     : ROLE_LABELS[roles[0] ?? ""] ?? "";
+  const canViewSystemDocumentation = roles.includes("master") || roles.includes("admin");
   const accountReady = status === "ready" && Boolean(displayName);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
@@ -109,7 +110,7 @@ export default function Topbar({ title, bare = false }: TopbarProps) {
 
           {userMenuOpen && (
             <div className="topbar-user-dropdown" role="menu">
-              {roleName === "Master" && <button type="button" role="menuitem" onClick={() => { setUserMenuOpen(false); router.push("/documentacao"); }}>
+              {canViewSystemDocumentation && <button type="button" role="menuitem" onClick={() => { setUserMenuOpen(false); router.push("/documentacao"); }}>
                 <BookOpen size={15} /> Documentação
               </button>}
               <button type="button" role="menuitem" onClick={openPasswordDialog}>
