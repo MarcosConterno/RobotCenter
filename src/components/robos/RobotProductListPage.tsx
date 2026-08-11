@@ -20,7 +20,7 @@ const statusOptions = [TODAS_OPCOES, "Ativo", "Inativo"] as const;
 
 export default function RobotProductListPage({ product }: { product: RobotProductDefinition }) {
   const router = useRouter();
-  const { canManageRobots, isAdmin } = useAdminAccess();
+  const { canManageRobots, canEditClientRobots, clientId, isAdmin } = useAdminAccess();
   const { robos, clientes, importarRobos, recarregarDados } = useAppData();
   const productRobots = useMemo(() => robos.filter((robot) => robot.productType === product.productType), [product.productType, robos]);
   const [robotSelecionadoDoDashboard, setRobotSelecionadoDoDashboard] = useState<string | null>(null);
@@ -75,10 +75,10 @@ export default function RobotProductListPage({ product }: { product: RobotProduc
   }, [robos, robotSelecionadoDoDashboard, router]);
 
   useEffect(() => {
-    if (!canManageRobots || !robotParaEditarId) return;
+    if ((!canManageRobots && !canEditClientRobots) || !robotParaEditarId) return;
     const robot = robos.find((item) => item.id === robotParaEditarId);
-    if (robot) router.replace(`/robos/${robot.id}/editar`);
-  }, [canManageRobots, robos, robotParaEditarId, router]);
+    if (robot && (canManageRobots || robot.clienteId === clientId)) router.replace(`/robos/${robot.id}/editar`);
+  }, [canEditClientRobots, canManageRobots, clientId, robos, robotParaEditarId, router]);
 
   function limparFiltros() {
     setPesquisa(""); setClienteId(TODAS_OPCOES); setPacote(TODAS_OPCOES); setSistema(TODAS_OPCOES);

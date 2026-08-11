@@ -35,7 +35,7 @@ A publicação `supabase_realtime` inclui as tabelas operacionais usadas pelos p
 - A importação em lote de robôs e o download do modelo são exclusivos do papel Admin. A interface reutiliza a autorização da sessão autenticada, carregada centralmente, evitando validações repetidas a cada ação; operações persistentes continuam protegidas no servidor e pelas policies RLS.
 - **Operador**: consulta robôs e detalhes e altera somente `ideal` e `max` pela permissão `robots.capacity.update`; não acessa Configurações nem a manutenção completa de robôs.
 - **Dev**: inicia com as mesmas permissões e o mesmo escopo global de dados do Operador. Sua matriz é independente e pode ser editada por Admin ou Master para receber novas capacidades no futuro.
-- **Cliente**: lê somente seu próprio cliente, seus robôs, regras e publicações; não acessa Configurações e não possui escrita.
+- **Cliente**: lê somente seu próprio cliente, seus robôs, regras e publicações. Pode receber no cadastro do usuário a capacidade individual **Pode editar robôs**; sem ela permanece somente leitura. A capacidade limita a escrita aos robôs da empresa vinculada e não concede criação, exclusão, transferência, catálogos ou documentação.
 - **Suporte**: acessa Dashboard, listagem/detalhes de Robôs e Fluxos em modo de visualização. Recebe somente as leituras necessárias e não acessa Configurações nem ações de manutenção.
 - **Head Setor**: consulta Robôs e analisa Solicitações de Stack conforme as permissões `stack_requests.*`, sem receber manutenção geral do cadastro de Robôs.
 
@@ -66,6 +66,8 @@ Todo usuário autenticado pode consultar, criar e atualizar exclusivamente seu p
 O histórico `alteracoes_robo` permite leitura com `robots.read`, respeitando `private.can_access_cliente`, e inserção com `robots.update`. Não existem grants ou policies de update/delete para usuários autenticados, garantindo que o histórico anterior não seja alterado pela aplicação.
 
 As policies consultam `roles`, `permissions`, `user_roles` e `role_permissions` por funções no schema privado. `user_metadata` não participa da autorização. Todas as tabelas públicas da aplicação têm RLS habilitada, e `anon` não recebe acesso. O papel Master é um vínculo RBAC real, nunca uma condição confiada apenas ao email enviado pela interface.
+
+A escrita individual do Cliente consulta `profiles.pode_editar_robos_cliente` diretamente no banco. `robos_update_staff` usa `private.can_update_robot(cliente_id)` em `USING` e `WITH CHECK`, bloqueando IDs de outros Clientes e a transferência da linha. O trigger `robos_protect_client_update` protege campos administrativos mesmo contra chamadas diretas à Data API.
 - Todo usuário autenticado pode alterar exclusivamente a própria senha pelo menu da conta. A operação usa a sessão atual do Supabase Auth e não concede acesso administrativo a outros usuários.
 - O histórico do Dashboard respeita `publicacoes_select`; somente papéis com `publications.create` podem inserir registros por **Salvar e publicar**.
 - O bucket privado `robot-manuals` permite leitura somente a quem possui `robots.read` e acesso ao cliente do robô. Upload e exclusão de objetos exigem `robots.update`; não existe acesso anônimo. Os metadados em `robot_uploaded_documents` repetem o mesmo escopo por RLS.
@@ -120,6 +122,8 @@ Versões publicadas permanecem no mesmo bucket privado, sob `<robo_id>/versions/
 O **Controle de Acesso** apresenta recursos em cards e níveis Sem acesso, Somente leitura, Personalizado e Acesso total. A edição detalhada ocorre em drawer: fechar descarta, “Aplicar alterações” atualiza apenas o rascunho e somente “Salvar alterações” persiste a matriz. Os produtos de Robôs possuem permissões `robots.product.*.read`; menu, rota direta e `robos_select` exigem o produto correspondente, mantendo também `robots.read` e o escopo por Cliente.
 
 O painel **Configurações → Permissões** agrupa o catálogo de `permissions` pelo campo `recurso` e mostra quais registros ativos de `roles` estão relacionados por `role_permissions`. A descrição funcional é o título e o código técnico aparece como informação secundária. A API `/api/admin/permissions` repete a validação de Admin/Master no servidor e não confia na visibilidade da aba.
+
+A matriz não permite atribuir ao papel Cliente permissões administrativas de criação, edição global, arquivamento ou capacidade de Robôs, criação de Publicações, gerenciamento de catálogos/documentação/clientes/usuários ou Controle de Acesso. A interface desabilita essas combinações, a RPC as rejeita e a policy de `role_permissions` impede inserção direta. A edição de Robôs por Cliente é sempre individual no cadastro do usuário.
 
 Admin e Master podem editar a matriz completa de todos os demais perfis, inclusive o próprio perfil Admin e o recurso `access_control`. O perfil Master é imutável pela matriz e conserva todas as permissões ativas. Dev pode receber permissões de Solicitações de Stack pela matriz; Cliente e Suporte permanecem bloqueados no RPC e nas policies.
 

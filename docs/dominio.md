@@ -58,6 +58,8 @@ Evento histórico relacionado a um Robô por `roboId`. Possui categoria, descri�
 
 O perfil de usuário pode possuir vínculo opcional com um Cliente por `profiles.cliente_id`. Para o papel Cliente, o vínculo é obrigatório; para Admin, Operador, Dev e Suporte, é opcional. O vínculo determina o escopo de dados do usuário Cliente e não pode ser inferido pelo email ou pelo papel isoladamente.
 
+Um usuário com papel Cliente pode receber individualmente `profiles.pode_editar_robos_cliente`. A capacidade não é herdada pelos demais usuários da empresa e não amplia o vínculo: permite editar apenas robôs cujo `cliente_id` seja igual ao do profile. Criação, arquivamento, transferência entre Clientes, mudança de produto, catálogos compartilhados e documentação permanecem administrativos.
+
 Identidade cadastrada para futuro acesso à aplicação. Possui login e tipo. A senha existe somente no dado transitório do formulário e não pertence à entidade persistível de perfil.
 
 O tipo **Suporte** representa consulta operacional sem permissões de escrita. Pode acessar Dashboard, listagem e detalhes dos Robôs e Fluxos em modo de visualização. Operador mantém consulta aos detalhes e atualização exclusiva da capacidade `ideal`/`max`; Admin permanece responsável pelo cadastro completo.

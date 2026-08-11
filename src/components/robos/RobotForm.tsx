@@ -19,6 +19,7 @@ interface RobotFormProps {
   initialValues?: DadosFormularioRobo;
   defaultProductType?: TipoProdutoRobo;
   mode: "create" | "edit";
+  clientScoped?: boolean;
   onCancel: () => void;
   onDelete?: () => void;
   onSubmit: (data: DadosFormularioRobo, publish: boolean) => void | Promise<void>;
@@ -32,6 +33,7 @@ export default function RobotForm({
   initialValues,
   defaultProductType = "INTEGRADOR",
   mode,
+  clientScoped = false,
   onCancel,
   onDelete,
   onSubmit,
@@ -127,7 +129,7 @@ export default function RobotForm({
           <Field label="Robô" placeholder="Nome do robô" value={form.nome} onChange={(v) => update("nome", v)} required />
           <div>
             <label style={labelStyle}>Produto</label>
-            <select value={form.productType} onChange={(event) => {
+            <select value={form.productType} disabled={clientScoped} onChange={(event) => {
               const productType = event.target.value as TipoProdutoRobo;
               setForm((current) => ({ ...current, productType, clienteId: productType === "INTEGRADOR" ? current.clienteId : null, tribunal: productType === "INTEGRADOR" ? null : current.tribunal, tribunalSystem: productType === "INTEGRADOR" ? null : current.tribunalSystem }));
               setFormError("");
@@ -178,7 +180,7 @@ export default function RobotForm({
                 <strong style={manualUploadTitleStyle}>{form.uploadedDocumentationFile?.name ?? form.uploadedDocumentationName ?? "Selecionar documentação em PDF"}</strong>
                 <small style={manualUploadHintStyle}>Arquivo externo em PDF de até 20 MB. Um novo envio substitui somente a Documentação Upada atual.</small>
               </span>
-              <input type="file" accept="application/pdf,.pdf" onChange={(event) => {
+              <input type="file" accept="application/pdf,.pdf" disabled={clientScoped} onChange={(event) => {
                 const arquivo = event.target.files?.[0] ?? null;
                 if (arquivo && arquivo.type !== "application/pdf") {
                   setFormError("A Documentação Upada deve ser um arquivo PDF.");
@@ -188,6 +190,7 @@ export default function RobotForm({
                 update("uploadedDocumentationFile", arquivo);
               }} style={hiddenFileInputStyle} />
             </label>
+            {clientScoped && <span style={fieldHintStyle}>A documentação é administrada pela equipe interna.</span>}
             {(form.uploadedDocumentationFile || form.uploadedDocumentationName) && <span style={manualSelectedStyle}><Paperclip size={12} /> {form.uploadedDocumentationFile?.name ?? form.uploadedDocumentationName}</span>}
           </div>
         </div>
@@ -197,7 +200,7 @@ export default function RobotForm({
         <div style={technicalFieldsGridStyle}>
           {form.productType === "INTEGRADOR" && <div>
             <label style={labelStyle}>Cliente</label>
-            <select value={form.clienteId || ""} onChange={(event) => {
+            <select value={form.clienteId || ""} disabled={clientScoped} onChange={(event) => {
               const clienteId = event.target.value;
               setForm((old) => ({ ...old, clienteId: clienteId || null, gatilhoDeRoboId: null, gatilhoParaRoboId: null }));
               setFormError("");
@@ -219,7 +222,7 @@ export default function RobotForm({
               const packageItem = catalogs.packages.find((item) => item.name === v);
               if (packageItem?.color) update("pacoteCor", packageItem.color);
             }} />
-            <ColorPicker label="Cor do pacote" value={form.pacoteCor} onChange={(value) => update("pacoteCor", value)} />
+            <ColorPicker label="Cor do pacote" value={form.pacoteCor} onChange={(value) => update("pacoteCor", value)} disabled={clientScoped} />
           </div>
           <Field label="Versão" placeholder="Ex.: 1.0.0" value={form.versao} onChange={(v) => update("versao", v)} required />
           <div style={fullWidthStyle}><CatalogSelect label="Command" value={form.command} items={catalogs.commands} optional commandValues onChange={(value) => update("command", value)} /></div>
@@ -525,7 +528,7 @@ const rulesTabStyle = { flex: 1, padding: "8px 10px", border: "none", borderRadi
 const activeRulesTabStyle = { background: "var(--card)", color: "var(--accent)", boxShadow: "var(--shadow)" } as const;
 const errorStyle = { margin: 0, padding: "10px 12px", border: "1px solid rgba(239,68,68,.35)", borderRadius: 8, color: "#FCA5A5", background: "rgba(127,29,29,.18)", fontSize: 12 } as const;
 
-function ColorPicker({ label, value, onChange }: { label: string; value: CorBadgeRobo; onChange: (value: CorBadgeRobo) => void }) {
+function ColorPicker({ label, value, onChange, disabled = false }: { label: string; value: CorBadgeRobo; onChange: (value: CorBadgeRobo) => void; disabled?: boolean }) {
   return (
     <fieldset style={colorFieldsetStyle}>
       <legend style={colorLegendStyle}>{label}</legend>
@@ -540,6 +543,7 @@ function ColorPicker({ label, value, onChange }: { label: string; value: CorBadg
               aria-label={`${label}: ${paleta.nome}`}
               aria-pressed={selected}
               title={paleta.nome}
+              disabled={disabled}
               onClick={() => onChange(cor)}
               style={{
                 ...colorOptionStyle,

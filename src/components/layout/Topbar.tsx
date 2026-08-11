@@ -2,25 +2,23 @@
 
 import { BookOpen, ChevronDown, KeyRound, LogOut, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useState } from "react";
 
+import { useAdminAccess } from "@/auth/AdminAccessProvider";
 import { createClient } from "@/lib/supabase/client";
 import ThemeToggle from "@/components/theme/ThemeToggle";
 
 interface TopbarProps { title: string; bare?: boolean; }
 
-function getRoleName(roleRelation: unknown) {
-  if (Array.isArray(roleRelation)) {
-    const firstRole = roleRelation[0];
-    return typeof firstRole === "object" && firstRole && "nome" in firstRole
-      ? String(firstRole.nome)
-      : null;
-  }
-
-  return typeof roleRelation === "object" && roleRelation && "nome" in roleRelation
-    ? String(roleRelation.nome)
-    : null;
-}
+const ROLE_LABELS: Record<string, string> = {
+  master: "Master",
+  admin: "Admin",
+  head_setor: "Head Setor",
+  operador: "Operador",
+  dev: "Dev",
+  cliente: "Cliente",
+  suporte: "Suporte",
+};
 
 function getInitials(name: string) {
   return name
@@ -33,8 +31,11 @@ function getInitials(name: string) {
 
 export default function Topbar({ title, bare = false }: TopbarProps) {
   const router = useRouter();
-  const [displayName, setDisplayName] = useState("Usuário");
-  const [roleName, setRoleName] = useState("Usuário");
+  const { displayName, roles, status } = useAdminAccess();
+  const roleName = roles.includes("master")
+    ? ROLE_LABELS.master
+    : ROLE_LABELS[roles[0] ?? ""] ?? "";
+  const accountReady = status === "ready" && Boolean(displayName);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [newPassword, setNewPassword] = useState("");
@@ -42,42 +43,11 @@ export default function Topbar({ title, bare = false }: TopbarProps) {
   const [passwordSuccess, setPasswordSuccess] = useState("");
   const [updatingPassword, setUpdatingPassword] = useState(false);
 
-  useEffect(() => {
-    let active = true;
-    const supabase = createClient();
-
-    async function loadAuthenticatedUser() {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user || !active) return;
-
-      const [{ data: profile }, { data: userRoles }] = await Promise.all([
-        supabase.from("profiles").select("login").eq("id", user.id).maybeSingle(),
-        supabase
-          .from("user_roles")
-          .select("roles(nome)")
-          .eq("user_id", user.id),
-      ]);
-
-      if (!active) return;
-
-      setDisplayName(profile?.login || user.email || "Usuário");
-      const names = (userRoles ?? []).map((item) => getRoleName(item.roles)).filter(Boolean);
-      setRoleName(names.includes("Master") ? "Master" : names[0] || "Usuário");
-    }
-
-    void loadAuthenticatedUser();
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
   async function logout() {
     const supabase = createClient();
-    await supabase.auth.signOut();
-    router.replace("/login");
-    router.refresh();
+    const { error } = await supabase.auth.signOut();
+    if (error) await supabase.auth.signOut({ scope: "local" });
+    window.location.assign("/login");
   }
 
   function openPasswordDialog() {
@@ -122,16 +92,17 @@ export default function Topbar({ title, bare = false }: TopbarProps) {
         <div className="topbar-user-menu">
           <button
             type="button"
-            className="topbar-user"
-            aria-label={`Abrir opções da conta de ${displayName}`}
+            className={`topbar-user${accountReady ? "" : " is-loading"}`}
+            aria-label={accountReady ? `Abrir opções da conta de ${displayName}` : "Carregando dados da conta"}
             aria-haspopup="menu"
             aria-expanded={userMenuOpen}
+            disabled={!accountReady}
             onClick={() => setUserMenuOpen((current) => !current)}
           >
-            <span className="topbar-avatar">{getInitials(displayName)}</span>
+            <span className="topbar-avatar">{accountReady ? getInitials(displayName) : ""}</span>
             <span className="topbar-user-copy">
-              <strong>{displayName}</strong>
-              <small>{roleName}</small>
+              <strong>{accountReady ? displayName : "\u00a0"}</strong>
+              <small>{accountReady ? roleName : "\u00a0"}</small>
             </span>
             <ChevronDown className={userMenuOpen ? "is-open" : undefined} size={15} aria-hidden="true" />
           </button>

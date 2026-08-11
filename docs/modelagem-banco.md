@@ -289,6 +289,10 @@ A persistência inicial está definida pelas migrations em `supabase/migrations`
 
 `profiles.cliente_id` é uma FK opcional para `clientes`, com `on delete restrict` e índice próprio. O valor é obrigatório por regra de negócio quando o profile recebe o papel Cliente e pode permanecer nulo ou ser preenchido para Admin, Operador e Suporte.
 
+`profiles.pode_editar_robos_cliente` é booleano, obrigatório e inicia em `false`. A função privada `can_update_robot(uuid)` combina sessão ativa, escopo de Cliente, RBAC administrativo e essa exceção individual. A policy de `robos` repete a função em `USING` e `WITH CHECK`; um trigger impede que Cliente altere `cliente_id`, produto, exclusão lógica, auditoria, documentação e cores compartilhadas.
+
+A migration `20260811140214_protect_client_role_permissions.sql` impede que a matriz global contorne a capacidade individual. As combinações administrativas bloqueadas são validadas tanto pela RPC `update_role_permission_matrix` quanto pela policy de inserção em `role_permissions`.
+
 O papel `master` é um vínculo adicional em `user_roles`, não uma coluna especial em `profiles`. Ele é inicializado exclusivamente para `marcos.vinicius@loylegal.com`, que conserva também `admin`. A permissão `access_control.read` distingue o painel reservado de mapeamento. Policies específicas bloqueiam novas atribuições ou remoções de Master pela aplicação e impedem alterar a role reservada ou sua concessão em `role_permissions`.
 
 A matriz editável continua normalizada em `role_permissions`, sem novas colunas. A RPC `update_role_permission_matrix(jsonb)` recebe somente diferenças confirmadas pela interface e as aplica transacionalmente com `SECURITY INVOKER`. Policies permitem edição irrestrita ao Master e limitam Admin aos papéis Operador, Dev, Cliente e Suporte, excluindo o recurso `access_control`.

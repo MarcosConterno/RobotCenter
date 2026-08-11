@@ -41,7 +41,7 @@ function getFormData(robot: Robo): DadosFormularioRobo {
 
 export default function RobotFormRoute({ mode, robotId, defaultProductType = "INTEGRADOR" }: { mode: "create" | "edit"; robotId?: string; defaultProductType?: TipoProdutoRobo }) {
   const router = useRouter();
-  const { isAdmin, status: accessStatus } = useAdminAccess();
+  const { isAdmin, isClient, canEditClientRobots, clientId, status: accessStatus } = useAdminAccess();
   const {
     robos,
     clientes,
@@ -53,9 +53,16 @@ export default function RobotFormRoute({ mode, robotId, defaultProductType = "IN
   } = useAppData();
   const robot = mode === "edit" ? robos.find((item) => item.id === robotId) : undefined;
   const product = getRobotProductByType(robot?.productType ?? defaultProductType);
+  const canEditRobot = isAdmin || (
+    mode === "edit"
+    && isClient
+    && canEditClientRobots
+    && Boolean(clientId)
+    && robot?.clienteId === clientId
+  );
 
   if (accessStatus === "loading" || carregandoRobos) return <div className={styles.message}>Carregando formulário...</div>;
-  if (!isAdmin) return <div className={`${styles.message} ${styles.error}`}>Acesso negado. Somente Admin pode cadastrar ou editar robôs.</div>;
+  if (!canEditRobot) return <div className={`${styles.message} ${styles.error}`}>Acesso negado. Sua conta não possui autorização para editar este robô.</div>;
   if (mode === "edit" && !robot) return <div className={`${styles.message} ${styles.error}`}>Robô não encontrado ou acesso não autorizado.</div>;
 
   async function saveRobot(data: DadosFormularioRobo) {
@@ -101,8 +108,9 @@ export default function RobotFormRoute({ mode, robotId, defaultProductType = "IN
         initialValues={robot ? getFormData(robot) : undefined}
         defaultProductType={defaultProductType}
         mode={mode}
+        clientScoped={!isAdmin}
         onCancel={() => router.push(backHref)}
-        onDelete={mode === "edit" ? deleteRobot : undefined}
+        onDelete={mode === "edit" && isAdmin ? deleteRobot : undefined}
         onSubmit={saveRobot}
       />
     </div>

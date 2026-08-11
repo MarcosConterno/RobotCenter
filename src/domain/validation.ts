@@ -58,9 +58,13 @@ export const dadosCadastroUsuarioSchema = z.object({
   senha: z.string().min(6, "A senha deve ter pelo menos 6 caracteres."),
   tipo: z.string().trim().min(1, "Selecione um perfil."),
   clienteId: z.string().uuid("Selecione um cliente válido.").nullable().optional(),
+  podeEditarRobosCliente: z.boolean().optional().default(false),
 }).refine((dados) => dados.tipo !== "Cliente" || Boolean(dados.clienteId), {
   message: "Usuário Cliente deve estar vinculado a um cliente.",
   path: ["clienteId"],
+}).refine((dados) => !dados.podeEditarRobosCliente || dados.tipo === "Cliente", {
+  message: "A edição de robôs por Cliente só pode ser liberada para o perfil Cliente.",
+  path: ["podeEditarRobosCliente"],
 });
 
 export const dadosCadastroClienteSchema = z.object({

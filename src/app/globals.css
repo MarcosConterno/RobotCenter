@@ -455,8 +455,18 @@ button {
 .topbar-user { display: flex; align-items: center; gap: 9px; }
 .topbar-avatar { width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; color: #ddd6fe; background: linear-gradient(145deg, rgba(124,58,237,.42), rgba(79,70,229,.25)); border: 1px solid rgba(167,139,250,.2); font-size: 10px; font-weight: 800; }
 .topbar-user-copy strong, .topbar-user-copy small { display: block; }
+.topbar-user-copy { min-width: 82px; }
 .topbar-user-copy strong { color: #e2e8f0; font-size: 11.5px; }
 .topbar-user-copy small { color: #64748b; font-size: 9.5px; margin-top: 2px; }
+.topbar-user.is-loading { cursor: default; }
+.topbar-user.is-loading .topbar-avatar,
+.topbar-user.is-loading .topbar-user-copy strong,
+.topbar-user.is-loading .topbar-user-copy small {
+  color: transparent;
+  background: var(--chrome-fill);
+}
+.topbar-user.is-loading .topbar-user-copy strong,
+.topbar-user.is-loading .topbar-user-copy small { border-radius: 4px; }
 
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 

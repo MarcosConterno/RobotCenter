@@ -4,15 +4,15 @@
 
 ## Listagem
 
-`GET` retorna `id`, `login`, `email`, `tipo` e `clienteId`. O email é obtido do Supabase Auth e o vínculo com Cliente vem de `profiles.cliente_id`.
+`GET` retorna `id`, `login`, `email`, `tipo`, `clienteId` e `podeEditarRobosCliente`. O email é obtido do Supabase Auth; o vínculo e a capacidade individual vêm de `profiles`.
 
 ## Cadastro
 
-`POST` aceita `login`, `email`, `password`, `tipo` e `clientId`. `clientId` é obrigatório para o papel Cliente e opcional para Admin, Operador e Suporte. Quando informado, precisa referenciar um Cliente não arquivado.
+`POST` aceita `login`, `email`, `password`, `tipo`, `clientId` e `canEditClientRobots`. `clientId` é obrigatório para o papel Cliente. `canEditClientRobots` somente pode ser verdadeiro para esse papel e começa falso quando omitido.
 
 ## Atualização
 
-`PATCH` aceita `id`, `login`, `email`, `tipo` e `clientId`, com as mesmas validações do cadastro. A alteração do vínculo é gravada em `profiles.cliente_id`; o cliente recebido não é usado sem validar a autorização administrativa e a existência do registro.
+`PATCH` aceita também `canEditClientRobots`, com as mesmas validações do cadastro. Ao trocar o papel para outro perfil, a capacidade individual é removida automaticamente. A alteração é feita somente após validar Admin/Master e o Cliente ativo.
 
 ## Exclusão
 

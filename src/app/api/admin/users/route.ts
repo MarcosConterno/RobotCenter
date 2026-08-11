@@ -10,9 +10,13 @@ const createUserSchema = z.object({
   password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres."),
   tipo: z.string().trim().min(1).max(60),
   clientId: z.string().uuid().nullable().optional(),
+  canEditClientRobots: z.boolean().optional().default(false),
 }).refine((data) => data.tipo !== "Cliente" || Boolean(data.clientId), {
   message: "O perfil Cliente exige a seleção de um cliente.",
   path: ["clientId"],
+}).refine((data) => !data.canEditClientRobots || data.tipo === "Cliente", {
+  message: "A edição de robôs só pode ser liberada para usuários Cliente.",
+  path: ["canEditClientRobots"],
 });
 
 const updateUserSchema = z.object({
@@ -21,9 +25,13 @@ const updateUserSchema = z.object({
   email: z.string().trim().email("Informe um email válido."),
   tipo: z.string().trim().min(1).max(60),
   clientId: z.string().uuid().nullable().optional(),
+  canEditClientRobots: z.boolean().optional().default(false),
 }).refine((data) => data.tipo !== "Cliente" || Boolean(data.clientId), {
   message: "O perfil Cliente exige a seleção de um cliente.",
   path: ["clientId"],
+}).refine((data) => !data.canEditClientRobots || data.tipo === "Cliente", {
+  message: "A edição de robôs só pode ser liberada para usuários Cliente.",
+  path: ["canEditClientRobots"],
 });
 
 const deleteUserSchema = z.object({ id: z.string().uuid() });
@@ -78,7 +86,7 @@ export async function GET() {
     admin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
     admin
       .from("profiles")
-      .select("id, login, cliente_id, user_roles:user_roles!user_roles_user_id_fkey(roles(codigo,nome))")
+      .select("id, login, cliente_id, pode_editar_robos_cliente, user_roles:user_roles!user_roles_user_id_fkey(roles(codigo,nome))")
       .is("deleted_at", null)
       .eq("ativo", true),
   ]);
@@ -99,7 +107,7 @@ export async function GET() {
     const codes = assignments?.flatMap((assignment) => Array.isArray(assignment.roles) ? assignment.roles : [assignment.roles]).filter(Boolean).flatMap(roleCodes) ?? [];
     const assignedRole = assignments?.flatMap((assignment) => Array.isArray(assignment.roles) ? assignment.roles : [assignment.roles]).find((role) => role && role.codigo !== "master");
     const tipo = assignedRole?.nome ?? "Operador";
-    return { id: profile.id, login: profile.login, email: emailById.get(profile.id) ?? "", tipo, clienteId: profile.cliente_id, isMaster: codes.includes("master") };
+    return { id: profile.id, login: profile.login, email: emailById.get(profile.id) ?? "", tipo, clienteId: profile.cliente_id, podeEditarRobosCliente: profile.pode_editar_robos_cliente, isMaster: codes.includes("master") };
   });
 
   return NextResponse.json({ users, currentUserId: access.user.id }, { headers: { "Cache-Control": "no-store" } });
@@ -119,7 +127,7 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
-  const { login, email, password, tipo, clientId = null } = parsed.data;
+  const { login, email, password, tipo, clientId = null, canEditClientRobots } = parsed.data;
   const roleCode = roleCodeFromName(tipo);
 
   const { data: role, error: roleError } = await admin
@@ -162,7 +170,7 @@ export async function POST(request: Request) {
   const userId = createdUser.user.id;
   const { error: profileError } = await admin
     .from("profiles")
-    .update({ login, cliente_id: clientId })
+    .update({ login, cliente_id: clientId, pode_editar_robos_cliente: tipo === "Cliente" && canEditClientRobots })
     .eq("id", userId);
 
   const { error: assignmentError } = profileError
@@ -178,7 +186,7 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json(
-    { id: userId, login, email, tipo, clienteId: clientId },
+    { id: userId, login, email, tipo, clienteId: clientId, podeEditarRobosCliente: tipo === "Cliente" && canEditClientRobots },
     { status: 201, headers: { "Cache-Control": "no-store" } },
   );
 }
@@ -190,7 +198,8 @@ export async function PATCH(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Dados inválidos." }, { status: 400 });
 
   const admin = createAdminClient();
-  const { id, login, email, tipo, clientId = null } = parsed.data;
+  const { id, login, email, tipo, clientId = null, canEditClientRobots } = parsed.data;
+  const podeEditarRobosCliente = tipo === "Cliente" && canEditClientRobots;
   const { data: masterRole } = await admin.from("roles").select("id").eq("codigo", "master").maybeSingle();
   const { count: targetMasterRoles } = masterRole
     ? await admin.from("user_roles").select("user_id", { count: "exact", head: true }).eq("user_id", id).eq("role_id", masterRole.id)
@@ -217,7 +226,7 @@ export async function PATCH(request: Request) {
   let removeRoleError: unknown = null;
   let addRoleError: unknown = null;
   if (tipo === "Cliente") {
-    ({ error: profileError } = await admin.from("profiles").update({ login, cliente_id: clientId }).eq("id", id).is("deleted_at", null));
+    ({ error: profileError } = await admin.from("profiles").update({ login, cliente_id: clientId, pode_editar_robos_cliente: podeEditarRobosCliente }).eq("id", id).is("deleted_at", null));
     if (!profileError) {
       let removeQuery = admin.from("user_roles").delete().eq("user_id", id);
       if (masterRole) removeQuery = removeQuery.neq("role_id", masterRole.id);
@@ -229,13 +238,13 @@ export async function PATCH(request: Request) {
     if (masterRole) removeQuery = removeQuery.neq("role_id", masterRole.id);
     ({ error: removeRoleError } = await removeQuery);
     if (!removeRoleError) ({ error: addRoleError } = await admin.from("user_roles").insert({ user_id: id, role_id: role.id }));
-    if (!removeRoleError && !addRoleError) ({ error: profileError } = await admin.from("profiles").update({ login, cliente_id: clientId }).eq("id", id).is("deleted_at", null));
+    if (!removeRoleError && !addRoleError) ({ error: profileError } = await admin.from("profiles").update({ login, cliente_id: clientId, pode_editar_robos_cliente: false }).eq("id", id).is("deleted_at", null));
   }
   if (profileError) return NextResponse.json({ error: "Não foi possível atualizar o perfil e o cliente vinculado." }, { status: 400 });
   if (removeRoleError) return NextResponse.json({ error: "Não foi possível substituir o papel atual do usuário." }, { status: 500 });
   if (addRoleError) return NextResponse.json({ error: "Não foi possível atualizar o papel do usuário." }, { status: 500 });
 
-  return NextResponse.json({ id, login, email, tipo, clienteId: clientId });
+  return NextResponse.json({ id, login, email, tipo, clienteId: clientId, podeEditarRobosCliente });
 }
 
 export async function DELETE(request: Request) {

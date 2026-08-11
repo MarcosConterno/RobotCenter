@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import type { Database } from "@/types/database.types";
 
+import { clearSupabaseAuthCookies, copyResponseCookies, isInvalidRefreshTokenError } from "./auth-cookies";
 import { getSupabaseConfig } from "./config";
 
 const PUBLIC_PATHS = [
@@ -31,12 +32,13 @@ export async function updateSession(request: NextRequest) {
       getAll() {
         return request.cookies.getAll();
       },
-      setAll(cookiesToSet) {
+      setAll(cookiesToSet, headers) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         response = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);
         });
+        Object.entries(headers).forEach(([name, value]) => response.headers.set(name, value));
       },
     },
   });
@@ -45,14 +47,32 @@ export async function updateSession(request: NextRequest) {
   const isAuthenticated = !error && Boolean(data?.claims?.sub);
   const isPublicPath = PUBLIC_PATHS.includes(request.nextUrl.pathname);
 
+  if (isInvalidRefreshTokenError(error)) {
+    if (isPublicPath) return clearSupabaseAuthCookies(request, response);
+    if (request.nextUrl.pathname.startsWith("/api/")) {
+      return clearSupabaseAuthCookies(
+        request,
+        NextResponse.json({ error: "Sessão expirada." }, { status: 401 }),
+      );
+    }
+
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    loginUrl.searchParams.set("redirectTo", `${request.nextUrl.pathname}${request.nextUrl.search}`);
+    return clearSupabaseAuthCookies(request, NextResponse.redirect(loginUrl));
+  }
+
   if (!isAuthenticated && !isPublicPath) {
+    if (request.nextUrl.pathname.startsWith("/api/")) {
+      return copyResponseCookies(response, NextResponse.json({ error: "Sessão inválida." }, { status: 401 }));
+    }
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.searchParams.set(
       "redirectTo",
       `${request.nextUrl.pathname}${request.nextUrl.search}`,
     );
-    return NextResponse.redirect(loginUrl);
+    return copyResponseCookies(response, NextResponse.redirect(loginUrl));
   }
 
   if (isAuthenticated && (request.nextUrl.pathname.startsWith("/configuracoes") || request.nextUrl.pathname.startsWith("/robos"))) {
@@ -85,7 +105,7 @@ export async function updateSession(request: NextRequest) {
       const dashboardUrl = request.nextUrl.clone();
       dashboardUrl.pathname = "/minha-pagina";
       dashboardUrl.search = "";
-      return NextResponse.redirect(dashboardUrl);
+      return copyResponseCookies(response, NextResponse.redirect(dashboardUrl));
     }
   }
 

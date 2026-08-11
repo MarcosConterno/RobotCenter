@@ -19,6 +19,12 @@ interface PermissionRole { id: string; codigo: string; nome: string; descricao: 
 interface PermissionItem { id: string; codigo: string; recurso: string; acao: string; descricao: string | null; roles: string[] }
 interface ClientMetric { clientId: string; robots: number; flows: number; documents: number; updatedAt: string }
 
+const CLIENT_ROLE_BLOCKED_PERMISSIONS = new Set([
+  "robots.create", "robots.update", "robots.archive", "robots.capacity.update",
+  "publications.create", "robot_catalog.manage", "robot_center_documentation.manage",
+  "clients.manage", "users.read", "users.manage", "access_control.read",
+]);
+
 export default function ConfiguracoesPage() {
   const {
     clientes,
@@ -35,6 +41,7 @@ export default function ConfiguracoesPage() {
   const [senha, setSenha] = useState("");
   const [tipoUsuario, setTipoUsuario] = useState<TipoUsuario>("Operador");
   const [clienteUsuarioId, setClienteUsuarioId] = useState("");
+  const [podeEditarRobosCliente, setPodeEditarRobosCliente] = useState(false);
   const [nomeCliente, setNomeCliente] = useState("");
   const [tenant, setTenant] = useState("");
   const [corCliente, setCorCliente] = useState<CorBadgeRobo>(() =>
@@ -53,6 +60,7 @@ export default function ConfiguracoesPage() {
   const [usuarioEditandoEmail, setUsuarioEditandoEmail] = useState("");
   const [usuarioEditandoTipo, setUsuarioEditandoTipo] = useState<TipoUsuario>("Operador");
   const [usuarioEditandoClienteId, setUsuarioEditandoClienteId] = useState("");
+  const [usuarioEditandoPodeEditarRobos, setUsuarioEditandoPodeEditarRobos] = useState(false);
   const [usuarioExcluindo, setUsuarioExcluindo] = useState<Usuario | null>(null);
   const [clienteEditandoId, setClienteEditandoId] = useState<string | null>(null);
   const [clienteEditandoNome, setClienteEditandoNome] = useState("");
@@ -143,7 +151,7 @@ export default function ConfiguracoesPage() {
   async function cadastrarUsuario(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const result = dadosCadastroUsuarioSchema.safeParse({ login, email, senha, tipo: tipoUsuario, clienteId: clienteUsuarioId || null });
+    const result = dadosCadastroUsuarioSchema.safeParse({ login, email, senha, tipo: tipoUsuario, clienteId: clienteUsuarioId || null, podeEditarRobosCliente });
     if (!result.success) {
       setErroUsuario(primeiraMensagemErro(result.error));
       return;
@@ -163,6 +171,7 @@ export default function ConfiguracoesPage() {
           password: result.data.senha,
           tipo: result.data.tipo,
           clientId: result.data.clienteId ?? null,
+          canEditClientRobots: result.data.podeEditarRobosCliente,
         }),
       });
       const payload = await response.json() as { error?: string };
@@ -177,6 +186,7 @@ export default function ConfiguracoesPage() {
       setSenha("");
       setTipoUsuario("Operador");
       setClienteUsuarioId("");
+      setPodeEditarRobosCliente(false);
       setSucessoUsuario("Usuário cadastrado com sucesso.");
       setUsuariosGerenciados((atuais) => [...atuais, payload as Usuario]);
     } catch {
@@ -192,6 +202,7 @@ export default function ConfiguracoesPage() {
     setUsuarioEditandoEmail(usuario.email ?? "");
     setUsuarioEditandoTipo(usuario.tipo);
     setUsuarioEditandoClienteId(usuario.clienteId ?? "");
+    setUsuarioEditandoPodeEditarRobos(usuario.podeEditarRobosCliente === true);
     setErroUsuario("");
     setSucessoUsuario("");
   }
@@ -221,6 +232,7 @@ export default function ConfiguracoesPage() {
           email: emailNormalizado,
           tipo: usuarioEditandoTipo,
           clientId: usuarioEditandoClienteId || null,
+          canEditClientRobots: usuarioEditandoTipo === "Cliente" && usuarioEditandoPodeEditarRobos,
         }),
       });
       const payload = await response.json() as { error?: string };
@@ -424,7 +436,7 @@ export default function ConfiguracoesPage() {
                 <span style={labelStyle}>Tipo de usuário</span>
                 <select
                   value={tipoUsuario}
-                  onChange={(event) => { setTipoUsuario(event.target.value as TipoUsuario); setErroUsuario(""); setSucessoUsuario(""); }}
+                  onChange={(event) => { const tipo = event.target.value as TipoUsuario; setTipoUsuario(tipo); if (tipo !== "Cliente") setPodeEditarRobosCliente(false); setErroUsuario(""); setSucessoUsuario(""); }}
                   style={inputStyle}
                 >
                   {(permissionRoles.length ? permissionRoles.filter((role) => role.codigo !== "master").map((role) => role.nome) : [...TIPOS_USUARIO]).map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
@@ -443,6 +455,11 @@ export default function ConfiguracoesPage() {
                   {clientes.map((cliente) => <option key={cliente.id} value={cliente.id}>{cliente.nome}</option>)}
                 </select>
               </label>
+
+              {tipoUsuario === "Cliente" && clienteUsuarioId ? <label style={permissionToggleStyle}>
+                <input type="checkbox" checked={podeEditarRobosCliente} onChange={(event) => setPodeEditarRobosCliente(event.target.checked)} />
+                <span><strong>Pode editar robôs</strong><small>Permite alterar somente os robôs do Cliente vinculado. Não permite cadastrar, excluir ou transferir robôs.</small></span>
+              </label> : null}
 
               <button type="submit" style={primaryButtonStyle} disabled={salvandoUsuario}>
                 <Plus size={17} />
@@ -468,19 +485,24 @@ export default function ConfiguracoesPage() {
                     <div style={editGridStyle}>
                       <input aria-label="Nome" value={usuarioEditandoLogin} onChange={(event) => setUsuarioEditandoLogin(event.target.value)} style={compactInputStyle} />
                       <input aria-label="Email" type="email" value={usuarioEditandoEmail} onChange={(event) => setUsuarioEditandoEmail(event.target.value)} style={compactInputStyle} />
-                      <select aria-label="Tipo de usuário" value={usuarioEditandoTipo} onChange={(event) => setUsuarioEditandoTipo(event.target.value as TipoUsuario)} style={compactInputStyle}>
+                      <select aria-label="Tipo de usuário" value={usuarioEditandoTipo} onChange={(event) => { const tipo = event.target.value as TipoUsuario; setUsuarioEditandoTipo(tipo); if (tipo !== "Cliente") setUsuarioEditandoPodeEditarRobos(false); }} style={compactInputStyle}>
                         {(permissionRoles.length ? permissionRoles.filter((role) => role.codigo !== "master").map((role) => role.nome) : [...TIPOS_USUARIO]).map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
                       </select>
                       <select aria-label="Cliente vinculado" value={usuarioEditandoClienteId} onChange={(event) => setUsuarioEditandoClienteId(event.target.value)} required={usuarioEditandoTipo === "Cliente"} style={compactInputStyle}>
                         <option value="">Nenhum cliente</option>
                         {clientes.map((cliente) => <option key={cliente.id} value={cliente.id}>{cliente.nome}</option>)}
                       </select>
+                      {usuarioEditandoTipo === "Cliente" && usuarioEditandoClienteId ? <label style={compactPermissionToggleStyle}>
+                        <input type="checkbox" checked={usuarioEditandoPodeEditarRobos} onChange={(event) => setUsuarioEditandoPodeEditarRobos(event.target.checked)} />
+                        <span>Pode editar robôs</span>
+                      </label> : null}
                     </div>
                   ) : (
                     <div style={itemContentStyle}>
                       <span style={itemNameStyle}>{usuario.login}</span>
                       {usuario.email && <span style={itemSecondaryStyle}>{usuario.email}</span>}
                       {usuario.clienteId && <span style={itemSecondaryStyle}>Cliente: {clientes.find((cliente) => cliente.id === usuario.clienteId)?.nome ?? "Cliente não encontrado"}</span>}
+                      {usuario.tipo === "Cliente" && <span style={itemSecondaryStyle}>Edição de robôs: {usuario.podeEditarRobosCliente ? "Permitida" : "Somente leitura"}</span>}
                     </div>
                   )}
                   <div style={itemActionsStyle}>
@@ -669,6 +691,7 @@ function PermissionsPanel({ roles, permissions, loading, error, isMaster, onSave
   const canEdit = (permission: PermissionItem, role: PermissionRole) => {
     if (role.codigo === "master") return false;
     if (permission.recurso === "stack_requests" && ["cliente", "suporte"].includes(role.codigo)) return false;
+    if (role.codigo === "cliente" && CLIENT_ROLE_BLOCKED_PERMISSIONS.has(permission.codigo)) return false;
     return true;
   };
   const toggleRole = (permissionId: string, roleCode: string) => setDraft((current) => {
@@ -742,7 +765,7 @@ function PermissionsPanel({ roles, permissions, loading, error, isMaster, onSave
             {items.map((permission) => <div key={permission.id} style={permissionRowStyle}>
               <div style={permissionIdentityStyle}><strong>{permission.descricao || permission.acao}</strong><span>{permission.codigo}</span></div>
               <div style={permissionRolesStyle}>{editing
-                ? visibleRoles.map((role) => <label key={role.id} style={{ ...permissionRoleOptionStyle, ...((draft[permission.id] ?? []).includes(role.codigo) ? selectedPermissionRoleStyle : {}), ...(!canEdit(permission, role) ? disabledPermissionRoleStyle : {}) }} title={!canEdit(permission, role) ? role.codigo === "master" ? "As permissões do Master são protegidas." : "Este perfil não pode acessar Solicitações de Stack." : undefined}>
+                ? visibleRoles.map((role) => <label key={role.id} style={{ ...permissionRoleOptionStyle, ...((draft[permission.id] ?? []).includes(role.codigo) ? selectedPermissionRoleStyle : {}), ...(!canEdit(permission, role) ? disabledPermissionRoleStyle : {}) }} title={!canEdit(permission, role) ? role.codigo === "master" ? "As permissões do Master são protegidas." : role.codigo === "cliente" && CLIENT_ROLE_BLOCKED_PERMISSIONS.has(permission.codigo) ? "Use a liberação individual no cadastro do usuário Cliente." : "Este perfil não pode acessar Solicitações de Stack." : undefined}>
                     <input type="checkbox" checked={(draft[permission.id] ?? []).includes(role.codigo)} disabled={!canEdit(permission, role) || saving} onChange={() => toggleRole(permission.id, role.codigo)} style={permissionCheckboxStyle} />
                     {role.nome}
                   </label>)
@@ -967,6 +990,28 @@ const fieldStyle: React.CSSProperties = {
   display: "grid",
   gap: 7,
   minWidth: 0,
+};
+
+const permissionToggleStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "flex-start",
+  gap: 10,
+  minHeight: 42,
+  padding: "10px 12px",
+  border: "1px solid var(--border)",
+  borderRadius: 9,
+  background: "var(--surface)",
+  color: "var(--text-2)",
+  cursor: "pointer",
+};
+
+const compactPermissionToggleStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  minHeight: 36,
+  color: "var(--text-2)",
+  fontSize: 12,
 };
 
 const labelStyle: React.CSSProperties = {

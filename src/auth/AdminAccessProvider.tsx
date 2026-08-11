@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import type { TipoProdutoRobo } from "@/domain/entities";
 
 type AccessStatus = "loading" | "ready";
@@ -13,6 +14,7 @@ interface AdminAccessContextValue {
   isClient: boolean;
   isSupport: boolean;
   canManageRobots: boolean;
+  canEditClientRobots: boolean;
   canUpdateCapacity: boolean;
   canAccessSettings: boolean;
   canAccessRobots: boolean;
@@ -35,24 +37,50 @@ interface AdminAccessContextValue {
 
 const AdminAccessContext = createContext<AdminAccessContextValue | null>(null);
 
+const PUBLIC_PATHS = new Set([
+  "/login",
+  "/recuperar-senha",
+  "/redefinir-senha",
+]);
+
 export function AdminAccessProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const [roles, setRoles] = useState<string[]>([]);
   const [permissions, setPermissions] = useState<string[]>([]);
   const [status, setStatus] = useState<AccessStatus>("loading");
   const [error, setError] = useState("");
   const [clientId, setClientId] = useState<string | null>(null);
-  const [displayName, setDisplayName] = useState("Usuário");
+  const [canEditClientRobots, setCanEditClientRobots] = useState(false);
+  const [displayName, setDisplayName] = useState("");
 
   useEffect(() => {
+    if (PUBLIC_PATHS.has(pathname)) {
+      setRoles([]);
+      setPermissions([]);
+      setClientId(null);
+      setCanEditClientRobots(false);
+      setDisplayName("");
+      setError("");
+      setStatus("ready");
+      return;
+    }
+
     let active = true;
+    setStatus("loading");
     void fetch("/api/admin/access", { cache: "no-store" })
       .then(async (response) => {
-        const payload = await response.json() as { roles?: string[]; permissions?: string[]; isMaster?: boolean; clientId?: string | null; displayName?: string; error?: string };
+        const payload = await response.json() as { roles?: string[]; permissions?: string[]; isMaster?: boolean; clientId?: string | null; canEditClientRobots?: boolean; displayName?: string; error?: string };
         if (!active) return;
+        if (response.status === 401) {
+          const redirectTo = `${window.location.pathname}${window.location.search}`;
+          window.location.replace(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+          return;
+        }
         setRoles(response.ok && Array.isArray(payload.roles) ? payload.roles : []);
         setPermissions(response.ok && Array.isArray(payload.permissions) ? payload.permissions : []);
         setClientId(response.ok ? payload.clientId ?? null : null);
-        setDisplayName(response.ok ? payload.displayName ?? "Usuário" : "Usuário");
+        setCanEditClientRobots(response.ok && payload.canEditClientRobots === true);
+        setDisplayName(response.ok ? payload.displayName ?? "" : "");
         setError(response.status === 401 ? "" : payload.error ?? "");
       })
       .catch(() => {
@@ -62,7 +90,7 @@ export function AdminAccessProvider({ children }: { children: ReactNode }) {
         if (active) setStatus("ready");
       });
     return () => { active = false; };
-  }, []);
+  }, [pathname]);
 
   const value = useMemo(() => {
     const isMaster = roles.includes("master");
@@ -79,6 +107,7 @@ export function AdminAccessProvider({ children }: { children: ReactNode }) {
       isClient,
       isSupport,
       canManageRobots: permissions.some((permission) => ["robots.create", "robots.update", "robots.archive"].includes(permission)),
+      canEditClientRobots,
       canUpdateCapacity: permissions.includes("robots.capacity.update"),
       canAccessSettings: permissions.some((permission) => permission === "settings.read" || permission === "access_control.read" || permission.startsWith("users.") || permission.startsWith("clients.") || permission.startsWith("robot_catalog.")),
       canAccessRobots: permissions.includes("robots.read"),
@@ -98,7 +127,7 @@ export function AdminAccessProvider({ children }: { children: ReactNode }) {
       status,
       error,
     };
-  }, [clientId, displayName, error, permissions, roles, status]);
+  }, [canEditClientRobots, clientId, displayName, error, permissions, roles, status]);
   return <AdminAccessContext.Provider value={value}>{children}</AdminAccessContext.Provider>;
 }
 

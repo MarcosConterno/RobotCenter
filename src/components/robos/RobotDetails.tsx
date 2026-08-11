@@ -55,7 +55,8 @@ interface RobotDetailsProps {
 }
 
 export default function RobotDetails({ robot, clientes = EMPTY_CLIENTES, robos = EMPTY_ROBOS, initialTab = "general" }: RobotDetailsProps) {
-  const { isAdmin, canViewStackRequests } = useAdminAccess();
+  const { isAdmin, isClient, canEditClientRobots, clientId, canViewStackRequests } = useAdminAccess();
+  const canEditRobot = isAdmin || (isClient && canEditClientRobots && Boolean(clientId) && robot.clienteId === clientId);
   const [activeTab, setActiveTab] = useState<MainTab>(() => initialTab === "stackRequests" && !canViewStackRequests ? "general" : initialTab);
   const [documentationTab, setDocumentationTab] = useState<DocumentationTab>("functional");
   const uploadInputRef = useRef<HTMLInputElement>(null);
@@ -185,7 +186,7 @@ export default function RobotDetails({ robot, clientes = EMPTY_CLIENTES, robos =
           <span><Server size={12} /> {robot.fila}</span>
           <span><Layers3 size={12} /> {robot.stack || "Sem Stack"}</span>
         </div>
-        {isAdmin && (
+        {canEditRobot && (
           <Link href={`/robos/${robot.id}/editar`} className={`${styles.primaryAction} ${styles.headerAction}`}>
             <Pencil size={14} /> Editar robô
           </Link>

@@ -455,6 +455,7 @@ export type Database = {
           deleted_by: string | null
           id: string
           login: string
+          pode_editar_robos_cliente: boolean
           updated_at: string
           updated_by: string | null
         }
@@ -467,6 +468,7 @@ export type Database = {
           deleted_by?: string | null
           id: string
           login: string
+          pode_editar_robos_cliente?: boolean
           updated_at?: string
           updated_by?: string | null
         }
@@ -479,6 +481,7 @@ export type Database = {
           deleted_by?: string | null
           id?: string
           login?: string
+          pode_editar_robos_cliente?: boolean
           updated_at?: string
           updated_by?: string | null
         }

@@ -187,6 +187,7 @@ export interface Usuario {
   email?: string;
   tipo: TipoUsuario;
   clienteId?: string | null;
+  podeEditarRobosCliente?: boolean;
   isMaster?: boolean;
 }
 
@@ -196,6 +197,7 @@ export interface DadosCadastroUsuario {
   senha: string;
   tipo: TipoUsuario;
   clienteId?: string | null;
+  podeEditarRobosCliente?: boolean;
 }
 
 export interface Cliente {

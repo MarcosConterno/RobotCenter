@@ -33,15 +33,17 @@ function extractPermissionCodes(permissionRelation: unknown): string[] {
 
 export async function GET() {
   const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
+  const { data, error: authError } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  const userId = typeof claims?.sub === "string" ? claims.sub : null;
+  if (authError || !userId) {
     return NextResponse.json({ allowed: false, error: "Sessão inválida." }, { status: 401 });
   }
 
   const { data: userRoles, error: rolesError } = await supabase
     .from("user_roles")
     .select("roles(id,codigo)")
-    .eq("user_id", user.id);
+    .eq("user_id", userId);
 
   if (rolesError) {
     console.error("[api/admin/access] role lookup failed", { code: rolesError.code, message: rolesError.message });
@@ -57,11 +59,12 @@ export async function GET() {
   const isMaster = roles.includes("master");
   const { data: profile } = await supabase
     .from("profiles")
-    .select("cliente_id,login")
-    .eq("id", user.id)
+    .select("cliente_id,login,pode_editar_robos_cliente")
+    .eq("id", userId)
     .single();
+  const email = typeof claims.email === "string" ? claims.email : null;
   return NextResponse.json(
-    { allowed: roles.includes("admin") || isMaster, isMaster, roles, permissions, clientId: profile?.cliente_id ?? null, displayName: profile?.login ?? user.email ?? "Usuário" },
+    { allowed: roles.includes("admin") || isMaster, isMaster, roles, permissions, clientId: profile?.cliente_id ?? null, canEditClientRobots: profile?.pode_editar_robos_cliente === true, displayName: profile?.login ?? email ?? "Usuário" },
     { status: 200, headers: { "Cache-Control": "no-store" } },
   );
 }

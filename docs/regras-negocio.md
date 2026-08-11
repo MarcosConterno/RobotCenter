@@ -270,3 +270,11 @@
 12. Notas possuem título e conteúdo livre formatável, com negrito, tópicos, listas numeradas e checkboxes, e são ordenadas pela edição mais recente.
 13. Um ToDo pode ter no máximo uma origem, Reunião ou Nota, e a origem deve pertencer ao mesmo usuário.
 14. Excluir Reunião ou Nota remove apenas a referência de origem do ToDo; o ToDo permanece.
+# Edição individual de Robôs por Cliente
+
+- O padrão de todo usuário Cliente é somente leitura.
+- A liberação “Pode editar robôs” pertence ao usuário, não à empresa nem ao papel global.
+- A liberação exige papel Cliente e `profiles.cliente_id` válido.
+- O usuário autorizado edita somente robôs do Cliente vinculado.
+- O usuário não cria, arquiva, transfere ou muda o produto do robô e não administra catálogos, cores compartilhadas ou documentação.
+- Remover o papel Cliente remove automaticamente a liberação individual.
