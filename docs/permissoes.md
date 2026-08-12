@@ -180,3 +180,8 @@ Todos os perfis autenticados possuem acesso funcional a Minha página, sem permi
 `personal_page_preferences` e `personal_page_flows` repetem o isolamento por `auth.uid()`. A inserção de um atalho também exige que o Fluxo referenciado esteja visível à sessão pelas policies de `flows`. A configuração não concede `robots.read`, `flows.read` ou capacidades de escrita; os widgets continuam subordinados às permissões das entidades originais.
 
 `personal_meetings` e `personal_notes` concedem CRUD somente a `authenticated`, sempre com `auth.uid() = user_id` em cada policy. Updates possuem `USING` e `WITH CHECK`; triggers tornam o proprietário imutável. Não existe policy administrativa, inclusive para Admin e Master. A associação de origem do ToDo é validada pelo mesmo proprietário, impedindo referência cruzada entre workspaces.
+# Atualização: permissão da flag Kortex
+
+A leitura e alteração de `robos.kortex` seguem as mesmas policies RLS e permissões já aplicadas à linha do robô; nenhuma permissão adicional é concedida.
+
+O criador do fluxo pode atualizar sua descrição pela função controlada `update_flow_metadata`. Apenas Admin e Master podem alterar o cliente associado ao fluxo.

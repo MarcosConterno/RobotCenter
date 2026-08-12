@@ -96,7 +96,8 @@ export default function RobotCard({
               marginBottom: 4,
             }}
           >
-            {robot.nome}
+              {robot.nome}
+              {robot.kortex && <span className={styles.kortex}>Kortex</span>}
           </div>
 
           <div

@@ -322,3 +322,15 @@
 - O vínculo com Robô é opcional e não concede acesso adicional ao registro.
 - O PDF preserva a identidade visual da calculadora original, usando a marca e o padrão visual do Robot Center.
 - O PDF é um artefato externo e apresenta somente escopo e horas técnicas. Valor-hora, comissão e totais financeiros são estimativas internas e nunca devem aparecer no arquivo gerado.
+# Atualização: identificação Kortex
+
+- A flag Kortex inicia desmarcada em novos robôs.
+- Robôs existentes permanecem desmarcados após a migration.
+- O texto “Kortex” aparece no card somente quando a flag está ativa.
+
+## Fluxos e relacionamentos antecipados
+
+- O criador de um fluxo pode editar sua descrição.
+- Admin e Master também podem transferir o fluxo para outro cliente.
+- A transferência exige que os robôs vinculados já pertençam ao cliente de destino.
+- Gatilhos podem relacionar robôs ativos ou inativos do mesmo cliente; a interface identifica o status na lista.

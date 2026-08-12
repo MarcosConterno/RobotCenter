@@ -214,3 +214,6 @@ A Visualização Pessoal permite habilitar a tabela consolidada de Robôs e esco
 ## Remapeamento de usuários de Cliente
 
 Antes de arquivar um Cliente, o Master pode reatribuir todos os usuários vinculados a outro Cliente ativo ou remover o vínculo. A mudança não altera os papéis dos usuários; um perfil Cliente sem vínculo permanece sem escopo operacional até receber novo Cliente.
+# Atualização: Kortex
+
+Todo robô pode ser marcado como usuário de Kortex. A marcação é opcional no cadastro e na edição; quando ativa, o card do robô exibe “Kortex”.

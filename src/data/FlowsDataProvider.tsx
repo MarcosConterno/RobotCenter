@@ -27,6 +27,7 @@ interface FlowsDataContextValue {
   recarregar: () => Promise<void>;
   carregarDetalhes: (id: string) => Promise<DetalhesFluxo | null>;
   criarFluxo: (dados: DadosNovoFluxo) => Promise<Fluxo>;
+  atualizarMetadadosFluxo: (id: string, descricao: string, clienteId?: string) => Promise<void>;
   salvarFluxo: (fluxo: Fluxo, nodes: NodeFluxo[], edges: EdgeFluxo[], viewport: ViewportFluxo) => Promise<void>;
   publicarFluxo: (id: string, snapshot: Record<string, unknown>) => Promise<number>;
   excluirFluxo: (id: string) => Promise<void>;
@@ -157,6 +158,16 @@ export function FlowsDataProvider({ children }: { children: ReactNode }) {
     return fluxo;
   }, []);
 
+  const atualizarMetadadosFluxo = useCallback(async (id: string, descricao: string, clienteId?: string) => {
+    const { error } = await createClient().rpc("update_flow_metadata", {
+      target_flow_id: id,
+      target_description: descricao.trim(),
+      target_client_id: clienteId ?? null,
+    });
+    if (error) throw error;
+    await recarregar();
+  }, [recarregar]);
+
   const salvarFluxo = useCallback(async (
     fluxo: Fluxo,
     nodes: NodeFluxo[],
@@ -225,8 +236,8 @@ export function FlowsDataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(() => ({
-    fluxos, carregando, erro, recarregar, carregarDetalhes, criarFluxo, salvarFluxo, publicarFluxo, excluirFluxo,
-  }), [carregarDetalhes, carregando, criarFluxo, erro, excluirFluxo, fluxos, publicarFluxo, recarregar, salvarFluxo]);
+    fluxos, carregando, erro, recarregar, carregarDetalhes, criarFluxo, atualizarMetadadosFluxo, salvarFluxo, publicarFluxo, excluirFluxo,
+  }), [atualizarMetadadosFluxo, carregarDetalhes, carregando, criarFluxo, erro, excluirFluxo, fluxos, publicarFluxo, recarregar, salvarFluxo]);
 
   return <FlowsDataContext.Provider value={value}>{children}</FlowsDataContext.Provider>;
 }

@@ -61,7 +61,7 @@ export default function RobotForm({
     }));
   }, []);
   const robosDoCliente = robos
-    .filter((robo) => robo.clienteId === form.clienteId && robo.id !== currentRobotId && robo.ativo)
+    .filter((robo) => robo.clienteId === form.clienteId && robo.id !== currentRobotId)
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
   function update<K extends keyof DadosFormularioRobo>(field: K, value: DadosFormularioRobo[K]) {
@@ -177,6 +177,20 @@ export default function RobotForm({
             </label>
           </div>
           <div style={fullWidthStyle}>
+            <label style={statusControlStyle}>
+              <span>
+                <span style={statusTitleStyle}>Kortex</span>
+                <span style={statusDescriptionStyle}>{form.kortex ? "Este robô utiliza Kortex" : "Este robô não utiliza Kortex"}</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={form.kortex}
+                onChange={(event) => update("kortex", event.target.checked)}
+                aria-label="Kortex"
+              />
+            </label>
+          </div>
+          <div style={fullWidthStyle}>
             <span style={labelStyle}>Documentação Upada</span>
             <label style={manualUploadStyle}>
               <span style={manualUploadIconStyle}><Upload size={17} /></span>
@@ -244,14 +258,14 @@ export default function RobotForm({
             <label style={labelStyle}>Gatilho De</label>
             <select value={form.gatilhoDeRoboId ?? ""} onChange={(event) => update("gatilhoDeRoboId", event.target.value || null)} style={inputStyle}>
               <option value="">Nenhum</option>
-              {robosDoCliente.map((robo) => <option key={robo.id} value={robo.id}>{robo.nome}</option>)}
+              {robosDoCliente.map((robo) => <option key={robo.id} value={robo.id}>{robo.ativo ? "🟢" : "⚪"} {robo.nome}</option>)}
             </select>
           </div>
           <div>
             <label style={labelStyle}>Gatilho Para</label>
             <select value={form.gatilhoParaRoboId ?? ""} onChange={(event) => update("gatilhoParaRoboId", event.target.value || null)} style={inputStyle}>
               <option value="">Nenhum</option>
-              {robosDoCliente.map((robo) => <option key={robo.id} value={robo.id}>{robo.nome}</option>)}
+              {robosDoCliente.map((robo) => <option key={robo.id} value={robo.id}>{robo.ativo ? "🟢" : "⚪"} {robo.nome}</option>)}
             </select>
           </div>
         </div>
@@ -578,6 +592,7 @@ const FORMULARIO_ROBO_INICIAL: DadosFormularioRobo = {
   descricao: "",
   ambiente: "Produção",
   ativo: true,
+  kortex: false,
   stack: "",
   fila: "",
   versao: "",

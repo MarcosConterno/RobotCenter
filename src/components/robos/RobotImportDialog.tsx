@@ -249,7 +249,7 @@ export default function RobotImportDialog({ open, robos, clientes, defaultProduc
             if (chave(value) === "limpar") { campos[campo] = null; continue; }
             const relacionado = robos.find((robo) => robo.id === value);
             if (!uuidValido(value) || !relacionado) throw new Error(`${header} não referencia um robô acessível.`);
-            if (!relacionado.ativo || relacionado.clienteId !== (clienteEfetivo?.id ?? existente?.clienteId)) throw new Error(`${header} deve ser um robô ativo do mesmo cliente.`);
+            if (relacionado.clienteId !== (clienteEfetivo?.id ?? existente?.clienteId)) throw new Error(`${header} deve ser um robô do mesmo cliente.`);
             if (relacionado.id === existente?.id) throw new Error(`${header} não pode referenciar o próprio robô.`);
             campos[campo] = value;
           }

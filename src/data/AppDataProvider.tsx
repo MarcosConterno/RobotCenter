@@ -184,6 +184,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         versao: item.versao,
         command: item.command,
         productType: item.product_type as Robo["productType"],
+        kortex: item.kortex,
         tribunal: item.tribunal,
         tribunalSystem: item.tribunal_system,
         versionCheckedAt: item.version_checked_at,
@@ -260,7 +261,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       court_name: cadastro.courtName, ideal: cadastro.ideal, max: cadastro.max, pacote: cadastro.pacote,
       pacote_cor: cadastro.pacoteCor, descricao: cadastro.descricao, ambiente: cadastro.ambiente,
       ativo: cadastro.ativo, stack: cadastro.stack || null, fila: cadastro.fila, versao: cadastro.versao,
-      command: cadastro.command, product_type: cadastro.productType,
+      command: cadastro.command, product_type: cadastro.productType, kortex: cadastro.kortex,
       system_id: catalogIds.systemId, package_id: catalogIds.packageId, stack_id: catalogIds.stackId, queue_id: catalogIds.queueId, command_id: catalogIds.commandId,
       tribunal: cadastro.productType === "INTEGRADOR" ? null : cadastro.tribunal,
       tribunal_system: cadastro.productType === "INTEGRADOR" ? null : cadastro.tribunalSystem,
@@ -312,7 +313,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       sistema: cadastro.sistema, court_name: cadastro.courtName, ideal: cadastro.ideal, max: cadastro.max,
       pacote: cadastro.pacote, pacote_cor: cadastro.pacoteCor, descricao: cadastro.descricao,
       ambiente: cadastro.ambiente, ativo: cadastro.ativo, stack: cadastro.stack || null, fila: cadastro.fila,
-      versao: cadastro.versao, command: cadastro.command, product_type: cadastro.productType,
+      versao: cadastro.versao, command: cadastro.command, product_type: cadastro.productType, kortex: cadastro.kortex,
       system_id: catalogIds.systemId, package_id: catalogIds.packageId, stack_id: catalogIds.stackId, queue_id: catalogIds.queueId, command_id: catalogIds.commandId,
       tribunal: cadastro.productType === "INTEGRADOR" ? null : cadastro.tribunal,
       tribunal_system: cadastro.productType === "INTEGRADOR" ? null : cadastro.tribunalSystem,
@@ -498,6 +499,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         if (campos.fila !== undefined) patch.fila = campos.fila;
         if (campos.versao !== undefined) patch.versao = campos.versao;
         if (campos.command !== undefined) patch.command = campos.command;
+        if (campos.kortex !== undefined) patch.kortex = campos.kortex;
         if (campos.productType !== undefined) {
           patch.product_type = campos.productType;
           if (campos.productType === "INTEGRADOR") {
@@ -554,6 +556,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         descricao: campos.descricao ?? "Não informado",
         ambiente: campos.ambiente ?? "Desenvolvimento",
         ativo: campos.ativo ?? false,
+        kortex: campos.kortex ?? false,
         responsavel: campos.responsavel ?? "Não informado",
         disparo: campos.disparo ?? "Manual",
         gatilhoDeRoboId: campos.gatilhoDeRoboId ?? null,
@@ -572,7 +575,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         cliente_id: cliente?.id ?? null, cliente_cor: clienteCor, nome: cadastro.nome, sistema: cadastro.sistema, court_name: cadastro.courtName,
         ideal: cadastro.ideal, max: cadastro.max, pacote: cadastro.pacote, pacote_cor: pacoteCor, descricao: cadastro.descricao,
         ambiente: cadastro.ambiente, ativo: cadastro.ativo, stack: cadastro.stack || null, fila: cadastro.fila,
-        versao: cadastro.versao, command: cadastro.command, product_type: cadastro.productType,
+      versao: cadastro.versao, command: cadastro.command, product_type: cadastro.productType, kortex: cadastro.kortex,
         system_id: catalogIds.systemId, package_id: catalogIds.packageId, stack_id: catalogIds.stackId, queue_id: catalogIds.queueId, command_id: catalogIds.commandId,
         tribunal: cadastro.productType === "INTEGRADOR" ? null : cadastro.tribunal,
         tribunal_system: cadastro.productType === "INTEGRADOR" ? null : cadastro.tribunalSystem,

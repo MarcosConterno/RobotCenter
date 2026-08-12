@@ -1100,6 +1100,7 @@ export type Database = {
           package_id: string | null
           pacote_cor: string
           product_type: string
+          kortex: boolean
           responsavel: string
           sistema: string
           system_id: string | null
@@ -1141,6 +1142,7 @@ export type Database = {
           package_id?: string | null
           pacote_cor?: string
           product_type?: string
+          kortex?: boolean
           responsavel: string
           sistema: string
           system_id?: string | null
@@ -1182,6 +1184,7 @@ export type Database = {
           package_id?: string | null
           pacote_cor?: string
           product_type?: string
+          kortex?: boolean
           responsavel?: string
           sistema?: string
           system_id?: string | null
@@ -1498,6 +1501,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      update_flow_metadata: {
+        Args: { target_client_id?: string | null; target_description: string; target_flow_id: string }
+        Returns: undefined
+      }
       save_budget: {
         Args: {
           p_budget_id: string | null

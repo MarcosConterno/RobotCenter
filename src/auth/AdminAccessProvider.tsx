@@ -7,6 +7,7 @@ import type { TipoProdutoRobo } from "@/domain/entities";
 type AccessStatus = "loading" | "ready";
 
 interface AdminAccessContextValue {
+  userId: string | null;
   isAdmin: boolean;
   isMaster: boolean;
   isOperator: boolean;
@@ -55,6 +56,7 @@ export function AdminAccessProvider({ children }: { children: ReactNode }) {
   const [clientId, setClientId] = useState<string | null>(null);
   const [canEditClientRobots, setCanEditClientRobots] = useState(false);
   const [displayName, setDisplayName] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isPublicPath) {
@@ -63,6 +65,7 @@ export function AdminAccessProvider({ children }: { children: ReactNode }) {
       setClientId(null);
       setCanEditClientRobots(false);
       setDisplayName("");
+      setUserId(null);
       setError("");
       setStatus("ready");
       return;
@@ -72,7 +75,7 @@ export function AdminAccessProvider({ children }: { children: ReactNode }) {
     setStatus("loading");
     void fetch("/api/admin/access", { cache: "no-store" })
       .then(async (response) => {
-        const payload = await response.json() as { roles?: string[]; permissions?: string[]; isMaster?: boolean; clientId?: string | null; canEditClientRobots?: boolean; displayName?: string; error?: string };
+        const payload = await response.json() as { userId?: string; roles?: string[]; permissions?: string[]; isMaster?: boolean; clientId?: string | null; canEditClientRobots?: boolean; displayName?: string; error?: string };
         if (!active) return;
         if (response.status === 401) {
           const redirectTo = `${window.location.pathname}${window.location.search}`;
@@ -84,6 +87,7 @@ export function AdminAccessProvider({ children }: { children: ReactNode }) {
         setClientId(response.ok ? payload.clientId ?? null : null);
         setCanEditClientRobots(response.ok && payload.canEditClientRobots === true);
         setDisplayName(response.ok ? payload.displayName ?? "" : "");
+        setUserId(response.ok ? payload.userId ?? null : null);
         setError(response.status === 401 ? "" : payload.error ?? "");
       })
       .catch(() => {
@@ -103,6 +107,7 @@ export function AdminAccessProvider({ children }: { children: ReactNode }) {
     const isClient = roles.includes("cliente");
     const isSupport = roles.includes("suporte");
     return {
+      userId,
       isAdmin,
       isMaster,
       isOperator,
@@ -132,7 +137,7 @@ export function AdminAccessProvider({ children }: { children: ReactNode }) {
       status,
       error,
     };
-  }, [canEditClientRobots, clientId, displayName, error, permissions, roles, status]);
+  }, [canEditClientRobots, clientId, displayName, error, permissions, roles, status, userId]);
   return <AdminAccessContext.Provider value={value}>{children}</AdminAccessContext.Provider>;
 }
 

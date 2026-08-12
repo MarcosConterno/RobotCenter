@@ -424,3 +424,6 @@ Na interface, essa entidade é denominada exclusivamente **ToDo**. `note` aceita
 ## Arquivamento de Cliente pelo Master
 
 `archive_client_with_user_reassignment` atualiza atomicamente `profiles.cliente_id` e `clientes.deleted_at`. O Cliente substituto, quando informado, deve existir e estar ativo. A operação preserva o trigger que bloqueia Clientes com Robôs ativos e não remove entidades ou históricos.
+# Atualização: flag Kortex dos robôs
+
+`public.robos.kortex` é um booleano obrigatório, com padrão `false`, que indica se o robô utiliza Kortex. O campo pertence à própria entidade `robos` e não altera seus relacionamentos.

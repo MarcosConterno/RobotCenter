@@ -64,7 +64,16 @@ export async function GET() {
     .single();
   const email = typeof claims.email === "string" ? claims.email : null;
   return NextResponse.json(
-    { allowed: roles.includes("admin") || isMaster, isMaster, roles, permissions, clientId: profile?.cliente_id ?? null, canEditClientRobots: profile?.pode_editar_robos_cliente === true, displayName: profile?.login ?? email ?? "Usuário" },
+    {
+      allowed: roles.includes("admin") || isMaster,
+      userId,
+      isMaster,
+      roles,
+      permissions,
+      clientId: profile?.cliente_id ?? null,
+      canEditClientRobots: profile?.pode_editar_robos_cliente === true,
+      displayName: profile?.login ?? email ?? "Usuário",
+    },
     { status: 200, headers: { "Cache-Control": "no-store" } },
   );
 }

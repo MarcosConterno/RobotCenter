@@ -1,9 +1,7 @@
 "use client";
 
 import {
-  ArrowRight,
   Bot,
-  Clock,
   CloudUpload,
   Code2,
   FlaskConical,
@@ -20,7 +18,6 @@ import {
 import { useMemo, useState } from "react";
 
 import type { Publicacao, Robo } from "@/domain/entities";
-import { formatarDataHoraRelativa } from "@/domain/formatters";
 
 interface FeedProps {
   publicacoes: Publicacao[];
@@ -126,7 +123,20 @@ export default function Feed({ publicacoes, robos, onViewRobot }: FeedProps) {
           const environmentClass = robo.ambiente === "Produção" ? "is-production" : robo.ambiente === "Teste" ? "is-test" : "is-development";
 
           return (
-            <article key={publicacao.id} className={`updates-feed__row ${environmentClass}`}>
+            <article
+              key={publicacao.id}
+              className={`updates-feed__row ${environmentClass}${parsedDescription.ruleChanges.length ? " has-documentation" : ""}`}
+              role="link"
+              tabIndex={0}
+              aria-label={`Abrir robô ${robo.nome}`}
+              onClick={() => onViewRobot(robo)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onViewRobot(robo);
+                }
+              }}
+            >
               <span className="updates-feed__environment-bar" aria-hidden="true" />
               <span className="updates-feed__environment-icon"><EnvironmentIcon size={19} /></span>
 
@@ -145,13 +155,15 @@ export default function Feed({ publicacoes, robos, onViewRobot }: FeedProps) {
                 <p>{parsedDescription.description}</p>
               </div>
 
-                <div className={`updates-feed__rule-changes${parsedDescription.ruleChanges.length ? "" : " is-empty"}`} aria-label="Regras alteradas">
+              {parsedDescription.ruleChanges.length > 0 && (
+                <div className="updates-feed__rule-changes" aria-label="Regras alteradas">
                   {parsedDescription.ruleChanges.map((rule, index) => (
                     <div key={`${rule.type}-${index}`} className="updates-feed__rule-change">
                       <strong><Plus size={12} /> {rule.type}</strong>
                     </div>
                   ))}
                 </div>
+              )}
 
               <div className="updates-feed__technical" aria-label="Informações técnicas">
                 <span className={packageChanged ? "is-changed" : undefined} title={`Pacote: ${robo.pacote}`}><Package size={12} />{robo.pacote}</span>
@@ -159,12 +171,6 @@ export default function Feed({ publicacoes, robos, onViewRobot }: FeedProps) {
                 <span className={`is-version${versionChanged ? " is-changed" : ""}`} title={`Versão atual: ${robo.versao}`}>v{robo.versao}</span>
               </div>
 
-              <div className="updates-feed__side">
-                <span className="updates-feed__time"><Clock size={13} />{formatarDataHoraRelativa(publicacao.publicadaEm)}</span>
-                <button type="button" className="updates-feed__details" onClick={() => onViewRobot(robo)}>
-                  Ver detalhes <ArrowRight size={13} />
-                </button>
-              </div>
             </article>
           );
         })}

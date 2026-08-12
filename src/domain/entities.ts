@@ -131,6 +131,7 @@ export interface Robo {
   descricao: string;
   ambiente: AmbienteRobo;
   ativo: boolean;
+  kortex: boolean;
   stack: string;
   fila: string;
   versao: string;

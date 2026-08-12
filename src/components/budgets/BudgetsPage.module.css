@@ -1,4 +1,4 @@
-.page { padding: 28px clamp(18px,3vw,42px) 52px; }
+.page { container-type:inline-size; padding:28px clamp(18px,3vw,42px) 52px; }
 .heading { display:flex; justify-content:space-between; gap:24px; align-items:flex-end; margin-bottom:24px; }
 .heading span,.history>div>span,.summaryEyebrow,.dictionaryDialog header span { color:var(--accent); font-size:11px; font-weight:800; letter-spacing:.13em; }
 .heading h1 { margin-top:5px; color:var(--text-strong); font-size:clamp(28px,3vw,40px); letter-spacing:-.04em; }
@@ -116,5 +116,123 @@
 .newDictionaryAction { display:grid; grid-template-columns:100px minmax(220px,1fr) 100px minmax(220px,1fr); gap:9px; margin-top:15px; padding-top:15px; border-top:1px solid var(--separator); }
 .newDictionaryAction strong { grid-column:1/-1; color:var(--text-strong); }
 .dictionaryDialog footer { display:flex; justify-content:flex-end; gap:9px; margin-top:17px; }
-@media (max-width:900px) { .workspace{grid-template-columns:1fr}.summaryCard{position:static}.projectIdentity{grid-template-columns:1fr 1fr}.heading{align-items:flex-start;flex-direction:column}.tableHeader,.itemRow{grid-template-columns:minmax(180px,1fr) 75px 100px 32px}.dictionaryHeader,.dictionaryRow{grid-template-columns:minmax(220px,1fr) 85px minmax(200px,1fr) 45px}.newDictionaryAction{grid-template-columns:1fr 1fr} }
-@media (max-width:600px) { .page{padding-inline:12px}.projectIdentity{grid-template-columns:1fr}.internalSettings{align-items:stretch;flex-direction:column}.internalFields{grid-template-columns:1fr}.actionPicker{grid-template-columns:1fr}.actionSelectContent{min-width:0}.tableHeader{display:none}.itemRow{grid-template-columns:1fr 80px 90px 30px}.itemRow>div{grid-column:1/-1}.dictionaryRow,.dictionaryHeader{grid-template-columns:1fr}.dictionaryHeader{display:none}.newDictionaryAction{grid-template-columns:1fr} }
+@media (max-width:1200px) {
+  .page { padding:20px clamp(14px,2vw,24px) 36px; }
+  .heading { align-items:flex-start; margin-bottom:18px; }
+  .heading h1 { font-size:clamp(26px,3vw,34px); }
+  .headingActions { justify-content:flex-end; }
+  .workspace { grid-template-columns:1fr; gap:14px; }
+  .summaryCard { position:static; padding:18px 20px; }
+  .summaryCard h2 { margin-bottom:10px; font-size:17px; }
+  .summaryCard dl { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)) minmax(180px,1.2fr); align-items:stretch; gap:8px; }
+  .summaryCard dl>div { min-width:0; flex-direction:column; justify-content:center; gap:5px; border:1px solid var(--separator); border-radius:9px; padding:10px 12px; }
+  .summaryCard .grandTotal { margin-top:0; }
+  .projectIdentity { grid-template-columns:minmax(0,1.2fr) minmax(260px,1fr); }
+  .tableHeader,.itemRow { grid-template-columns:minmax(180px,1fr) 75px 100px 32px; }
+  .dictionaryHeader,.dictionaryRow { grid-template-columns:minmax(220px,1fr) 85px minmax(200px,1fr) 45px; }
+  .newDictionaryAction { grid-template-columns:1fr 1fr; }
+}
+
+@media (max-width:760px) {
+  .page { padding:14px 12px 28px; }
+  .heading { flex-direction:column; gap:14px; margin-bottom:14px; }
+  .heading h1 { margin-top:4px; font-size:27px; line-height:1.08; }
+  .heading p { max-width:42rem; font-size:13px; line-height:1.45; }
+  .headingActions { width:100%; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .headingActions button { width:100%; min-height:36px; padding:0 10px; font-size:12px; }
+  .editorCard,.summaryCard,.history { border-radius:13px; }
+  .editorCard { padding:14px; }
+  .modeTabs { width:100%; }
+  .modeTabs button { flex:1; justify-content:center; padding:8px 9px; }
+  .projectIdentity { grid-template-columns:1fr; gap:10px; margin-top:14px; }
+  .projectNameField textarea { min-height:64px; }
+  .internalSettings { align-items:stretch; flex-direction:column; gap:10px; margin-top:12px; padding:11px; }
+  .internalSettingsHeading { min-width:0; }
+  .internalFields { width:100%; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+  .projectIdentity input,.projectIdentity select,.projectIdentity textarea,.internalFields input,.internalFields select { padding:8px 9px; }
+  .actionPicker { margin-top:14px; padding-top:14px; }
+  .actionSelectTrigger { min-height:42px; }
+  .summaryCard { padding:14px; }
+  .summaryCard dl { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .summaryCard dl>div { padding:9px 10px; }
+  .history { margin-top:14px; padding:14px; }
+  .editorActions { display:grid; grid-template-columns:1fr; }
+  .editorActions button { width:100%; }
+}
+
+@media (max-width:520px) {
+  .headingActions { grid-template-columns:1fr; }
+  .internalFields { grid-template-columns:1fr; }
+  .actionPicker { grid-template-columns:1fr; }
+  .actionPicker>.primaryButton { width:100%; }
+  .actionSelectContent { min-width:0; max-width:calc(100vw - 24px); }
+  .summaryCard dl { grid-template-columns:1fr 1fr; }
+  .tableHeader { display:none; }
+  .itemRow { grid-template-columns:minmax(0,1fr) 70px 76px 30px; gap:7px; padding:9px; }
+  .itemRow>div { grid-column:1/-1; }
+  .dictionaryRow,.dictionaryHeader { grid-template-columns:1fr; }
+  .dictionaryHeader { display:none; }
+  .newDictionaryAction { grid-template-columns:1fr; }
+  .historyGrid { grid-template-columns:1fr; }
+  .budgetMeta { align-items:flex-start; flex-direction:column; }
+  .budgetMeta>span { width:100%; white-space:normal; }
+}
+
+/* Mede a área útil da calculadora, independentemente da largura da janela/sidebar. */
+@container (max-width:1000px) {
+  .page { padding:16px 14px 30px; }
+  .heading { align-items:flex-end; flex-direction:row; gap:12px; margin-bottom:16px; }
+  .heading>div:first-child { min-width:0; flex:1; }
+  .heading h1 { font-size:30px; }
+  .headingActions { flex:0 0 auto; align-self:flex-end; justify-content:flex-end; flex-wrap:nowrap; }
+  .workspace { grid-template-columns:1fr; gap:14px; }
+  .editorCard { padding:16px; border-radius:14px; }
+  .summaryCard { position:static; padding:15px 16px; border-radius:14px; }
+  .summaryCard h2 { margin:5px 0 10px; font-size:17px; }
+  .summaryCard dl { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; }
+  .summaryCard dl>div { min-width:0; flex-direction:column; gap:4px; border:1px solid var(--separator); border-radius:8px; padding:9px 10px; }
+  .summaryCard .grandTotal { margin:0; }
+  .projectIdentity { grid-template-columns:minmax(0,1fr) minmax(250px,1fr); gap:12px; margin-top:15px; }
+  .internalSettings { margin-top:12px; padding:11px; }
+  .actionPicker { margin-top:14px; padding-top:14px; }
+  .itemsTable { margin-top:14px; }
+  .empty { min-height:120px; }
+  .history { margin-top:14px; padding:16px; }
+  .primaryButton,.secondaryButton { min-height:34px; padding:0 10px; border-radius:8px; gap:5px; font-size:11px; }
+  .primaryButton svg,.secondaryButton svg { width:14px; height:14px; }
+  .editBudgetButton { padding:5px 7px; font-size:10px; }
+}
+
+@container (max-width:700px) {
+  .page { padding:10px 8px 24px; }
+  .heading { align-items:flex-start; flex-direction:column; }
+  .heading h1 { font-size:25px; }
+  .heading p { font-size:12px; }
+  .headingActions { width:100%; display:grid; grid-template-columns:1fr 1fr; }
+  .headingActions button { width:100%; min-height:34px; font-size:11px; }
+  .editorCard { padding:11px; }
+  .projectIdentity { grid-template-columns:1fr; }
+  .projectNameField textarea { min-height:58px; }
+  .internalSettings { align-items:stretch; flex-direction:column; gap:8px; }
+  .internalSettingsHeading { min-width:0; }
+  .internalFields { width:100%; grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .summaryCard dl { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .modeTabs { width:100%; }
+  .modeTabs button { flex:1; justify-content:center; }
+  .editorActions { display:grid; grid-template-columns:1fr; }
+  .editorActions button { width:100%; }
+  .primaryButton,.secondaryButton { min-height:32px; padding:0 9px; font-size:10.5px; }
+  .actionPicker>.primaryButton { width:auto; min-width:92px; }
+}
+
+@container (max-width:460px) {
+  .headingActions,.internalFields,.actionPicker { grid-template-columns:1fr; }
+  .tableHeader { display:none; }
+  .itemRow { grid-template-columns:minmax(0,1fr) 68px 74px 28px; gap:6px; padding:8px; }
+  .itemRow>div { grid-column:1/-1; }
+  .summaryCard dl { grid-template-columns:1fr; }
+  .primaryButton,.secondaryButton { min-height:30px; padding:0 8px; font-size:10px; }
+  .headingActions { display:flex; flex-wrap:wrap; }
+  .headingActions button { width:auto; flex:1 1 145px; }
+  .actionPicker>.primaryButton { width:100%; }
+}

@@ -21,8 +21,8 @@ interface SnapshotFluxo {
 export default function FluxoDetalhePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { clientes, robos } = useAppData();
-  const { canEditFlows } = useAdminAccess();
-  const { carregarDetalhes, salvarFluxo, publicarFluxo } = useFlowsData();
+  const { canEditFlows, isAdmin, userId } = useAdminAccess();
+  const { carregarDetalhes, salvarFluxo, publicarFluxo, atualizarMetadadosFluxo } = useFlowsData();
   const [fluxo, setFluxo] = useState<Fluxo | null>(null);
   const [nodes, setNodes] = useState<NodeFluxo[]>([]);
   const [edges, setEdges] = useState<EdgeFluxo[]>([]);
@@ -35,6 +35,10 @@ export default function FluxoDetalhePage({ params }: { params: Promise<{ id: str
   const [versaoSelecionada, setVersaoSelecionada] = useState<number | null>(null);
   const [historicoAberto, setHistoricoAberto] = useState(false);
   const [editorExpandido, setEditorExpandido] = useState(false);
+  const [metadadosAbertos, setMetadadosAbertos] = useState(false);
+  const [descricaoEditada, setDescricaoEditada] = useState("");
+  const [clienteEditadoId, setClienteEditadoId] = useState("");
+  const [salvandoMetadados, setSalvandoMetadados] = useState(false);
 
   const carregar = useCallback(async () => {
     setCarregando(true); setErro("");
@@ -79,10 +83,24 @@ export default function FluxoDetalhePage({ params }: { params: Promise<{ id: str
     finally { setPublicando(false); }
   }
 
+  async function salvarMetadados() {
+    if (!fluxo) return;
+    setSalvandoMetadados(true); setErro("");
+    try {
+      await atualizarMetadadosFluxo(fluxo.id, descricaoEditada, isAdmin ? clienteEditadoId : undefined);
+      setFluxo({ ...fluxo, descricao: descricaoEditada.trim(), clienteId: isAdmin ? clienteEditadoId : fluxo.clienteId, atualizadoEm: new Date().toISOString() });
+      setMetadadosAbertos(false);
+    } catch (error) {
+      const detail = error && typeof error === "object" && "message" in error ? String(error.message) : "Não foi possível salvar.";
+      setErro(detail);
+    } finally { setSalvandoMetadados(false); }
+  }
+
   if (carregando) return <AppShell title="Fluxos"><div className="flow-message">Carregando fluxo...</div></AppShell>;
   if (!fluxoExibido) return <AppShell title="Fluxos"><div className="flow-message is-error">{erro || "Acesso negado."}</div></AppShell>;
 
   const isHistorical = Boolean(historicoSelecionado);
+  const canEditMetadata = isAdmin || fluxo.criadoPor === userId;
   return (
     <AppShell title="Fluxos">
       <section className="flow-detail-page">
@@ -97,6 +115,7 @@ export default function FluxoDetalhePage({ params }: { params: Promise<{ id: str
             </div>
           </div>
           <div className="flow-detail-actions">
+            {canEditMetadata && !isHistorical && <button className="flow-secondary-button flow-metadata-button" type="button" onClick={() => { setDescricaoEditada(fluxo.descricao); setClienteEditadoId(fluxo.clienteId); setMetadadosAbertos(true); }}><Pencil size={14} /> Editar informações</button>}
             <div className="flow-mode-toggle"><button className={modo === "view" ? "is-active" : ""} type="button" onClick={() => setModo("view")}><Eye size={14} /> Visualizar</button>{canEditFlows && !isHistorical && <button className={modo === "edit" ? "is-active" : ""} type="button" onClick={() => setModo("edit")}><Pencil size={14} /> Editar</button>}</div>
             {canEditFlows && !isHistorical && <button className="flow-primary-button" type="button" disabled={dirty || publicando} title={dirty ? "Salve as alterações antes de publicar." : undefined} onClick={() => void publicar()}><Rocket size={15} />{publicando ? "Publicando..." : "Publicar versão"}</button>}
           </div>
@@ -110,6 +129,7 @@ export default function FluxoDetalhePage({ params }: { params: Promise<{ id: str
         </div>
 
         {historicoAberto && <div className="flow-history-backdrop" onMouseDown={() => setHistoricoAberto(false)}><aside className="flow-history-panel is-drawer" onMouseDown={(event) => event.stopPropagation()}><div className="flow-history-title"><span><History size={15} /> HISTÓRICO</span><button type="button" aria-label="Fechar histórico" onClick={() => setHistoricoAberto(false)}><X size={16} /></button></div><button className={!versaoSelecionada ? "is-current" : ""} type="button" onClick={() => { setVersaoSelecionada(null); setHistoricoAberto(false); }}><strong>v{fluxo.versao} Atual</strong><span>{formatarData(fluxo.atualizadoEm)}</span></button>{versoes.map((version) => <button className={versaoSelecionada === version.versao ? "is-current" : ""} type="button" key={version.id} onClick={() => { setVersaoSelecionada(version.versao); setModo("view"); setDirty(false); setHistoricoAberto(false); }}><strong>v{version.versao}</strong><span>{formatarData(version.criadoEm)}</span></button>)}</aside></div>}
+        {metadadosAbertos && <div className="flow-dialog-backdrop" onMouseDown={() => setMetadadosAbertos(false)}><div className="flow-dialog" onMouseDown={(event) => event.stopPropagation()}><header><div><span>INFORMAÇÕES DO FLUXO</span><h2>Editar fluxo</h2></div><button type="button" onClick={() => setMetadadosAbertos(false)}><X size={18} /></button></header>{isAdmin && <label>Cliente<select value={clienteEditadoId} onChange={(event) => setClienteEditadoId(event.target.value)}>{clientes.map((item) => <option key={item.id} value={item.id}>{item.nome}</option>)}</select></label>}<label>Descrição<textarea rows={4} value={descricaoEditada} onChange={(event) => setDescricaoEditada(event.target.value)} /></label><footer><button type="button" onClick={() => setMetadadosAbertos(false)}>Cancelar</button><button className="flow-primary-button" type="button" disabled={salvandoMetadados || (isAdmin && !clienteEditadoId)} onClick={() => void salvarMetadados()}>{salvandoMetadados ? "Salvando..." : "Salvar"}</button></footer></div></div>}
       </section>
     </AppShell>
   );
