@@ -24,7 +24,8 @@ export default function RobotCatalogSettings({ canManage }: { canManage: boolean
   const load = useCallback(async () => {
     setLoading(true); setError("");
     const supabase = createClient();
-    const result = kind === "packages" ? await supabase.from("robot_packages").select("id,name,color,active").order("name")
+    const result = kind === "systems" ? await supabase.from("robot_systems").select("id,name,active").order("name")
+      : kind === "packages" ? await supabase.from("robot_packages").select("id,name,color,active").order("name")
       : kind === "commands" ? await supabase.from("robot_commands").select("id,name,command,active").order("name")
       : kind === "stacks" ? await supabase.from("robot_stacks").select("id,name,active").order("name")
       : await supabase.from("robot_queues").select("id,name,active").order("name");
@@ -45,7 +46,8 @@ export default function RobotCatalogSettings({ canManage }: { canManage: boolean
     if (!name.trim() || (kind === "commands" && !command.trim())) return;
     const supabase = createClient();
     let operationError: { code?: string; message: string } | null = null;
-    if (kind === "packages") operationError = (editingId ? await supabase.from("robot_packages").update({ name: name.trim(), color }).eq("id", editingId) : await supabase.from("robot_packages").insert({ name: name.trim(), color })).error;
+    if (kind === "systems") operationError = (editingId ? await supabase.from("robot_systems").update({ name: name.trim() }).eq("id", editingId) : await supabase.from("robot_systems").insert({ name: name.trim() })).error;
+    else if (kind === "packages") operationError = (editingId ? await supabase.from("robot_packages").update({ name: name.trim(), color }).eq("id", editingId) : await supabase.from("robot_packages").insert({ name: name.trim(), color })).error;
     else if (kind === "commands") operationError = (editingId ? await supabase.from("robot_commands").update({ name: name.trim(), command: command.trim() }).eq("id", editingId) : await supabase.from("robot_commands").insert({ name: name.trim(), command: command.trim() })).error;
     else if (kind === "stacks") operationError = (editingId ? await supabase.from("robot_stacks").update({ name: name.trim() }).eq("id", editingId) : await supabase.from("robot_stacks").insert({ name: name.trim() })).error;
     else operationError = (editingId ? await supabase.from("robot_queues").update({ name: name.trim() }).eq("id", editingId) : await supabase.from("robot_queues").insert({ name: name.trim() })).error;
@@ -55,7 +57,8 @@ export default function RobotCatalogSettings({ canManage }: { canManage: boolean
 
   async function toggle(item: RobotCatalogItem) {
     const supabase = createClient();
-    const result = kind === "packages" ? await supabase.from("robot_packages").update({ active: !item.active }).eq("id", item.id)
+    const result = kind === "systems" ? await supabase.from("robot_systems").update({ active: !item.active }).eq("id", item.id)
+      : kind === "packages" ? await supabase.from("robot_packages").update({ active: !item.active }).eq("id", item.id)
       : kind === "commands" ? await supabase.from("robot_commands").update({ active: !item.active }).eq("id", item.id)
       : kind === "stacks" ? await supabase.from("robot_stacks").update({ active: !item.active }).eq("id", item.id)
       : await supabase.from("robot_queues").update({ active: !item.active }).eq("id", item.id);

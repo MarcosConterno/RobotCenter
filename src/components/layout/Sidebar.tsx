@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, ChevronDown, ChevronRight, CircleHelp, GitFork, House, LayoutDashboard, PanelLeftClose, PanelLeftOpen, Settings2 } from "lucide-react";
+import { Bot, Calculator, ChevronDown, ChevronRight, CircleHelp, GitFork, House, LayoutDashboard, PanelLeftClose, PanelLeftOpen, Settings2 } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import Image from "next/image";
 import Link from "next/link";
@@ -17,6 +17,7 @@ const navigation = [
   { href: "/dashboard", label: "Dashboard", description: "Visão geral", icon: LayoutDashboard, access: "dashboard" },
   { href: "/robos", label: "Robôs", description: "Consulta e detalhes", icon: Bot, access: "robots" },
   { href: "/fluxos", label: "Fluxos", description: "Documentação visual", icon: GitFork, access: "flows" },
+  { href: "/orcamentos", label: "Orçamentos", description: "Estimativas de projetos", icon: Calculator, access: "budgets" },
   { href: "/configuracoes", label: "Configurações", description: "Usuários e clientes", icon: Settings2, access: "settings" },
 ];
 
@@ -35,13 +36,14 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
     window.addEventListener(DASHBOARD_UNREAD_EVENT, sync);
     return () => window.removeEventListener(DASHBOARD_UNREAD_EVENT, sync);
   }, []);
-  const { canAccessRobots, canAccessRobotProduct, canAccessFlows, canAccessSettings, canManageTutorials, status } = useAdminAccess();
+  const { canAccessRobots, canAccessRobotProduct, canAccessFlows, canAccessBudgets, canAccessSettings, canManageTutorials, status } = useAdminAccess();
   const tutorial = useTutorial();
   const visibleNavigation = navigation.filter((item) => (
     item.access === "my-page"
     || item.access === "dashboard"
     || (item.access === "robots" && canAccessRobots)
     || (item.access === "flows" && canAccessFlows)
+    || (item.access === "budgets" && canAccessBudgets)
     || (item.access === "settings" && (canAccessSettings || canManageTutorials))
   ));
 

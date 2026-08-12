@@ -304,3 +304,21 @@
 - O usuário autorizado edita somente robôs do Cliente vinculado.
 - O usuário não cria, arquiva, transfere ou muda o produto do robô e não administra catálogos, cores compartilhadas ou documentação.
 - Remover o papel Cliente remove automaticamente a liberação individual.
+# Orçamentos
+
+- Somente Master e Admin acessam o menu, a rota e os dados de Orçamentos.
+- Um orçamento deve possuir nome e ao menos um item para ser salvo.
+- O Cliente é opcional; selecionar “Sem cliente” grava `client_id = NULL`.
+- O Sistema é opcional; vazio grava `system_id = NULL`. Quando informado, deve ser um cadastro ativo de `robot_systems`.
+- Master e Admin podem editar orçamentos salvos. A edição atualiza o mesmo UUID e substitui seus itens atomicamente.
+- Todo orçamento é criado com status **Novo**. Em edições posteriores, Master/Admin podem alterar para **Enviado ao Comercial**, **Projeto Rejeitado**, **Arquivado** ou **Aprovado**, além de retornar para **Novo**.
+- A importação aceita TXT; linhas vazias e comentários `---` não geram itens.
+- O parser normaliza caixa e acentos e avalia aliases por prioridade e especificidade.
+- Itens não reconhecidos são mantidos para revisão, nunca descartados silenciosamente.
+- Horas, valor-hora, comissão, descrições e valores são congelados no orçamento salvo.
+- O resultado financeiro final é gravado em `budgets.total` e apresentado funcionalmente como **Valor estimado**.
+- Horas totais, subtotal e Valor estimado são recalculados no banco durante cada criação ou edição; valores agregados enviados isoladamente pelo navegador não são aceitos como fonte de verdade.
+- Alterar ou desativar uma ação não modifica orçamentos anteriores.
+- O vínculo com Robô é opcional e não concede acesso adicional ao registro.
+- O PDF preserva a identidade visual da calculadora original, usando a marca e o padrão visual do Robot Center.
+- O PDF é um artefato externo e apresenta somente escopo e horas técnicas. Valor-hora, comissão e totais financeiros são estimativas internas e nunca devem aparecer no arquivo gerado.

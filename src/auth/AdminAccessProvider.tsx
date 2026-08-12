@@ -23,6 +23,8 @@ interface AdminAccessContextValue {
   canEditFlows: boolean;
   canCreateFlows: boolean;
   canDeleteFlows: boolean;
+  canAccessBudgets: boolean;
+  canManageBudgetDictionary: boolean;
   canViewStackRequests: boolean;
   canCreateStackRequests: boolean;
   canManageStackRequests: boolean;
@@ -117,6 +119,8 @@ export function AdminAccessProvider({ children }: { children: ReactNode }) {
       canEditFlows: permissions.includes("flows.update"),
       canCreateFlows: permissions.includes("flows.create"),
       canDeleteFlows: permissions.includes("flows.delete"),
+      canAccessBudgets: isAdmin,
+      canManageBudgetDictionary: isAdmin,
       canViewStackRequests: permissions.includes("stack_requests.read"),
       canCreateStackRequests: permissions.includes("stack_requests.create"),
       canManageStackRequests: permissions.some((permission) => ["stack_requests.update", "stack_requests.status", "stack_requests.complete", "stack_requests.cancel", "stack_requests.request_info"].includes(permission)),

@@ -20,7 +20,7 @@
 
 O **Robot Center** organiza o ciclo de vida das automações da empresa. A plataforma oferece uma visão consolidada do portfólio de robôs e, ao mesmo tempo, preserva o isolamento dos dados de cada cliente por meio das políticas de segurança do Supabase.
 
-O sistema atende diferentes perfis — de clientes e equipes operacionais até administradores — com permissões específicas para leitura, edição, documentação, publicação e administração.
+O sistema atende diferentes perfis — de clientes e equipes operacionais até administradores — com permissões específicas para leitura, edição, documentação, publicação, orçamentos e administração.
 
 ## Principais recursos
 
@@ -58,6 +58,15 @@ O sistema atende diferentes perfis — de clientes e equipes operacionais até a
 - Histórico imutável das versões publicadas.
 - Separação completa entre documentação interna e arquivos enviados pelo usuário.
 
+### Orçamentos de projetos
+
+- Calculadora disponível para Master e Admin, com criação manual ou importação de escopo em TXT.
+- Dicionário configurável de ações, aliases e horas técnicas para reconhecimento dos arquivos.
+- Cliente e Sistema opcionais, com Sistema ligado ao catálogo relacional usado pelos robôs.
+- Valor-hora, comissão e Valor estimado mantidos como parâmetros internos.
+- PDFs clássico e Robot Center contendo apenas o escopo e as horas técnicas, sem valores financeiros.
+- Histórico editável com os status Novo, Enviado ao Comercial, Projeto Rejeitado, Arquivado e Aprovado.
+
 ### Minha página
 
 - ToDos pessoais com prioridade, prazo e status.
@@ -70,6 +79,7 @@ O sistema atende diferentes perfis — de clientes e equipes operacionais até a
 
 - Gestão de usuários, clientes e vínculos.
 - Matriz visual de papéis e permissões.
+- Cadastros técnicos relacionais de Sistemas, Pacotes, Stacks, Commands e Filas.
 - Tutoriais administráveis e progresso individual.
 - Tema claro e escuro.
 - Sincronização em tempo real dos dados autorizados.
@@ -81,8 +91,8 @@ O acesso combina **RBAC**, permissões granulares e **Row Level Security (RLS)**
 
 | Perfil | Escopo principal |
 |---|---|
-| **Master** | Administração superior, matriz completa e operações excepcionais auditadas |
-| **Admin** | Gestão de usuários, clientes, robôs, documentos, tutoriais e permissões autorizadas |
+| **Master** | Administração superior, matriz completa, orçamentos e operações excepcionais auditadas |
+| **Admin** | Gestão de usuários, clientes, robôs, orçamentos, documentos, tutoriais e permissões autorizadas |
 | **Head Setor** | Consulta de robôs e gestão das solicitações de stack conforme a matriz |
 | **Operador** | Consulta global e capacidades operacionais específicas |
 | **Dev** | Escopo configurável, independente do Operador |
@@ -222,6 +232,7 @@ O ambiente oficial utiliza **Supabase Cloud**. Para manter segurança e rastreab
 - [API de usuários](docs/api-usuarios.md)
 - [API de fluxos](docs/api-fluxos.md)
 - [API da Minha página](docs/api-minha-pagina.md)
+- [API de orçamentos](docs/api-orcamentos.md)
 - [Documentação Robot Center](docs/api-documentacao-robot-center.md)
 
 ## Qualidade e contribuição

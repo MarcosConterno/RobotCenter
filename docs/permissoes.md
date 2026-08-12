@@ -117,6 +117,16 @@ Versões publicadas permanecem no mesmo bucket privado, sob `<robo_id>/versions/
 | `robot_center_documentation.read` | Sim | Conforme `robots.read` | Próprio cliente | Conforme `robots.read` |
 | `robot_center_documentation.manage` | Sim | Não | Não | Não |
 
+## Orçamentos
+
+O módulo `/orcamentos` exige papel real `master` ou `admin` na navegação e na validação de rota. A ocultação do item não substitui a proteção no servidor e no banco. As tabelas `budgets`, `budget_items`, `budget_action_catalog` e `budget_action_aliases` possuem RLS e grants somente para `authenticated`, com policies que repetem a exigência de Master/Admin.
+
+As permissões cadastradas são `budgets.read`, `budgets.create`, `budgets.update` e `budgets.dictionary.manage`, inicialmente atribuídas somente a Master e Admin. Nenhuma policy usa `user_metadata`, e usuários anônimos ou demais papéis não consultam nem alteram orçamentos por acesso direto à Data API.
+
+O catálogo `robot_systems` segue `robot_catalog.read` e `robot_catalog.manage`: os mesmos papéis que consultam os demais catálogos podem lê-lo, enquanto somente Master e Admin podem cadastrar, editar ou inativar Sistemas.
+
+A RPC `public.save_budget` usa `SECURITY INVOKER`, valida novamente os papéis Master/Admin e permanece sujeita às policies das tabelas. A substituição dos itens recebe policy de `DELETE` restrita aos mesmos papéis e somente para orçamento ativo. Informar um Cliente não amplia acesso: a função aceita apenas Cliente ativo e o módulo continua exclusivamente administrativo.
+
 ## Painel administrativo de permissões
 
 O **Controle de Acesso** apresenta recursos em cards e níveis Sem acesso, Somente leitura, Personalizado e Acesso total. A edição detalhada ocorre em drawer: fechar descarta, “Aplicar alterações” atualiza apenas o rascunho e somente “Salvar alterações” persiste a matriz. Os produtos de Robôs possuem permissões `robots.product.*.read`; menu, rota direta e `robos_select` exigem o produto correspondente, mantendo também `robots.read` e o escopo por Cliente.

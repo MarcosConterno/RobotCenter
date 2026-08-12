@@ -28,7 +28,7 @@ O campo `pacote` também identifica a opção correspondente na propriedade `Pac
 
 ### Sistema
 
-Sistema com o qual o robô se relaciona. É um valor textual do Robô. Não é sinônimo de Cliente nem de Pacote.
+Sistema com o qual o robô ou orçamento se relaciona. É administrado no catálogo `robot_systems`; Robôs preservam também o nome textual sincronizado para compatibilidade. Não é sinônimo de Cliente nem de Pacote.
 
 ### Pacote
 
@@ -103,7 +103,7 @@ Na administração, cada Cliente possui um resumo operacional derivado: quantida
 - Usuário não deve ser inferido a partir de Responsável.
 # Persistência V1
 
-A V1 mantém os conceitos e comportamentos atuais. Sistema, Pacote, Responsável e Ambiente continuam atributos de `Robo`.
+Sistema e Pacote são catálogos relacionados ao `Robo`; Responsável e Ambiente continuam atributos diretos. Os nomes textuais de Sistema e Pacote permanecem sincronizados para compatibilidade das projeções existentes.
 
 Para persistência, os IDs passam a UUID. Um robô pertence obrigatoriamente a um Cliente. As regras são armazenadas como registros filhos ordenados e categorizados. No domínio da aplicação, regras do documento técnico são expostas em `regras` e regras externas em `regrasForaDocumentacao`. `ultimaPublicacaoEm` é derivado da publicação mais recente e não é gravado no cadastro do robô.
 
@@ -134,6 +134,20 @@ Alterações de regras são registradas na descrição da publicação com a cat
 ## Documentação Upada
 
 O Robô pode possuir vários documentos externos em `uploadedDocuments`, incluindo PDF, DOCX e XLSX. Os metadados pertencem a `robot_uploaded_documents` e os objetos permanecem privados no bucket `robot-manuals`. `uploadedDocumentationPath` e `uploadedDocumentationName` continuam como compatibilidade para o PDF legado e são migrados sem apagar o objeto existente. Esses anexos não integram regras, publicações ou o motor DOCX/PDF.
+
+## Orçamentos
+
+O Orçamento representa uma estimativa estruturada de projeto criada manualmente ou importada de TXT. Ele preserva os parâmetros financeiros e os itens usados no momento da finalização. O total calculado é persistido e apresentado internamente como **Valor estimado**. O Dicionário de Orçamentos é a única fonte das ações e termos reconhecidos; editar o dicionário afeta somente cálculos futuros.
+
+Linhas vazias e comentários iniciados por `---` são ignorados. Linhas sem correspondência permanecem visíveis como “Outra ação não catalogada”, com zero hora, para revisão explícita. O vínculo com Robô é opcional e foi preparado para a futura exibição do PDF em Outros documentos.
+
+O vínculo do Orçamento com Cliente também é opcional. Admin e Master podem reabrir qualquer orçamento ativo, alterar Cliente, itens, parâmetros e origem e salvar sobre o mesmo registro; a atualização substitui os itens de forma transacional e recalcula os totais.
+
+O Sistema do projeto é opcional e relacional. A interface seleciona um registro ativo de `robot_systems`, sem obrigar Cliente ou Robô, permitindo índices e vínculos futuros consistentes.
+
+O ciclo do Orçamento possui os status `Novo`, `Enviado ao Comercial`, `Projeto Rejeitado`, `Arquivado` e `Aprovado`. Toda criação começa obrigatoriamente em `Novo`; mudanças de status são permitidas somente ao editar um orçamento já salvo.
+
+O contrato de leitura e escrita do módulo está documentado em `docs/api-orcamentos.md`.
 
 ## Documentação Robot Center
 

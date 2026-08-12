@@ -22,6 +22,7 @@ interface ClientMetric { clientId: string; robots: number; flows: number; docume
 const CLIENT_ROLE_BLOCKED_PERMISSIONS = new Set([
   "robots.create", "robots.update", "robots.archive", "robots.capacity.update",
   "publications.create", "robot_catalog.manage", "robot_center_documentation.manage",
+  "budgets.read", "budgets.create", "budgets.update", "budgets.dictionary.manage",
   "clients.manage", "users.read", "users.manage", "access_control.read",
 ]);
 
@@ -784,7 +785,7 @@ function PermissionsPanel({ roles, permissions, loading, error, isMaster, onSave
 
 function resourceLabel(resource: string) {
   const labels: Record<string, string> = {
-    access_control: "Controle de acesso", clients: "Clientes", dashboard: "Dashboard", flows: "Fluxos",
+    access_control: "Controle de acesso", budgets: "Orçamentos", clients: "Clientes", dashboard: "Dashboard", flows: "Fluxos",
     publications: "Publicações", robot_center_documentation: "Documentação Robot Center", robots: "Robôs",
     settings: "Configurações", robot_catalog: "Cadastros", tutorials: "Tutoriais", users: "Usuários",
     stack_requests: "Solicitações de Stack",

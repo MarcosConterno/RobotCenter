@@ -57,7 +57,8 @@ Arquivos principais:
 |---|---|---:|---|
 | `id` | `number` | Sim | Mock numérico ou `Date.now()` no cadastro temporário. |
 | `nome` | `string` | Sim | Texto não vazio. |
-| `sistema` | `string` | Sim | Texto não vazio; conceito distinto de Cliente e Pacote. |
+| `sistema` | `string` | Sim | Snapshot compatível do catálogo `robot_systems`. |
+| `system_id` | `uuid` | Sim | FK indexada para `robot_systems`; fonte relacional do Sistema. |
 | `pacote` | `string` | Sim | Texto não vazio; filtro próprio. |
 | `descricao` | `string` | Sim | Texto não vazio. |
 | `ambiente` | `AmbienteRobo` | Sim | `Produção`, `Teste`, `Desenvolvimento`. |
@@ -216,7 +217,7 @@ Todos os formulários validam antes de chamar o provedor. Campos obrigatórios d
 - Formato obrigatório de versão.
 - Unicidade de nome do robô, login, nome do cliente e tenant.
 - Significado técnico de tenant.
-- Se Sistema e Pacote continuarão texto ou serão catálogos.
+- A evolução dos catálogos relacionais de Sistema e Pacote deve preservar os snapshots textuais enquanto houver consumidores legados.
 
 ## Módulo de Fluxos por Cliente
 
@@ -332,6 +333,26 @@ O componente **Atualizações recentes** lê `public.publicacoes`, ordenada por 
 ## Manual PDF do robô
 
 `robot_uploaded_documents` registra os metadados dos anexos privados do robô: caminho, nome original, MIME, tamanho e auditoria. O bucket privado `robot-manuals` aceita PDF, DOCX e XLSX de até 20 MB, usando caminhos únicos sob `<robo_id>/`. Os campos legados `robos.manual_path` e `robos.manual_nome` são preservados, e seus arquivos existentes ganham somente uma linha de metadados, sem duplicação ou remoção do objeto.
+
+## Orçamentos
+
+`budget_action_catalog` é a fonte única das ações, categorias, horas padrão, ordem e estado ativo usados pela criação manual e pelo parser de TXT. `budget_action_aliases` registra os termos normalizados reconhecidos no arquivo e sua prioridade; aliases mais prioritários e específicos são avaliados antes dos genéricos.
+
+`budgets` persiste nome, origem (`manual` ou `txt`), estado, parâmetros financeiros e totais congelados. O conteúdo e nome do TXT podem ser preservados para rastreabilidade. `client_id`, `system_id` e `robot_id` são FKs opcionais: o orçamento pode ser salvo sem Cliente, Sistema e Robô. `system_id` referencia o catálogo `robot_systems` e possui índice para consultas e indicadores futuros.
+
+`budget_items` mantém o snapshot da descrição, horas, valor-hora, valor e linha de origem. Alterações posteriores no dicionário não recalculam registros históricos. Todas as tabelas possuem auditoria, índices, grants explícitos e RLS limitada a Master/Admin.
+
+```text
+budget_action_catalog (1) ── budget_action_aliases (0..N)
+          │
+          └── budget_items (0..N) ── (1) budgets ── (0..1) clientes
+                                             └──── (0..1) robot_systems
+                                             └──── (0..1) robos
+```
+
+`public.save_budget` é uma RPC `SECURITY INVOKER` que cria ou edita o orçamento e substitui seus itens na mesma transação. Horas, subtotal e valor estimado são recalculados no banco a partir dos itens; a função valida Master/Admin, Cliente ativo e dados financeiros antes de gravar.
+
+`budgets.status` aceita `novo`, `enviado_comercial`, `projeto_rejeitado`, `arquivado` e `aprovado`. O default é `novo`, e a RPC ignora qualquer tentativa de criar diretamente em outro estado. Registros legados `draft`/`finalized` são migrados para `novo` sem exclusão.
 
 ## Base da Documentação Robot Center
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, BookOpen, Bot, Boxes, Building2, FileClock, FileText, GitFork, KeyRound, LayoutDashboard, Plus, Save, Search, Settings2, ShieldCheck, Users, X, type LucideIcon } from "lucide-react";
+import { Activity, BookOpen, Bot, Boxes, Building2, Calculator, FileClock, FileText, GitFork, KeyRound, LayoutDashboard, Plus, Save, Search, Settings2, ShieldCheck, Users, X, type LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 
 import styles from "./AccessControlCenter.module.css";
@@ -15,12 +15,13 @@ const META: Record<string, { label: string; description: string; category: "OPER
   publications: { label: "Atualizações", description: "Histórico de publicações do Robot Center.", category: "OPERAÇÃO", icon: FileClock },
   stack_requests: { label: "Solicitações de Stack", description: "Solicitações, análise e conclusão de Stacks.", category: "OPERAÇÃO", icon: Activity },
   robot_center_documentation: { label: "Documentação Robot Center", description: "Leitura e manutenção da documentação técnica.", category: "OPERAÇÃO", icon: FileText },
+  budgets: { label: "Orçamentos", description: "Calculadora, histórico, edição e dicionário de projetos.", category: "OPERAÇÃO", icon: Calculator },
   robots: { label: "Robôs", description: "Cadastro, manutenção e produtos de robôs.", category: "ROBÔS", icon: Bot },
   clients: { label: "Clientes", description: "Consulta e gestão dos clientes.", category: "ADMINISTRAÇÃO", icon: Building2 },
   users: { label: "Usuários", description: "Usuários, vínculos e papéis de acesso.", category: "ADMINISTRAÇÃO", icon: Users },
   access_control: { label: "Perfis e Permissões", description: "Controle central de perfis e acessos.", category: "ADMINISTRAÇÃO", icon: ShieldCheck },
   settings: { label: "Configurações", description: "Acesso às configurações do sistema.", category: "ADMINISTRAÇÃO", icon: Settings2 },
-  robot_catalog: { label: "Cadastros técnicos", description: "Pacotes, Stacks, Commands e filas.", category: "ADMINISTRAÇÃO", icon: Boxes },
+  robot_catalog: { label: "Cadastros técnicos", description: "Sistemas, Pacotes, Stacks, Commands e filas.", category: "ADMINISTRAÇÃO", icon: Boxes },
   tutorials: { label: "Tutoriais", description: "Criação e publicação de tutoriais.", category: "ADMINISTRAÇÃO", icon: BookOpen },
 };
 const PRODUCT_ACTIONS = [
@@ -53,9 +54,10 @@ export default function AccessControlCenter({ roles, permissions, loading, error
   const accessPercent = resources.length ? Math.round(resources.reduce((sum, resource) => sum + ({ none: 0, read: .35, custom: .65, full: 1 }[getLevel(resource)]), 0) / resources.length * 100) : 0;
   const filteredResources = resources.filter((resource) => { const meta = META[resource]; const level = getLevel(resource); const term = search.trim().toLocaleLowerCase("pt-BR"); return (filter === "all" || filter === level) && (!term || `${meta.label} ${meta.description}`.toLocaleLowerCase("pt-BR").includes(term)); });
   const stackRequestsBlocked = drawerResource === "stack_requests" && ["cliente", "suporte"].includes(selectedRoleCode);
+  const budgetsBlocked = drawerResource === "budgets" && !["master", "admin"].includes(selectedRoleCode);
   const openDrawer = (resource: string) => { const codes = selectedCodes(resource); setDrawerResource(resource); setDrawerDraft(codes); setDrawerMode(getLevel(resource)); };
-  const setDrawerLevel = (level: Level) => { if (!drawerResource || selectedRoleCode === "master" || stackRequestsBlocked) return; const modulePermissions = permissions.filter((item) => item.recurso === drawerResource); setDrawerMode(level); if (level === "none") setDrawerDraft([]); else if (level === "full") setDrawerDraft(modulePermissions.map((item) => item.codigo)); else if (level === "read") setDrawerDraft(modulePermissions.filter((item) => READ_ACTIONS.has(item.acao) || item.acao.startsWith("product.")).map((item) => item.codigo)); };
-  const toggleDrawerCode = (code: string) => { if (selectedRoleCode === "master" || stackRequestsBlocked) return; setDrawerMode("custom"); setDrawerDraft((current) => current.includes(code) ? current.filter((item) => item !== code) : [...current, code]); };
+  const setDrawerLevel = (level: Level) => { if (!drawerResource || selectedRoleCode === "master" || stackRequestsBlocked || budgetsBlocked) return; const modulePermissions = permissions.filter((item) => item.recurso === drawerResource); setDrawerMode(level); if (level === "none") setDrawerDraft([]); else if (level === "full") setDrawerDraft(modulePermissions.map((item) => item.codigo)); else if (level === "read") setDrawerDraft(modulePermissions.filter((item) => READ_ACTIONS.has(item.acao) || item.acao.startsWith("product.")).map((item) => item.codigo)); };
+  const toggleDrawerCode = (code: string) => { if (selectedRoleCode === "master" || stackRequestsBlocked || budgetsBlocked) return; setDrawerMode("custom"); setDrawerDraft((current) => current.includes(code) ? current.filter((item) => item !== code) : [...current, code]); };
   const applyDrawer = () => { if (!drawerResource) return; const ids = permissions.filter((item) => item.recurso === drawerResource).map((item) => item.id); setDraft((current) => Object.fromEntries(Object.entries(current).map(([id, roleCodes]) => [id, ids.includes(id) ? (drawerDraft.includes(permissions.find((item) => item.id === id)?.codigo ?? "") ? [...new Set([...roleCodes, selectedRoleCode])] : roleCodes.filter((role) => role !== selectedRoleCode)) : roleCodes]))); setDrawerResource(null); };
   const pendingChanges = permissions.flatMap((permission) => roles.filter((role) => role.codigo !== "master" && permission.roles.includes(role.codigo) !== (draft[permission.id] ?? []).includes(role.codigo)).map((role) => ({ permissionId: permission.id, roleId: role.id, enabled: (draft[permission.id] ?? []).includes(role.codigo) })));
   const save = async () => { if (!pendingChanges.length) return; setSaving(true); setSaveError(""); try { const response = await fetch("/api/admin/permissions", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ changes: pendingChanges }) }); const payload = await response.json() as { error?: string }; if (!response.ok) throw new Error(payload.error ?? "Não foi possível salvar as permissões."); onSaved(permissions.map((permission) => ({ ...permission, roles: [...(draft[permission.id] ?? [])] }))); } catch (failure) { setSaveError(failure instanceof Error ? failure.message : "Não foi possível salvar as permissões."); } finally { setSaving(false); } };

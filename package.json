@@ -20,6 +20,7 @@
     "date-fns": "^4.4.0",
     "driver.js": "^1.8.0",
     "exceljs": "^4.4.0",
+    "jspdf": "^2.5.2",
     "jszip": "^3.10.1",
     "lucide-react": "^1.25.0",
     "motion": "^12.42.2",

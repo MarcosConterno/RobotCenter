@@ -14,6 +14,49 @@ export type Database = {
   }
   public: {
     Tables: {
+      budget_action_aliases: {
+        Row: { active: boolean; action_id: string; alias: string; created_at: string; created_by: string | null; id: string; priority: number; updated_at: string; updated_by: string | null }
+        Insert: { active?: boolean; action_id: string; alias: string; created_at?: string; created_by?: string | null; id?: string; priority?: number; updated_at?: string; updated_by?: string | null }
+        Update: { active?: boolean; action_id?: string; alias?: string; created_at?: string; created_by?: string | null; id?: string; priority?: number; updated_at?: string; updated_by?: string | null }
+        Relationships: [
+          { foreignKeyName: "budget_action_aliases_action_id_fkey"; columns: ["action_id"]; isOneToOne: false; referencedRelation: "budget_action_catalog"; referencedColumns: ["id"] },
+          { foreignKeyName: "budget_action_aliases_created_by_fkey"; columns: ["created_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "budget_action_aliases_updated_by_fkey"; columns: ["updated_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
+      }
+      budget_action_catalog: {
+        Row: { active: boolean; category: string; code: string; created_at: string; created_by: string | null; default_hours: number; description: string; id: string; sort_order: number; updated_at: string; updated_by: string | null }
+        Insert: { active?: boolean; category?: string; code: string; created_at?: string; created_by?: string | null; default_hours?: number; description: string; id?: string; sort_order?: number; updated_at?: string; updated_by?: string | null }
+        Update: { active?: boolean; category?: string; code?: string; created_at?: string; created_by?: string | null; default_hours?: number; description?: string; id?: string; sort_order?: number; updated_at?: string; updated_by?: string | null }
+        Relationships: [
+          { foreignKeyName: "budget_action_catalog_created_by_fkey"; columns: ["created_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "budget_action_catalog_updated_by_fkey"; columns: ["updated_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
+      }
+      budget_items: {
+        Row: { action_id: string | null; amount: number; budget_id: string; created_at: string; created_by: string | null; description: string; hourly_rate: number; hours: number; id: string; sort_order: number; source_line: number | null; source_text: string | null; updated_at: string; updated_by: string | null }
+        Insert: { action_id?: string | null; amount: number; budget_id: string; created_at?: string; created_by?: string | null; description: string; hourly_rate: number; hours: number; id?: string; sort_order?: number; source_line?: number | null; source_text?: string | null; updated_at?: string; updated_by?: string | null }
+        Update: { action_id?: string | null; amount?: number; budget_id?: string; created_at?: string; created_by?: string | null; description?: string; hourly_rate?: number; hours?: number; id?: string; sort_order?: number; source_line?: number | null; source_text?: string | null; updated_at?: string; updated_by?: string | null }
+        Relationships: [
+          { foreignKeyName: "budget_items_action_id_fkey"; columns: ["action_id"]; isOneToOne: false; referencedRelation: "budget_action_catalog"; referencedColumns: ["id"] },
+          { foreignKeyName: "budget_items_budget_id_fkey"; columns: ["budget_id"]; isOneToOne: false; referencedRelation: "budgets"; referencedColumns: ["id"] },
+          { foreignKeyName: "budget_items_created_by_fkey"; columns: ["created_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "budget_items_updated_by_fkey"; columns: ["updated_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
+      }
+      budgets: {
+        Row: { client_id: string | null; commission_percent: number; created_at: string; created_by: string | null; deleted_at: string | null; deleted_by: string | null; hourly_rate: number; id: string; project_name: string; robot_id: string | null; source: string; source_content: string | null; source_file_name: string | null; status: string; subtotal: number; system_id: string | null; total: number; total_hours: number; updated_at: string; updated_by: string | null }
+        Insert: { client_id?: string | null; commission_percent?: number; created_at?: string; created_by?: string | null; deleted_at?: string | null; deleted_by?: string | null; hourly_rate?: number; id?: string; project_name: string; robot_id?: string | null; source?: string; source_content?: string | null; source_file_name?: string | null; status?: string; subtotal?: number; system_id?: string | null; total?: number; total_hours?: number; updated_at?: string; updated_by?: string | null }
+        Update: { client_id?: string | null; commission_percent?: number; created_at?: string; created_by?: string | null; deleted_at?: string | null; deleted_by?: string | null; hourly_rate?: number; id?: string; project_name?: string; robot_id?: string | null; source?: string; source_content?: string | null; source_file_name?: string | null; status?: string; subtotal?: number; system_id?: string | null; total?: number; total_hours?: number; updated_at?: string; updated_by?: string | null }
+        Relationships: [
+          { foreignKeyName: "budgets_created_by_fkey"; columns: ["created_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "budgets_deleted_by_fkey"; columns: ["deleted_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "budgets_client_id_fkey"; columns: ["client_id"]; isOneToOne: false; referencedRelation: "clientes"; referencedColumns: ["id"] },
+          { foreignKeyName: "budgets_robot_id_fkey"; columns: ["robot_id"]; isOneToOne: false; referencedRelation: "robos"; referencedColumns: ["id"] },
+          { foreignKeyName: "budgets_system_id_fkey"; columns: ["system_id"]; isOneToOne: false; referencedRelation: "robot_systems"; referencedColumns: ["id"] },
+          { foreignKeyName: "budgets_updated_by_fkey"; columns: ["updated_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
+      }
       personal_meetings: {
         Row: { created_at: string; id: string; meeting_date: string; meeting_time: string; name: string; notes: string; participants: string | null; summary: string | null; updated_at: string; user_id: string }
         Insert: { created_at?: string; id?: string; meeting_date: string; meeting_time: string; name: string; notes?: string; participants?: string | null; summary?: string | null; updated_at?: string; user_id: string }
@@ -1003,6 +1046,12 @@ export type Database = {
         Update: { id?: string; name?: string; color?: string; active?: boolean; created_at?: string; updated_at?: string; created_by?: string | null; updated_by?: string | null; deleted_at?: string | null; deleted_by?: string | null }
         Relationships: []
       }
+      robot_systems: {
+        Row: { id: string; name: string; active: boolean; created_at: string; updated_at: string; created_by: string | null; updated_by: string | null; deleted_at: string | null; deleted_by: string | null }
+        Insert: { id?: string; name: string; active?: boolean; created_at?: string; updated_at?: string; created_by?: string | null; updated_by?: string | null; deleted_at?: string | null; deleted_by?: string | null }
+        Update: { id?: string; name?: string; active?: boolean; created_at?: string; updated_at?: string; created_by?: string | null; updated_by?: string | null; deleted_at?: string | null; deleted_by?: string | null }
+        Relationships: []
+      }
       robot_stacks: {
         Row: { id: string; name: string; active: boolean; created_at: string; updated_at: string; created_by: string | null; updated_by: string | null; deleted_at: string | null; deleted_by: string | null }
         Insert: { id?: string; name: string; active?: boolean; created_at?: string; updated_at?: string; created_by?: string | null; updated_by?: string | null }
@@ -1053,6 +1102,7 @@ export type Database = {
           product_type: string
           responsavel: string
           sistema: string
+          system_id: string | null
           stack: string | null
           stack_id: string | null
           tribunal: string | null
@@ -1093,6 +1143,7 @@ export type Database = {
           product_type?: string
           responsavel: string
           sistema: string
+          system_id?: string | null
           stack?: string | null
           stack_id?: string | null
           tribunal?: string | null
@@ -1133,6 +1184,7 @@ export type Database = {
           product_type?: string
           responsavel?: string
           sistema?: string
+          system_id?: string | null
           stack?: string | null
           stack_id?: string | null
           tribunal?: string | null
@@ -1143,6 +1195,13 @@ export type Database = {
           versao?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "robos_system_id_fkey"
+            columns: ["system_id"]
+            isOneToOne: false
+            referencedRelation: "robot_systems"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "robos_cliente_id_fkey"
             columns: ["cliente_id"]
@@ -1439,6 +1498,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      save_budget: {
+        Args: {
+          p_budget_id: string | null
+          p_client_id: string | null
+          p_commission_percent: number
+          p_hourly_rate: number
+          p_items: Json
+          p_project_name: string
+          p_status: string
+          p_system_id: string | null
+          p_source: string
+          p_source_content: string | null
+          p_source_file_name: string | null
+        }
+        Returns: string
+      }
       archive_client_with_user_reassignment: {
         Args: { replacement_client_id?: string | null; target_client_id: string }
         Returns: number

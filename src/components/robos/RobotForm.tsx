@@ -45,15 +45,17 @@ export default function RobotForm({
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [rulesTab, setRulesTab] = useState<"documentacao" | "fora-documentacao">("documentacao");
   const [draggedRuleIndex, setDraggedRuleIndex] = useState<number | null>(null);
-  const [catalogs, setCatalogs] = useState<{ packages: RobotCatalogItem[]; stacks: RobotCatalogItem[]; queues: RobotCatalogItem[]; commands: RobotCatalogItem[] }>({ packages: [], stacks: [], queues: [], commands: [] });
+  const [catalogs, setCatalogs] = useState<{ systems: RobotCatalogItem[]; packages: RobotCatalogItem[]; stacks: RobotCatalogItem[]; queues: RobotCatalogItem[]; commands: RobotCatalogItem[] }>({ systems: [], packages: [], stacks: [], queues: [], commands: [] });
   useEffect(() => {
     const supabase = createClient();
     void Promise.all([
+      supabase.from("robot_systems").select("id,name,active").eq("active", true).order("name"),
       supabase.from("robot_packages").select("id,name,color,active").eq("active", true).order("name"),
       supabase.from("robot_stacks").select("id,name,active").eq("active", true).order("name"),
       supabase.from("robot_queues").select("id,name,active").eq("active", true).order("name"),
       supabase.from("robot_commands").select("id,name,command,active").eq("active", true).order("name"),
-    ]).then(([packages, stacks, queues, commands]) => setCatalogs({
+    ]).then(([systems, packages, stacks, queues, commands]) => setCatalogs({
+      systems: (systems.data ?? []) as RobotCatalogItem[],
       packages: (packages.data ?? []) as RobotCatalogItem[], stacks: (stacks.data ?? []) as RobotCatalogItem[],
       queues: (queues.data ?? []) as RobotCatalogItem[], commands: (commands.data ?? []) as RobotCatalogItem[],
     }));
@@ -212,7 +214,7 @@ export default function RobotForm({
             </select>
             {clientes.length === 0 && <span style={fieldHintStyle}>Cadastre um cliente antes de cadastrar o robô.</span>}
           </div>}
-          <Field label="Sistema" placeholder="Ex.: Legal One" value={form.sistema} onChange={(v) => update("sistema", v)} required />
+          <CatalogSelect label="Sistema" value={form.sistema} items={catalogs.systems} onChange={(v) => update("sistema", v)} />
           <Field label="CourtName" placeholder="Ex.: TJSP" value={form.courtName} onChange={(v) => update("courtName", v)} required />
           <CatalogSelect label="Fila" value={form.fila} items={catalogs.queues} onChange={(v) => update("fila", v)} />
           <CatalogSelect label="Stack (opcional)" value={form.stack} items={catalogs.stacks} onChange={(v) => update("stack", v)} />
