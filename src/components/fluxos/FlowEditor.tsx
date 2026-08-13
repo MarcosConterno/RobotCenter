@@ -95,9 +95,10 @@ function toCanvasNodes(nodes: NodeFluxo[], robos: Robo[], editable: boolean): Ca
       zIndex: isGroup ? 0 : 1,
       style: isGroup
         ? { width: savedWidth || 360, height: savedHeight || 240 }
-        : savedWidth && savedHeight
-          ? { width: Math.max(savedWidth, node.tipo === "decision" ? 150 : 175), height: Math.max(savedHeight, minimumHeight) }
-          : { width: node.tipo === "decision" ? 150 : 175, height: minimumHeight },
+        : {
+            width: Math.max(savedWidth || 0, node.tipo === "decision" ? 150 : 175),
+            minHeight: Math.max(savedHeight || 0, minimumHeight),
+          },
       data: {
         ...saved,
         label: String(saved.label ?? "Elemento"),
@@ -319,7 +320,7 @@ function FlowEditorInner({ fluxo, initialNodes, initialEdges, robos, editable, o
       id: crypto.randomUUID(),
       type: "flowNode",
       position,
-      style: isGroup ? { width: 360, height: 240 } : { width: item.kind === "decision" ? 150 : 175, height: minimumHeight },
+      style: isGroup ? { width: 360, height: 240 } : { width: item.kind === "decision" ? 150 : 175, minHeight: minimumHeight },
       zIndex: isGroup ? 0 : 1,
       data: {
         label: defaultRobot?.nome ?? item.label,

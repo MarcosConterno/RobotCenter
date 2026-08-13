@@ -54,7 +54,12 @@ export default function FlowCanvasNode({ data, selected }: NodeProps) {
   const canResize = Boolean(selected && nodeData.editable);
   const minimumHeight = nodeData.kind === "robot" || nodeData.kind === "system" ? 140 : isDecision ? 90 : 105;
   const inlineEditor = nodeData.editing ? (
-    <div className={`flow-node__inline-editor flow-node__inline-editor--${nodeData.kind}`} onDoubleClick={(event) => event.stopPropagation()}>
+    <div
+      className={`flow-node__inline-editor flow-node__inline-editor--${nodeData.kind} nodrag nowheel`}
+      onClick={(event) => event.stopPropagation()}
+      onDoubleClick={(event) => event.stopPropagation()}
+      onPointerDown={(event) => event.stopPropagation()}
+    >
       {nodeData.kind === "robot" ? (
         <select aria-label="Robô do elemento" value={robot?.id ?? ""} onChange={(event) => {
           const selectedRobot = nodeData.robotOptions?.find((item) => item.id === event.target.value);
@@ -114,7 +119,9 @@ export default function FlowCanvasNode({ data, selected }: NodeProps) {
           <>
             {robot.descricao ? <p>{robot.descricao}</p> : null}
             <div className="flow-node__robot-meta">
-              <span>Stack: {robot.stack}</span>
+              <span title={robot.stack}>Stack: {robot.stack || "Não informado"}</span>
+              <span title={robot.command}>Command: {robot.command || "Não informado"}</span>
+              <span title={robot.pacote}>Pacote: {robot.pacote || "Não informado"}</span>
               <span className={robot.ativo ? "is-active" : ""}>{robot.ambiente}</span>
             </div>
           </>
