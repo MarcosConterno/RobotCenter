@@ -2208,6 +2208,7 @@ button {
 .flow-node__content > p { margin: clamp(6px, 1.8cqi, 10px) 0 0; color: var(--muted); font-size: clamp(9px, calc(6px + 1.4cqi), 14px); line-height: 1.45; }
 .flow-node__robot-meta { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
 .flow-node__robot-meta span { border-radius: 5px; padding: clamp(3px, .8cqi, 5px) clamp(5px, 1.2cqi, 8px); color: var(--muted); background: var(--surface); font-size: clamp(8px, calc(5px + 1.2cqi), 12px); }
+.flow-node__robot-meta span.is-kortex { color: var(--accent); background: var(--accent-soft); font-weight: 800; }
 .flow-node__robot-meta span.is-active { color: var(--success); background: var(--success-soft); }
 .flow-node__condition { margin-top: clamp(7px, 2cqi, 12px); color: var(--text-strong); font-size: clamp(9px, calc(6px + 1.6cqi), 15px); font-weight: 700; }
 .flow-node__type-label { display: block; margin-top: 6px; color: var(--muted); font-size: 8px; }
@@ -2222,6 +2223,7 @@ button {
 .flow-node__description { white-space: pre-wrap; }
 .flow-node__inline-editor button { justify-self: end; border: 0; border-radius: 5px; padding: 4px 7px; color: var(--on-accent); background: var(--accent); font-size: 8px; font-weight: 700; cursor: pointer; }
 .flow-edge-label { position: absolute; display: grid; min-width: 88px; min-height: 64px; max-width: min(360px, 70vw); max-height: 320px; box-sizing: border-box; align-content: center; gap: 4px; overflow: auto; pointer-events: all; border: 1px solid var(--border); border-radius: 7px; padding: 9px 10px; color: var(--muted); background: var(--card); box-shadow: 0 2px 7px rgba(0,0,0,.12); font-size: 9px; line-height: 1.3; }
+.flow-edge-label span { color: #94a3b8; }
 .flow-edge-label.is-resizable { overflow: visible; cursor: grab; user-select: none; touch-action: none; }
 .flow-edge-label.is-moving { cursor: grabbing; }
 .flow-edge-resize-controls { position: absolute; inset: 0; pointer-events: none; }
@@ -2235,7 +2237,7 @@ button {
 .flow-edge-resize-controls .is-sw { bottom: -4px; left: -4px; cursor: nesw-resize; }
 .flow-edge-resize-controls .is-w { top: 50%; left: -4px; transform: translateY(-50%); cursor: ew-resize; }
 .flow-edge-label span { display: block; overflow-wrap: anywhere; }
-.flow-edge-label span:first-child { color: var(--accent); font-weight: 800; }
+.flow-edge-label span:first-child { color: #3b82f6; font-weight: 800; }
 .flow-edge-label.is-selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
 .flow-panel-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px; padding-bottom: 10px; border-bottom: 1px solid var(--separator); }
 .flow-panel-tabs button { display: inline-flex; min-width: 0; min-height: 28px; align-items: center; justify-content: center; gap: 3px; overflow: hidden; border: 0; border-radius: 6px; padding: 0 4px; color: var(--muted); background: transparent; font-size: 7.5px; font-weight: 800; text-overflow: ellipsis; cursor: pointer; }

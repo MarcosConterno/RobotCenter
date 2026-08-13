@@ -19,6 +19,14 @@ export interface FlowCanvasEdgeData extends Record<string, unknown> {
   onSelect?: () => void;
 }
 
+const exportSafeEdgeStyle = {
+  fill: "none",
+  stroke: "#64748b",
+  strokeWidth: 2.25,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+};
+
 export default function FlowCanvasEdge(props: EdgeProps) {
   const labelRef = useRef<HTMLDivElement>(null);
   const { zoom } = useViewport();
@@ -127,8 +135,8 @@ export default function FlowCanvasEdge(props: EdgeProps) {
 
   return (
     <>
-      <BaseEdge id={`${props.id}-source`} path={sourcePath} style={props.style} />
-      <BaseEdge id={`${props.id}-target`} path={targetPath} markerEnd={props.markerEnd} style={props.style} />
+      <BaseEdge id={`${props.id}-source`} path={sourcePath} style={{ ...exportSafeEdgeStyle, ...props.style }} />
+      <BaseEdge id={`${props.id}-target`} path={targetPath} markerEnd={props.markerEnd} style={{ ...exportSafeEdgeStyle, ...props.style }} />
       {labels.length ? (
         <EdgeLabelRenderer>
           <div

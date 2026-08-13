@@ -12,6 +12,7 @@ import {
   MiniMap,
   ReactFlow,
   ReactFlowProvider,
+  getViewportForBounds,
   useReactFlow,
   type Connection,
   type Edge,
@@ -25,6 +26,9 @@ import {
   Bot,
   Box,
   Copy,
+  Download,
+  FileImage,
+  FileText,
   GitBranch,
   History,
   Maximize2,
@@ -37,6 +41,8 @@ import {
   Trash2,
   Undo2,
 } from "lucide-react";
+import { toPng } from "html-to-image";
+import jsPDF from "jspdf";
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 
 import type { EdgeFluxo, Fluxo, NodeFluxo, Robo, TipoNodeFluxo, ViewportFluxo } from "@/domain/entities";
@@ -63,6 +69,7 @@ interface CanvasSnapshot { nodes: CanvasNode[]; edges: Edge[] }
 
 const nodeTypes = { flowNode: FlowCanvasNode };
 const edgeTypes = { flowEdge: FlowCanvasEdge };
+const flowEdgeColor = "#64748b";
 const connectionTypes = ["Envia para", "Dispara", "Processa", "Gera Job", "Depende de", "Condição"] as const;
 const palette = [
   { section: "Robôs", items: [{ label: "Robô", kind: "robot" as const, icon: Bot }] },
@@ -135,7 +142,7 @@ function toCanvasEdges(edges: EdgeFluxo[]): Edge[] {
       labelOffsetY: edge.rotuloOffsetY,
     },
     type: "flowEdge",
-    markerEnd: { type: MarkerType.ArrowClosed },
+    markerEnd: { type: MarkerType.ArrowClosed, color: flowEdgeColor },
   }));
 }
 
@@ -149,7 +156,7 @@ function FlowEditorInner({ fluxo, initialNodes, initialEdges, robos, editable, o
   const futureRef = useRef<CanvasSnapshot[]>([]);
   const dragSnapshotRef = useRef<CanvasSnapshot | null>(null);
   const clipboardRef = useRef<CanvasNode[]>([]);
-  const { screenToFlowPosition, getViewport, fitView } = useReactFlow();
+  const { screenToFlowPosition, getViewport, fitView, getNodesBounds } = useReactFlow();
   const [nodes, setNodes] = useState<CanvasNode[]>(() => toCanvasNodes(initialNodes, robos, editable));
   const [edges, setEdges] = useState<Edge[]>(() => toCanvasEdges(initialEdges));
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -158,6 +165,7 @@ function FlowEditorInner({ fluxo, initialNodes, initialEdges, robos, editable, o
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
   const [elementsCollapsed, setElementsCollapsed] = useState(false);
   const [salvando, setSalvando] = useState(false);
+  const [exportando, setExportando] = useState<"png" | "pdf" | null>(null);
   const [erro, setErro] = useState("");
   const selectedNode = nodes.find((node) => node.id === selectedNodeId);
   const selectedEdge = edges.find((edge) => edge.id === selectedEdgeId);
@@ -290,7 +298,7 @@ function FlowEditorInner({ fluxo, initialNodes, initialEdges, robos, editable, o
       ...connection,
       id,
       type: "flowEdge",
-      markerEnd: { type: MarkerType.ArrowClosed },
+      markerEnd: { type: MarkerType.ArrowClosed, color: flowEdgeColor },
       data: { tipo: "Envia para", rotulo: "", condicao: "", fila: "", descricao: "" },
     }, current));
     setSelectedEdgeId(id);
@@ -506,6 +514,67 @@ function FlowEditorInner({ fluxo, initialNodes, initialEdges, robos, editable, o
     window.setTimeout(() => void fitView({ padding: 0.16, duration: 180 }), 230);
   }
 
+  async function exportFlow(format: "png" | "pdf") {
+    if (!wrapperRef.current || nodes.length === 0 || exportando) return;
+    setExportando(format);
+    setErro("");
+
+    try {
+      const viewportElement = wrapperRef.current.querySelector<HTMLElement>(".react-flow__viewport");
+      if (!viewportElement) throw new Error("A área do fluxo não foi encontrada.");
+
+      const bounds = getNodesBounds(nodes);
+      const padding = 64;
+      const width = Math.max(1, Math.ceil(bounds.width + padding * 2));
+      const height = Math.max(1, Math.ceil(bounds.height + padding * 2));
+      const viewport = getViewportForBounds(bounds, width, height, 1, 1, padding / Math.max(width, height));
+
+      const backgroundColor = getComputedStyle(wrapperRef.current).backgroundColor || "#ffffff";
+      const dataUrl = await toPng(viewportElement, {
+        backgroundColor,
+        width,
+        height,
+        pixelRatio: 2,
+        cacheBust: true,
+        style: {
+          width: `${width}px`,
+          height: `${height}px`,
+          transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
+        },
+        filter: (element) => {
+          return !element.classList.contains("react-flow__handle")
+            && !element.classList.contains("react-flow__resize-control")
+            && !element.classList.contains("flow-edge-resize-controls");
+        },
+      });
+
+      const safeName = (fluxo.nome || "fluxo")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9_-]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .toLowerCase() || "fluxo";
+
+      if (format === "png") {
+        const link = document.createElement("a");
+        link.download = `${safeName}.png`;
+        link.href = dataUrl;
+        link.click();
+        return;
+      }
+
+      const orientation = width >= height ? "landscape" : "portrait";
+      const pdf = new jsPDF({ orientation, unit: "px", format: [width, height], hotfixes: ["px_scaling"] });
+      pdf.addImage(dataUrl, "PNG", 0, 0, width, height, undefined, "FAST");
+      pdf.save(`${safeName}.pdf`);
+    } catch (error) {
+      console.error("Falha ao exportar o fluxo", error);
+      setErro(error instanceof Error ? `Não foi possível exportar o fluxo. ${error.message}` : "Não foi possível exportar o fluxo.");
+    } finally {
+      setExportando(null);
+    }
+  }
+
   return (
     <div className={`flow-editor-shell${expanded ? " is-expanded" : ""}${elementsCollapsed ? " has-collapsed-elements" : ""}`}>
       <aside className={`flow-elements-panel${elementsCollapsed ? " is-collapsed" : ""}`}>
@@ -521,7 +590,7 @@ function FlowEditorInner({ fluxo, initialNodes, initialEdges, robos, editable, o
         })}</section>)}
       </aside>
 
-      <div className="flow-canvas" ref={wrapperRef} onDrop={drop} onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "move"; }}>
+      <div className="flow-canvas flow-export-target" ref={wrapperRef} onDrop={drop} onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "move"; }}>
         {erro ? <div className="flow-canvas-error">{erro}</div> : null}
         <div className="flow-canvas-toolbar">
           {editable ? <>
@@ -532,6 +601,12 @@ function FlowEditorInner({ fluxo, initialNodes, initialEdges, robos, editable, o
             <button type="button" onClick={organizeFlow}><AlignVerticalJustifyCenter size={15} />Organizar Fluxo</button>
             <button className="is-primary" type="button" disabled={salvando} onClick={() => void save()}><Save size={15} />{salvando ? "Salvando..." : "Salvar"}</button>
           </> : null}
+          <button type="button" disabled={Boolean(exportando) || nodes.length === 0} title="Baixar fluxo completo em PNG" onClick={() => void exportFlow("png")}>
+            {exportando === "png" ? <Download size={15} /> : <FileImage size={15} />}{exportando === "png" ? "Gerando..." : "PNG"}
+          </button>
+          <button type="button" disabled={Boolean(exportando) || nodes.length === 0} title="Baixar fluxo completo em PDF" onClick={() => void exportFlow("pdf")}>
+            {exportando === "pdf" ? <Download size={15} /> : <FileText size={15} />}{exportando === "pdf" ? "Gerando..." : "PDF"}
+          </button>
           <button type="button" onClick={onToggleExpanded}>{expanded ? <Minimize2 size={15} /> : <Maximize2 size={15} />}{expanded ? "Reduzir" : "Ampliar"}</button>
         </div>
         <ReactFlow

@@ -119,6 +119,7 @@ export default function FlowCanvasNode({ data, selected }: NodeProps) {
           <>
             {robot.descricao ? <p>{robot.descricao}</p> : null}
             <div className="flow-node__robot-meta">
+              {robot.kortex ? <span className="is-kortex">Kortex</span> : null}
               <span title={robot.stack}>Stack: {robot.stack || "Não informado"}</span>
               <span title={robot.command}>Command: {robot.command || "Não informado"}</span>
               <span title={robot.pacote}>Pacote: {robot.pacote || "Não informado"}</span>
