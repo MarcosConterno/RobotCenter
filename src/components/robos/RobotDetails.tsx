@@ -11,6 +11,7 @@ import {
   CirclePower,
   Cpu,
   Download,
+  Copy,
   ExternalLink,
   FileText,
   GitBranch,
@@ -55,7 +56,7 @@ interface RobotDetailsProps {
 }
 
 export default function RobotDetails({ robot, clientes = EMPTY_CLIENTES, robos = EMPTY_ROBOS, initialTab = "general" }: RobotDetailsProps) {
-  const { isAdmin, isClient, canEditClientRobots, clientId, canViewStackRequests } = useAdminAccess();
+  const { isAdmin, isClient, canDuplicateRobots, canEditClientRobots, clientId, canViewStackRequests } = useAdminAccess();
   const canEditRobot = isAdmin || (isClient && canEditClientRobots && Boolean(clientId) && robot.clienteId === clientId);
   const [activeTab, setActiveTab] = useState<MainTab>(() => initialTab === "stackRequests" && !canViewStackRequests ? "general" : initialTab);
   const [documentationTab, setDocumentationTab] = useState<DocumentationTab>("functional");
@@ -186,11 +187,10 @@ export default function RobotDetails({ robot, clientes = EMPTY_CLIENTES, robos =
           <span><Server size={12} /> {robot.fila}</span>
           <span><Layers3 size={12} /> {robot.stack || "Sem Stack"}</span>
         </div>
-        {canEditRobot && (
-          <Link href={`/robos/${robot.id}/editar`} className={`${styles.primaryAction} ${styles.headerAction}`}>
-            <Pencil size={14} /> Editar robô
-          </Link>
-        )}
+        <div className={styles.headerActions}>
+          {canDuplicateRobots && <Link href={`/robos/novo?copiarDe=${robot.id}`} className={styles.secondaryAction}><Copy size={14} /> Criar cópia</Link>}
+          {canEditRobot && <Link href={`/robos/${robot.id}/editar`} className={styles.primaryAction}><Pencil size={14} /> Editar robô</Link>}
+        </div>
       </header>
 
       <nav className={styles.mainTabs} role="tablist" aria-label="Seções do robô">

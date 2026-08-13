@@ -164,20 +164,31 @@ function anchorFor(text: string) {
 
 export default function ReadmeDocument({ source, onOpenDocument }: { source: string; onOpenDocument?: (target: string) => boolean }) {
   const blocks = useMemo(() => parseMarkdown(source), [source]);
-  const navigation = useMemo(
-    () => blocks.filter((block): block is Extract<Block, { type: "heading" }> => block.type === "heading" && block.level === 2),
-    [blocks],
-  );
+  const headingAnchors = useMemo(() => {
+    const occurrences = new Map<string, number>();
+    return blocks.map((block) => {
+      if (block.type !== "heading") return null;
+      const baseAnchor = anchorFor(block.text) || "secao";
+      const occurrence = (occurrences.get(baseAnchor) ?? 0) + 1;
+      occurrences.set(baseAnchor, occurrence);
+      return occurrence === 1 ? baseAnchor : `${baseAnchor}-${occurrence}`;
+    });
+  }, [blocks]);
+  const navigation = useMemo(() => blocks.flatMap((block, index) => (
+    block.type === "heading" && block.level === 2
+      ? [{ text: block.text, anchor: headingAnchors[index] ?? `secao-${index + 1}` }]
+      : []
+  )), [blocks, headingAnchors]);
 
   return <div className={styles.readmeLayout}>
     <aside className={styles.toc}>
       <span>Neste documento</span>
-      <nav>{navigation.map((item) => <button key={item.text} type="button" onClick={() => document.getElementById(anchorFor(item.text))?.scrollIntoView({ behavior: "smooth", block: "start" })}>{item.text}</button>)}</nav>
+      <nav>{navigation.map((item) => <button key={item.anchor} type="button" onClick={() => document.getElementById(item.anchor)?.scrollIntoView({ behavior: "smooth", block: "start" })}>{item.text}</button>)}</nav>
     </aside>
     <div className={styles.markdown}>
       {blocks.map((block, index): ReactNode => {
         if (block.type === "heading") {
-          const id = anchorFor(block.text);
+          const id = headingAnchors[index] ?? `secao-${index + 1}`;
           if (block.level === 1) return <h1 key={index} id={id}><Inline text={block.text} onOpenDocument={onOpenDocument} /></h1>;
           if (block.level === 2) return <h2 key={index} id={id}><Inline text={block.text} onOpenDocument={onOpenDocument} /></h2>;
           if (block.level === 3) return <h3 key={index} id={id}><Inline text={block.text} onOpenDocument={onOpenDocument} /></h3>;
@@ -185,13 +196,13 @@ export default function ReadmeDocument({ source, onOpenDocument }: { source: str
         }
         if (block.type === "paragraph") return <p key={index}><Inline text={block.text} onOpenDocument={onOpenDocument} /></p>;
         if (block.type === "rule") return <hr key={index} />;
-        if (block.type === "quote") return <blockquote key={index}>{block.lines.map((line) => <p key={line}><Inline text={line} onOpenDocument={onOpenDocument} /></p>)}</blockquote>;
+        if (block.type === "quote") return <blockquote key={index}>{block.lines.map((line, lineIndex) => <p key={`${line}-${lineIndex}`}><Inline text={line} onOpenDocument={onOpenDocument} /></p>)}</blockquote>;
         if (block.type === "code") return <CodeBlock key={index} language={block.language} value={block.value} />;
         if (block.type === "list") {
           const Tag = block.ordered ? "ol" : "ul";
-          return <Tag key={index}>{block.items.map((item) => <li key={item}><Inline text={item} onOpenDocument={onOpenDocument} /></li>)}</Tag>;
+          return <Tag key={index}>{block.items.map((item, itemIndex) => <li key={`${item}-${itemIndex}`}><Inline text={item} onOpenDocument={onOpenDocument} /></li>)}</Tag>;
         }
-        if (block.type === "table") return <div key={index} className={styles.tableScroll}><table><thead><tr>{block.headers.map((cell) => <th key={cell}><Inline text={cell} onOpenDocument={onOpenDocument} /></th>)}</tr></thead><tbody>{block.rows.map((row, rowIndex) => <tr key={rowIndex}>{row.map((cell, cellIndex) => <td key={`${cell}-${cellIndex}`}><Inline text={cell} onOpenDocument={onOpenDocument} /></td>)}</tr>)}</tbody></table></div>;
+        if (block.type === "table") return <div key={index} className={styles.tableScroll}><table><thead><tr>{block.headers.map((cell, cellIndex) => <th key={`${cell}-${cellIndex}`}><Inline text={cell} onOpenDocument={onOpenDocument} /></th>)}</tr></thead><tbody>{block.rows.map((row, rowIndex) => <tr key={rowIndex}>{row.map((cell, cellIndex) => <td key={`${cell}-${cellIndex}`}><Inline text={cell} onOpenDocument={onOpenDocument} /></td>)}</tr>)}</tbody></table></div>;
         return null;
       })}
     </div>

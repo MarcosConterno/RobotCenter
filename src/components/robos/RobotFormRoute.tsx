@@ -41,9 +41,23 @@ function getFormData(robot: Robo): DadosFormularioRobo {
   return { ...data, alteracoesRealizadas: [] };
 }
 
-export default function RobotFormRoute({ mode, robotId, defaultProductType = "INTEGRADOR" }: { mode: "create" | "edit"; robotId?: string; defaultProductType?: TipoProdutoRobo }) {
+function getCopyFormData(robot: Robo): DadosFormularioRobo {
+  const data = getFormData(robot);
+  return {
+    ...data,
+    nome: `Cópia de ${robot.nome}`,
+    regras: robot.regras.map((regra) => ({ descricao: regra.descricao })),
+    regrasForaDocumentacao: robot.regrasForaDocumentacao.map((regra) => ({ descricao: regra.descricao })),
+    alteracoesRealizadas: [],
+    uploadedDocumentationPath: null,
+    uploadedDocumentationName: null,
+    uploadedDocumentationFile: null,
+  };
+}
+
+export default function RobotFormRoute({ mode, robotId, copySourceId, defaultProductType = "INTEGRADOR" }: { mode: "create" | "edit"; robotId?: string; copySourceId?: string; defaultProductType?: TipoProdutoRobo }) {
   const router = useRouter();
-  const { isAdmin, isMaster, isClient, canEditClientRobots, clientId, status: accessStatus } = useAdminAccess();
+  const { isAdmin, isMaster, isClient, canDuplicateRobots, canEditClientRobots, clientId, status: accessStatus } = useAdminAccess();
   const [deleteError, setDeleteError] = useState("");
   const [deletingRobot, setDeletingRobot] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -57,8 +71,10 @@ export default function RobotFormRoute({ mode, robotId, defaultProductType = "IN
     publicarAlteracoes,
   } = useAppData();
   const robot = mode === "edit" ? robos.find((item) => item.id === robotId) : undefined;
-  const product = getRobotProductByType(robot?.productType ?? defaultProductType);
-  const canEditRobot = isAdmin || (
+  const copySource = mode === "create" && copySourceId ? robos.find((item) => item.id === copySourceId) : undefined;
+  const isCopy = mode === "create" && Boolean(copySourceId);
+  const product = getRobotProductByType(robot?.productType ?? copySource?.productType ?? defaultProductType);
+  const canEditRobot = (mode === "create" && isCopy ? canDuplicateRobots && Boolean(copySource) : isAdmin) || (
     mode === "edit"
     && isClient
     && canEditClientRobots
@@ -70,6 +86,7 @@ export default function RobotFormRoute({ mode, robotId, defaultProductType = "IN
   if (mode === "edit" && !robot && deletingRobot) {
     return <div className={`${styles.message} ${styles.redirectMessage}`} role="status"><LoaderCircle size={17} /> Robô excluído. Redirecionando...</div>;
   }
+  if (isCopy && !copySource) return <div className={`${styles.message} ${styles.error}`}>Robô de origem não encontrado ou acesso não autorizado.</div>;
   if (!canEditRobot) return <div className={`${styles.message} ${styles.error}`}>Acesso negado. Sua conta não possui autorização para editar este robô.</div>;
   if (mode === "edit" && !robot) return <div className={`${styles.message} ${styles.error}`}>Robô não encontrado ou acesso não autorizado.</div>;
 
@@ -101,19 +118,19 @@ export default function RobotFormRoute({ mode, robotId, defaultProductType = "IN
     }
   }
 
-  const backHref = robot ? `/robos/${robot.id}` : getRobotProductPath(defaultProductType);
+  const backHref = robot ? `/robos/${robot.id}` : copySource ? `/robos/${copySource.id}` : getRobotProductPath(defaultProductType);
   return (
     <div className={styles.routeContent}>
       <nav className={styles.breadcrumb} aria-label="Navegação estrutural">
         <Link href={backHref}><ArrowLeft size={13} /> Robôs</Link>
         <span>/</span>
         {robot ? <><Link href={`/robos/${robot.id}`}>{robot.nome}</Link><span>/</span></> : null}
-        <strong>{mode === "create" ? "Novo robô" : "Editar"}</strong>
+        <strong>{isCopy ? "Criar cópia" : mode === "create" ? "Novo robô" : "Editar"}</strong>
       </nav>
 
       <header className={styles.header}>
         <span className={styles.icon}><Bot size={22} /></span>
-        <div><span>{product.label.toLocaleUpperCase("pt-BR")}</span><h1>{mode === "create" ? "Cadastrar novo robô" : `Editar ${robot?.nome}`}</h1><p>Configure identificação, execução e capacidade do robô.</p></div>
+        <div><span>{product.label.toLocaleUpperCase("pt-BR")}</span><h1>{isCopy ? `Criar cópia de ${copySource?.nome}` : mode === "create" ? "Cadastrar novo robô" : `Editar ${robot?.nome}`}</h1><p>{isCopy ? "Revise os dados copiados e altere o que for necessário antes de salvar." : "Configure identificação, execução e capacidade do robô."}</p></div>
       </header>
 
       <RobotForm
@@ -121,9 +138,9 @@ export default function RobotFormRoute({ mode, robotId, defaultProductType = "IN
         robos={robos}
         currentRobotId={robot?.id}
         alteracoesExistentes={robot?.alteracoes ?? []}
-        key={`${mode}-${robot?.id ?? "new"}`}
-        initialValues={robot ? getFormData(robot) : undefined}
-        defaultProductType={defaultProductType}
+        key={`${mode}-${robot?.id ?? copySource?.id ?? "new"}`}
+        initialValues={robot ? getFormData(robot) : copySource ? getCopyFormData(copySource) : undefined}
+        defaultProductType={copySource?.productType ?? defaultProductType}
         mode={mode}
         clientScoped={!isAdmin}
         onCancel={() => router.push(backHref)}

@@ -15,6 +15,7 @@ interface AdminAccessContextValue {
   isClient: boolean;
   isSupport: boolean;
   canManageRobots: boolean;
+  canDuplicateRobots: boolean;
   canEditClientRobots: boolean;
   canUpdateCapacity: boolean;
   canAccessSettings: boolean;
@@ -115,6 +116,7 @@ export function AdminAccessProvider({ children }: { children: ReactNode }) {
       isClient,
       isSupport,
       canManageRobots: permissions.some((permission) => ["robots.create", "robots.update", "robots.archive"].includes(permission)),
+      canDuplicateRobots: isMaster || (roles.includes("admin") && permissions.includes("robots.duplicate")),
       canEditClientRobots,
       canUpdateCapacity: permissions.includes("robots.capacity.update"),
       canAccessSettings: permissions.some((permission) => permission === "settings.read" || permission === "access_control.read" || permission.startsWith("users.") || permission.startsWith("clients.") || permission.startsWith("robot_catalog.")),

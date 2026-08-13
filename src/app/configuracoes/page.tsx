@@ -20,7 +20,7 @@ interface PermissionItem { id: string; codigo: string; recurso: string; acao: st
 interface ClientMetric { clientId: string; robots: number; flows: number; documents: number; updatedAt: string }
 
 const CLIENT_ROLE_BLOCKED_PERMISSIONS = new Set([
-  "robots.create", "robots.update", "robots.archive", "robots.capacity.update",
+  "robots.create", "robots.update", "robots.archive", "robots.capacity.update", "robots.duplicate",
   "publications.create", "robot_catalog.manage", "robot_center_documentation.manage",
   "budgets.read", "budgets.create", "budgets.update", "budgets.dictionary.manage",
   "clients.manage", "users.read", "users.manage", "access_control.read",
@@ -690,6 +690,7 @@ function PermissionsPanel({ roles, permissions, loading, error, isMaster, onSave
   const visibleRoles = selectedRole === "all" ? roles : roles.filter((role) => role.codigo === selectedRole);
   const pendingChanges = permissions.reduce((total, permission) => total + roles.filter((role) => permission.roles.includes(role.codigo) !== (draft[permission.id] ?? []).includes(role.codigo)).length, 0);
   const canEdit = (permission: PermissionItem, role: PermissionRole) => {
+    if (permission.codigo === "robots.duplicate") return false;
     if (role.codigo === "master") return false;
     if (permission.recurso === "stack_requests" && ["cliente", "suporte"].includes(role.codigo)) return false;
     if (role.codigo === "cliente" && CLIENT_ROLE_BLOCKED_PERMISSIONS.has(permission.codigo)) return false;
@@ -766,7 +767,7 @@ function PermissionsPanel({ roles, permissions, loading, error, isMaster, onSave
             {items.map((permission) => <div key={permission.id} style={permissionRowStyle}>
               <div style={permissionIdentityStyle}><strong>{permission.descricao || permission.acao}</strong><span>{permission.codigo}</span></div>
               <div style={permissionRolesStyle}>{editing
-                ? visibleRoles.map((role) => <label key={role.id} style={{ ...permissionRoleOptionStyle, ...((draft[permission.id] ?? []).includes(role.codigo) ? selectedPermissionRoleStyle : {}), ...(!canEdit(permission, role) ? disabledPermissionRoleStyle : {}) }} title={!canEdit(permission, role) ? role.codigo === "master" ? "As permissões do Master são protegidas." : role.codigo === "cliente" && CLIENT_ROLE_BLOCKED_PERMISSIONS.has(permission.codigo) ? "Use a liberação individual no cadastro do usuário Cliente." : "Este perfil não pode acessar Solicitações de Stack." : undefined}>
+                ? visibleRoles.map((role) => <label key={role.id} style={{ ...permissionRoleOptionStyle, ...((draft[permission.id] ?? []).includes(role.codigo) ? selectedPermissionRoleStyle : {}), ...(!canEdit(permission, role) ? disabledPermissionRoleStyle : {}) }} title={!canEdit(permission, role) ? permission.codigo === "robots.duplicate" ? "A duplicação de robôs é exclusiva de Admin e Master." : role.codigo === "master" ? "As permissões do Master são protegidas." : role.codigo === "cliente" && CLIENT_ROLE_BLOCKED_PERMISSIONS.has(permission.codigo) ? "Use a liberação individual no cadastro do usuário Cliente." : "Este perfil não pode acessar Solicitações de Stack." : undefined}>
                     <input type="checkbox" checked={(draft[permission.id] ?? []).includes(role.codigo)} disabled={!canEdit(permission, role) || saving} onChange={() => toggleRole(permission.id, role.codigo)} style={permissionCheckboxStyle} />
                     {role.nome}
                   </label>)
