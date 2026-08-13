@@ -542,9 +542,12 @@ function FlowEditorInner({ fluxo, initialNodes, initialEdges, robos, editable, o
           transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
         },
         filter: (element) => {
-          return !element.classList.contains("react-flow__handle")
-            && !element.classList.contains("react-flow__resize-control")
-            && !element.classList.contains("flow-edge-resize-controls");
+          const classList = element.classList;
+          if (!classList) return true;
+
+          return !classList.contains("react-flow__handle")
+            && !classList.contains("react-flow__resize-control")
+            && !classList.contains("flow-edge-resize-controls");
         },
       });
 

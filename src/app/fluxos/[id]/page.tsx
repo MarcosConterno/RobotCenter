@@ -46,7 +46,13 @@ export default function FluxoDetalhePage({ params }: { params: Promise<{ id: str
       const detalhes = await carregarDetalhes(id);
       if (!detalhes) { setErro("Fluxo não encontrado ou acesso negado."); return; }
       setFluxo(detalhes.fluxo); setNodes(detalhes.nodes); setEdges(detalhes.edges); setVersoes(detalhes.versoes);
-    } catch { setErro("Não foi possível abrir este fluxo."); }
+    } catch (error) {
+      console.error("Falha ao abrir o fluxo", error);
+      const detail = error && typeof error === "object" && "message" in error
+        ? String(error.message)
+        : "Erro não identificado.";
+      setErro(`Não foi possível abrir este fluxo. ${detail}`);
+    }
     finally { setCarregando(false); }
   }, [carregarDetalhes, id]);
 

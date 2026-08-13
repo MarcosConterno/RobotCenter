@@ -122,9 +122,23 @@ export function FlowsDataProvider({ children }: { children: ReactNode }) {
       supabase.from("flow_versions").select("id,flow_id,version,snapshot,created_by,created_at").eq("flow_id", id).order("version", { ascending: false }),
       supabase.rpc("get_flow_creator_name", { target_flow_id: id }),
     ]);
-    const error = flowResult.error ?? nodesResult.error ?? edgesResult.error ?? versionsResult.error;
-    if (error) throw error;
+    const failedQuery = [
+      ["fluxo", flowResult.error],
+      ["nós", nodesResult.error],
+      ["conexões", edgesResult.error],
+      ["histórico", versionsResult.error],
+    ].find(([, error]) => Boolean(error));
+    if (failedQuery) {
+      const [resource, error] = failedQuery;
+      const detail = error && typeof error === "object" && "message" in error
+        ? String(error.message)
+        : "Erro não identificado pelo Supabase.";
+      throw new Error(`Falha ao carregar ${resource}: ${detail}`);
+    }
     if (!flowResult.data) return null;
+    if (creatorResult.error) {
+      console.warn("Não foi possível carregar o nome do criador do fluxo", creatorResult.error);
+    }
     return {
       fluxo: { ...mapearFluxo(flowResult.data), criadorNome: creatorResult.data ?? "" },
       nodes: (nodesResult.data ?? []).map((node) => ({
