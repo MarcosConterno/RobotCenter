@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, CalendarDays, CalendarPlus, Check, CheckCircle2, Circle, Clock3, FileText, GitFork, ListTodo, NotebookPen, Pencil, Plus, Settings2, Trash2, UsersRound, X } from "lucide-react";
+import { Bot, CalendarDays, CalendarPlus, Check, CheckCircle2, Circle, Clock3, FileText, GitFork, ListTodo, NotebookPen, Pencil, Plus, Search, Settings2, Trash2, UsersRound, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
@@ -28,14 +28,12 @@ type Todo = Database["public"]["Tables"]["personal_tasks"]["Row"] & {
 };
 type Priority = "urgent" | "high" | "medium" | "low";
 type TodoStatus = "open_task" | "budget" | "todo" | "waiting_server_update" | "waiting_stack" | "testing" | "waiting_dev" | "waiting_client" | "in_progress" | "completed";
-type Filter = "today" | "pending" | "upcoming" | "completed";
+type Filter = "pending" | "completed";
 type WorkspaceTab = "todo" | "meetings" | "notes";
 type TodoOrigin = { id: string; label: string; date?: string; type: "meeting" | "note" };
 
 const filters: Array<{ id: Filter; label: string }> = [
-  { id: "today", label: "Hoje" },
-  { id: "pending", label: "Pendentes" },
-  { id: "upcoming", label: "Próximas" },
+  { id: "pending", label: "A fazer" },
   { id: "completed", label: "Concluídas" },
 ];
 
@@ -93,7 +91,8 @@ export default function MinhaPaginaPage() {
   const [requestedMeetingId, setRequestedMeetingId] = useState<string | null>(null);
   const [requestedNoteId, setRequestedNoteId] = useState<string | null>(null);
   const [tasks, setTasks] = useState<Todo[]>([]);
-  const [filter, setFilter] = useState<Filter>("today");
+  const [filter, setFilter] = useState<Filter>("pending");
+  const [taskSearch, setTaskSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -155,17 +154,23 @@ export default function MinhaPaginaPage() {
 
   useEffect(() => { void loadPreferences(); }, [loadPreferences]);
 
-  const visibleTasks = useMemo(() => tasks.filter((task) => {
-    if (filter === "today") return task.due_date === today && task.status !== "completed";
-    if (filter === "pending") return task.status !== "completed";
-    if (filter === "upcoming") return task.status !== "completed" && task.due_date > today;
-    return task.status === "completed";
-  }).sort((first, second) => {
+  const visibleTasks = useMemo(() => {
+    const search = taskSearch.trim().toLocaleLowerCase("pt-BR");
+    return tasks.filter((task) => {
+      const matchesFilter = filter === "pending"
+        ? task.status !== "completed"
+        : task.status === "completed";
+      const matchesSearch = !search
+        || task.title.toLocaleLowerCase("pt-BR").includes(search)
+        || task.clientes?.nome.toLocaleLowerCase("pt-BR").includes(search);
+      return matchesFilter && matchesSearch;
+    }).sort((first, second) => {
     const priorityDifference = priorityOrder[first.priority as Priority] - priorityOrder[second.priority as Priority];
     if (priorityDifference !== 0) return priorityDifference;
     const dateDifference = first.due_date.localeCompare(second.due_date);
     return dateDifference !== 0 ? dateDifference : first.created_at.localeCompare(second.created_at);
-  }), [filter, tasks, today]);
+    });
+  }, [filter, taskSearch, tasks, today]);
 
   const todayTasks = tasks.filter((task) => task.due_date === today);
   const todayCompleted = todayTasks.filter((task) => task.status === "completed").length;
@@ -378,9 +383,15 @@ export default function MinhaPaginaPage() {
               </form>
             )}
 
-            <nav className={styles.filters} aria-label="Filtros de ToDos">
-              {filters.map((item) => <button key={item.id} type="button" className={filter === item.id ? styles.activeFilter : undefined} onClick={() => setFilter(item.id)}>{item.label}</button>)}
-            </nav>
+            <div className={styles.todoToolbar}>
+              <nav className={styles.filters} aria-label="Filtros de ToDos">
+                {filters.map((item) => <button key={item.id} type="button" className={filter === item.id ? styles.activeFilter : undefined} onClick={() => setFilter(item.id)}>{item.label}</button>)}
+              </nav>
+              <label className={styles.workspaceSearch}>
+                <Search size={13} aria-hidden="true" />
+                <input type="search" value={taskSearch} onChange={(event) => setTaskSearch(event.target.value)} placeholder="Buscar por tarefa ou cliente" aria-label="Buscar ToDos por tarefa ou cliente" />
+              </label>
+            </div>
             {error && <p className={styles.error} role="alert">{error}</p>}
 
             <div className={styles.taskList}>
@@ -388,12 +399,11 @@ export default function MinhaPaginaPage() {
                 <div className={styles.empty}><CheckCircle2 size={22} /><strong>Nenhum ToDo por aqui</strong><span>Sua lista está organizada.</span></div>
               ) : visibleTasks.map((task) => {
                 const completed = task.status === "completed";
-                const overdue = !completed && task.due_date < today;
                 return (
-                  <article key={task.id} className={`${styles.task}${completed ? ` ${styles.completed}` : ""}${overdue ? ` ${styles.overdue}` : ""}`}>
+                  <article key={task.id} className={`${styles.task}${completed ? ` ${styles.completed}` : ""}`}>
                     <button className={styles.checkbox} type="button" aria-label={completed ? `Reabrir ToDo ${task.title}` : `Concluir ToDo ${task.title}`} onClick={() => void toggleTask(task)}>{completed ? <Check size={14} /> : <Circle size={16} />}</button>
                     <div className={styles.taskMain}><button type="button" className={styles.taskCopy} onClick={() => openTaskNote(task)} aria-label={`Abrir nota do ToDo ${task.title}`}><strong>{task.title}</strong>{task.note && <span>{richTextToPlainText(task.note)}</span>}</button>{task.personal_meetings && <button type="button" className={styles.originLink} onClick={() => openTodoOrigin(task)}><FileText size={11} />Origem: Reunião — {task.personal_meetings.name} · {formatTaskDate(task.personal_meetings.meeting_date)}</button>}{task.personal_notes && <button type="button" className={styles.originLink} onClick={() => openTodoOrigin(task)}><FileText size={11} />Origem: Nota — {task.personal_notes.title}</button>}</div>
-                    <time dateTime={task.due_date}><Clock3 size={12} />{overdue ? "Atrasada · " : ""}{formatTaskDate(task.due_date)}</time>
+                    <time dateTime={task.due_date}><Clock3 size={12} />{formatTaskDate(task.due_date)}</time>
                     {task.clientes ? <span className={styles.clientBadge} style={{ color: PALETAS_BADGE_ROBO[task.clientes.cor].texto, background: PALETAS_BADGE_ROBO[task.clientes.cor].fundo, borderColor: PALETAS_BADGE_ROBO[task.clientes.cor].borda }}>{task.clientes.nome}</span> : <span className={styles.clientEmpty}>—</span>}
                     <select
                       className={`${styles.inlineBadgeSelect} ${styles.status} ${styles[task.status as TodoStatus]}`}

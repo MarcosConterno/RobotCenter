@@ -52,12 +52,13 @@
 .filters button { min-height: 29px; border: 1px solid transparent; border-radius: 7px; padding: 0 10px; color: var(--muted); background: transparent; font-size: 10px; font-weight: 700; }
 .filters button:hover { color: var(--text); background: var(--surface); }
 .filters .activeFilter { border-color: var(--border); color: var(--accent); background: var(--accent-soft); }
+.todoToolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--separator); padding-right: 18px; }
+.todoToolbar .filters { border-bottom: 0; }
 .error { margin: 10px 18px 0; border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border)); border-radius: 7px; padding: 8px 10px; color: var(--danger); background: color-mix(in srgb, var(--danger) 7%, transparent); font-size: 10.5px; }
 .taskList { min-height: 0; }
 .task { display: grid; grid-template-columns: 30px minmax(0, 1fr) 118px minmax(90px, auto) minmax(100px, auto) 76px 72px; align-items: center; gap: 10px; min-height: 68px; padding: 10px 18px; border-bottom: 1px solid var(--separator); transition: opacity .2s ease, background .2s ease; }
 .task:last-child { border-bottom: 0; }
 .task:hover { background: var(--surface); }
-.task.overdue { box-shadow: inset 2px 0 var(--danger); }
 .task.completed { opacity: .58; }
 .task.completed .taskCopy strong { text-decoration: line-through; }
 .checkbox { display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center; border: 0; border-radius: 50%; padding: 0; color: var(--muted); background: transparent; }
@@ -73,7 +74,6 @@
 .originLink:hover { text-decoration: underline; }
 .originLink:focus-visible { border-radius: 3px; outline: 2px solid var(--accent); outline-offset: 2px; }
 .task time { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 10.5px; }
-.overdue time { color: var(--danger); }
 .priority, .status, .clientBadge { justify-self: start; border-radius: 999px; padding: 5px 9px; font-size: 9.5px; font-weight: 750; white-space: nowrap; }
 .inlineBadgeSelect { width: max-content; max-width: 100%; border: 1px solid transparent; outline: 0; font-family: inherit; cursor: pointer; }
 .inlineBadgeSelect:hover { border-color: currentColor; }
@@ -227,5 +227,5 @@
 .confirmDeleteButton:hover { filter: brightness(1.08); }
 .confirmDeleteButton:disabled, .confirmDialog button:disabled { opacity: .55; cursor: not-allowed; }
 @media (max-width: 1050px) { .taskForm { grid-template-columns: 1fr 1fr 145px; } .titleField { grid-column: span 2; } .layout { grid-template-columns: minmax(0, 1fr) 240px; } }
-@media (max-width: 780px) { .layout, .widgetOptions { grid-template-columns: 1fr; } .summary { grid-row: 2; } .task { grid-template-columns: 30px minmax(0, 1fr) auto; gap: 8px; padding-inline: 13px; } .task time { grid-column: 2; } .clientBadge, .clientEmpty { grid-column: 2; grid-row: 3; } .status { grid-column: 2; grid-row: 2; } .priority { grid-column: 3; grid-row: 1; } .actions { grid-column: 3; grid-row: 2 / span 3; opacity: 1; } .filters { overflow-x: auto; padding-inline: 13px; } .workspaceToolbar { align-items: stretch; flex-direction: column; padding: 0 13px 10px; } .workspaceToolbar .filters { padding-inline: 0; } .workspaceSearch { width: 100%; } .meetingItem { grid-template-columns: 60px minmax(0, 1fr) auto; } .openButton { grid-column: 2; justify-self: start; } .itemActions { grid-column: 3; grid-row: 1 / span 2; } .documentFields { grid-template-columns: 1fr 1fr; } .documentFields .wideField, .documentFields .editorField { grid-column: 1 / -1; } }
+@media (max-width: 780px) { .layout, .widgetOptions { grid-template-columns: 1fr; } .summary { grid-row: 2; } .task { grid-template-columns: 30px minmax(0, 1fr) auto; gap: 8px; padding-inline: 13px; } .task time { grid-column: 2; } .clientBadge, .clientEmpty { grid-column: 2; grid-row: 3; } .status { grid-column: 2; grid-row: 2; } .priority { grid-column: 3; grid-row: 1; } .actions { grid-column: 3; grid-row: 2 / span 3; opacity: 1; } .filters { overflow-x: auto; padding-inline: 13px; } .todoToolbar, .workspaceToolbar { align-items: stretch; flex-direction: column; padding: 0 13px 10px; } .todoToolbar .filters, .workspaceToolbar .filters { padding-inline: 0; } .workspaceSearch { width: 100%; } .meetingItem { grid-template-columns: 60px minmax(0, 1fr) auto; } .openButton { grid-column: 2; justify-self: start; } .itemActions { grid-column: 3; grid-row: 1 / span 2; } .documentFields { grid-template-columns: 1fr 1fr; } .documentFields .wideField, .documentFields .editorField { grid-column: 1 / -1; } }
 @media (max-width: 560px) { .welcome { align-items: flex-start; } .welcome h1 { font-size: 22px; } .welcome > div > p:not(.date) { max-width: 230px; } .welcomeActions { flex-direction: column-reverse; align-items: flex-end; } .settingsButton { width: 34px; padding: 0; justify-content: center; font-size: 0; } .panelHeader, .workspaceHeader { padding: 13px; } .taskForm { grid-template-columns: 1fr 1fr; padding: 13px; } .formHeading, .titleField { display: flex; grid-column: 1 / -1; } .formHeading { align-items: center; justify-content: space-between; } .formHeading strong { font-size: 11px; } .taskForm .titleField { display: grid; } .taskForm label:nth-of-type(2) { grid-column: 1 / -1; } .saveButton { grid-column: 1 / -1; } .todoOriginForm { grid-column: 1 / -1; } .notesGrid { grid-template-columns: 1fr; } .modalBackdrop { padding: 8px; } .documentModal { max-height: calc(100vh - 16px); } .documentFields { grid-template-columns: 1fr; } .documentFields label, .documentFields .wideField, .documentFields .editorField { grid-column: 1; } .documentFields textarea, .noteEditor textarea { min-height: 260px; } .documentModal footer { flex-wrap: wrap; } }
