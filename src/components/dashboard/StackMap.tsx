@@ -164,7 +164,7 @@ export default function StackMap({ robots, clients, onOpenRobot }: { robots: Rob
                 <span className={styles.stackIcon}><Layers3 size={15} /></span><span className={styles.stackName}><strong>{stack.name}</strong><small>{systems} {systems === 1 ? "sistema" : "sistemas"} · {stack.robots.length} {stack.robots.length === 1 ? "rotina" : "rotinas"}</small></span><ChevronDown size={15} className={isOpen ? styles.chevronOpen : undefined} />
               </button>
               {isOpen ? <div className={styles.robots}>{stack.robots.sort((a, b) => a.sistema.localeCompare(b.sistema, "pt-BR") || a.nome.localeCompare(b.nome, "pt-BR")).map((robot) => <button type="button" key={robot.id} onClick={() => onOpenRobot(robot)}>
-                <span className={styles.statusDot} data-active={robot.ativo} /><span><strong>{text(robot.sistema)}</strong><small>{robot.nome}</small><em>{text(robot.ambiente)} · {text(robot.responsavel)}{robot.kortex ? " · Kortex" : ""}</em></span><span className={styles.openLabel}>Abrir robô</span>
+                <span className={styles.statusDot} data-active={robot.ativo} /><span><strong>{text(robot.sistema)}</strong><small>{robot.nome}</small><em>CourtName: {text(robot.courtName)}</em><em>{text(robot.ambiente)} · {text(robot.responsavel)}{robot.kortex ? " · Kortex" : ""}</em></span><span className={styles.openLabel}>Abrir robô</span>
               </button>)}</div> : null}
             </article>;
           })}{group.stacks.length === 0 ? <p className={styles.noStacks}>Nenhuma stack cadastrada para este cliente.</p> : null}</div>
