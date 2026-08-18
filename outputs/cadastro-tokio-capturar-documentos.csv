@@ -1,0 +1,2 @@
+Operação;ID do Robô;Cliente;Sistema;Robô;CourtName;Fila;Stack;Ideal;Max;Pacote;Versão;Descrição;Ambiente;Status;Responsável;Disparo;Gatilho De (ID);Gatilho Para (ID);Alterações realizadas;Regras;Regras fora da documentação;Command;Tribunal;Sistema Tribunal;Produto
+Criar;;Costa, Vieira;Tokio;Tokio - Captura de Documentos;TOKIO-CAPTURAR-DOCUMENTOS;GVC;SEG2;3;5;loycrwleetokio;1.0.38;Não informado;Produção;Ativo;Marcos;Manual;;;;;;automation;;;Robôs Integradores

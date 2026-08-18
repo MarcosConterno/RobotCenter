@@ -19,6 +19,27 @@ import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/types/database.types";
 
 const LIMITE_PUBLICACOES = 50;
+const TAMANHO_PAGINA_ROBOS = 1000;
+
+async function carregarTodosOsRobos(supabase: ReturnType<typeof createClient>) {
+  const robos: Database["public"]["Tables"]["robos"]["Row"][] = [];
+
+  for (let inicio = 0; ; inicio += TAMANHO_PAGINA_ROBOS) {
+    const { data, error } = await supabase
+      .from("robos")
+      .select("*")
+      .is("deleted_at", null)
+      .order("nome")
+      .range(inicio, inicio + TAMANHO_PAGINA_ROBOS - 1);
+
+    if (error) return { data: null, error };
+
+    robos.push(...(data ?? []));
+    if (!data || data.length < TAMANHO_PAGINA_ROBOS) break;
+  }
+
+  return { data: robos, error: null };
+}
 
 function normalizarIdentificador(valor: string) {
   return valor
@@ -136,7 +157,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const supabase = createClient();
     void Promise.all([
       supabase.from("clientes").select("id,nome,tenant,cor").is("deleted_at", null).order("nome"),
-      supabase.from("robos").select("*").is("deleted_at", null).order("nome"),
+      carregarTodosOsRobos(supabase),
       supabase.from("regras_robo").select("id,robo_id,parent_id,descricao,ordem,tipo").is("deleted_at", null).order("ordem"),
       supabase.from("alteracoes_robo").select("id,robo_id,descricao,realizada_em").order("realizada_em", { ascending: false }),
       supabase.from("publicacoes").select("id,robo_id,categoria,descricao,publicada_em").order("publicada_em", { ascending: false }),
