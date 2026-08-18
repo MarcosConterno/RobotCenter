@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, LayoutDashboard, TableProperties } from "lucide-react";
+import { BarChart3, Layers3, LayoutDashboard, TableProperties } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -10,6 +10,7 @@ import { useAdminAccess } from "@/auth/AdminAccessProvider";
 import RobotsOverviewTable from "@/components/dashboard/RobotsOverviewTable";
 import StatsCards from "@/components/dashboard/StatsCards";
 import StackRequestsDashboard from "@/components/dashboard/StackRequestsDashboard";
+import StackMap from "@/components/dashboard/StackMap";
 import AppShell from "@/components/layout/AppShell";
 import Topbar from "@/components/layout/Topbar";
 import { useAppData } from "@/data/AppDataProvider";
@@ -19,7 +20,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { robos, publicacoes, clientes, atualizarCapacidadeRobo } = useAppData();
   const { canUpdateCapacity } = useAdminAccess();
-  const [activeTab, setActiveTab] = useState<"overview" | "robots" | "charts">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "robots" | "stacks" | "charts">("overview");
 
   function openRobotDetails(robot: Robo, tab?: "stackRequests") {
     router.push(`/robos/${robot.id}${tab ? `?tab=${tab}` : ""}`);
@@ -35,6 +36,17 @@ export default function DashboardPage() {
             <Topbar title="Conta do usuário" bare />
           </div>
           <nav className="dashboard-tabs" role="tablist" aria-label="Visualizações da Dashboard">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "stacks"}
+              aria-controls="dashboard-stacks-panel"
+              className={activeTab === "stacks" ? "is-active" : ""}
+              onClick={() => setActiveTab("stacks")}
+            >
+              <Layers3 size={15} />
+              Mapa de stacks
+            </button>
             <button
               type="button"
               role="tab"
@@ -81,6 +93,10 @@ export default function DashboardPage() {
           ) : activeTab === "robots" ? (
             <div id="dashboard-robots-panel" role="tabpanel" className="dashboard-tab-panel">
               <RobotsOverviewTable robos={robos} clientes={clientes} onViewRobot={openRobotDetails} canEditCapacity={canUpdateCapacity} onUpdateCapacity={atualizarCapacidadeRobo} />
+            </div>
+          ) : activeTab === "stacks" ? (
+            <div id="dashboard-stacks-panel" role="tabpanel" className="dashboard-tab-panel">
+              <StackMap robots={robos} clients={clientes} onOpenRobot={openRobotDetails} />
             </div>
           ) : (
             <div id="dashboard-charts-panel" role="tabpanel" className="dashboard-tab-panel">
