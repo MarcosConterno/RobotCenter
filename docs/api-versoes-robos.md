@@ -1,6 +1,6 @@
 # API de atualização manual de versões
 
-`POST /api/admin/robot-versions` recebe somente `packageName`. O endpoint exige sessão Supabase válida e papel `admin` ou `master`; a visibilidade do botão no frontend não é considerada autorização. Depois da autorização, a própria API consulta no Notion a linha cuja propriedade select `Pacote` corresponde exatamente ao pacote recebido e lê a propriedade rich text `Ult. Vers`.
+`POST /api/admin/robot-versions` recebe somente `packageName`. O endpoint exige sessão PostgreSQL local válida e papel `admin` ou `master`; a visibilidade do botão no frontend não é considerada autorização. Depois da autorização, a própria API consulta no Notion a linha cuja propriedade select `Pacote` corresponde exatamente ao pacote recebido e lê a propriedade rich text `Ult. Vers`.
 
 O servidor localiza todos os robôs ativos com o pacote exato, compara as versões atuais e atualiza `version_checked_at` em toda consulta bem-sucedida. `versao` recebe o valor encontrado, mas o resumo informa `unchanged` quando nenhum robô possuía valor diferente.
 

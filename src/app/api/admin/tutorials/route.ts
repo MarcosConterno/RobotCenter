@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient } from "@/lib/database/admin";
+import { relationString } from "@/lib/postgres/relation-rows";
 import { getTutorialAccess } from "@/server/tutorials/access";
 
 const createSchema = z.object({ name: z.string().trim().min(3).max(120), audienceRoleId: z.string().uuid() });
@@ -41,8 +42,8 @@ export async function GET() {
         key: tutorial.tutorial_key,
         name: tutorial.nome,
         audienceRoleId: tutorial.audience_role_id,
-        audienceRoleCode: role?.codigo ?? "",
-        audienceRoleName: role?.nome ?? "Perfil",
+        audienceRoleCode: relationString(role, "codigo", ""),
+        audienceRoleName: relationString(role, "nome", "Perfil"),
         status: tutorial.status,
         currentVersion: currentVersion?.version ?? null,
         stepCount: (steps ?? []).filter((step) => step.draft_id === draftId).length,
@@ -59,7 +60,7 @@ export async function POST(request: Request) {
   const parsed = createSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Dados do tutorial inválidos." }, { status: 400 });
 
-  const { data, error } = await access.supabase.rpc("create_tutorial", {
+  const { data, error } = await access.database.rpc("create_tutorial", {
     target_name: parsed.data.name,
     target_audience_role_id: parsed.data.audienceRoleId,
   });

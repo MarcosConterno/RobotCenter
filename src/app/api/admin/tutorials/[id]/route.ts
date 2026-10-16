@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient } from "@/lib/database/admin";
 import { getTutorialAccess } from "@/server/tutorials/access";
 import { findTourPage, findTourTarget } from "@/tutorial/targetCatalog";
 
@@ -55,7 +55,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
     const target = findTourTarget(step.pageKey, step.targetKey)!;
     return { ...step, conditionKey: target.conditionKey ?? step.conditionKey ?? null };
   });
-  const { error } = await access.supabase.rpc("save_tutorial_draft", {
+  const { error } = await access.database.rpc("save_tutorial_draft", {
     target_tutorial_id: id, target_name: parsed.data.name, target_audience_role_id: parsed.data.audienceRoleId, target_steps: normalizedSteps,
   });
   if (error) return NextResponse.json({ error: error.message || "Não foi possível salvar o rascunho." }, { status: 400 });
@@ -70,10 +70,10 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   const parsed = statusSchema.safeParse(await request.json().catch(() => null));
   if (!z.string().uuid().safeParse(id).success || !parsed.success) return NextResponse.json({ error: "Estado inválido." }, { status: 400 });
   if (parsed.data.status === "published") {
-    const { data: tutorial } = await access.supabase.from("tutorials").select("current_version_id").eq("id", id).maybeSingle();
+    const { data: tutorial } = await access.database.from("tutorials").select("current_version_id").eq("id", id).maybeSingle();
     if (!tutorial?.current_version_id) return NextResponse.json({ error: "Publique uma versão antes de ativar o tutorial." }, { status: 400 });
   }
-  const { error } = await access.supabase.from("tutorials").update({ status: parsed.data.status }).eq("id", id);
+  const { error } = await access.database.from("tutorials").update({ status: parsed.data.status }).eq("id", id);
   if (error) return NextResponse.json({ error: error.message || "Não foi possível alterar o estado." }, { status: 400 });
   return NextResponse.json({ success: true });
 }

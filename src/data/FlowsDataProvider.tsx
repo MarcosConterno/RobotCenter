@@ -10,7 +10,7 @@ import type {
   VersaoFluxo,
   ViewportFluxo,
 } from "@/domain/entities";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/database/client";
 import type { Json } from "@/types/database.types";
 
 interface DetalhesFluxo {
@@ -71,11 +71,11 @@ export function FlowsDataProvider({ children }: { children: ReactNode }) {
     const revision = ++loadRevision.current;
     setCarregando(true);
     setErro("");
-    const supabase = createClient();
+    const database = createClient();
     const [flowsResult, nodesResult, edgesResult] = await Promise.all([
-      supabase.from("flows").select("id,client_id,name,description,version,status,viewport,created_by,created_at,updated_at").order("updated_at", { ascending: false }),
-      supabase.from("flow_nodes").select("flow_id,type"),
-      supabase.from("flow_edges").select("flow_id"),
+      database.from("flows").select("id,client_id,name,description,version,status,viewport,created_by,created_at,updated_at").order("updated_at", { ascending: false }),
+      database.from("flow_nodes").select("flow_id,type"),
+      database.from("flow_edges").select("flow_id"),
     ]);
     if (revision !== loadRevision.current) return;
     if (flowsResult.error || nodesResult.error || edgesResult.error) {
@@ -93,13 +93,13 @@ export function FlowsDataProvider({ children }: { children: ReactNode }) {
   useEffect(() => { void recarregar(); }, [recarregar]);
 
   useEffect(() => {
-    const supabase = createClient();
+    const database = createClient();
     let refreshTimer: ReturnType<typeof setTimeout> | null = null;
     const scheduleRefresh = () => {
       if (refreshTimer) clearTimeout(refreshTimer);
       refreshTimer = setTimeout(() => { void recarregar(); }, 300);
     };
-    const channel = supabase
+    const channel = database
       .channel("flows-data-sync")
       .on("postgres_changes", { event: "*", schema: "public", table: "flows" }, scheduleRefresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "flow_nodes" }, scheduleRefresh)
@@ -109,18 +109,18 @@ export function FlowsDataProvider({ children }: { children: ReactNode }) {
     return () => {
       if (refreshTimer) clearTimeout(refreshTimer);
       loadRevision.current += 1;
-      void supabase.removeChannel(channel);
+      void database.removeChannel(channel);
     };
   }, [recarregar]);
 
   const carregarDetalhes = useCallback(async (id: string) => {
-    const supabase = createClient();
+    const database = createClient();
     const [flowResult, nodesResult, edgesResult, versionsResult, creatorResult] = await Promise.all([
-      supabase.from("flows").select("id,client_id,name,description,version,status,viewport,created_by,created_at,updated_at").eq("id", id).maybeSingle(),
-      supabase.from("flow_nodes").select("id,flow_id,type,robot_id,position_x,position_y,data").eq("flow_id", id),
-      supabase.from("flow_edges").select("id,flow_id,source_node_id,target_node_id,source_handle,target_handle,type,label,condition,queue,description,label_width,label_height,label_offset_x,label_offset_y").eq("flow_id", id),
-      supabase.from("flow_versions").select("id,flow_id,version,snapshot,created_by,created_at").eq("flow_id", id).order("version", { ascending: false }),
-      supabase.rpc("get_flow_creator_name", { target_flow_id: id }),
+      database.from("flows").select("id,client_id,name,description,version,status,viewport,created_by,created_at,updated_at").eq("id", id).maybeSingle(),
+      database.from("flow_nodes").select("id,flow_id,type,robot_id,position_x,position_y,data").eq("flow_id", id),
+      database.from("flow_edges").select("id,flow_id,source_node_id,target_node_id,source_handle,target_handle,type,label,condition,queue,description,label_width,label_height,label_offset_x,label_offset_y").eq("flow_id", id),
+      database.from("flow_versions").select("id,flow_id,version,snapshot,created_by,created_at").eq("flow_id", id).order("version", { ascending: false }),
+      database.rpc("get_flow_creator_name", { target_flow_id: id }),
     ]);
     const failedQuery = [
       ["fluxo", flowResult.error],
@@ -132,7 +132,7 @@ export function FlowsDataProvider({ children }: { children: ReactNode }) {
       const [resource, error] = failedQuery;
       const detail = error && typeof error === "object" && "message" in error
         ? String(error.message)
-        : "Erro não identificado pelo Supabase.";
+        : "Erro não identificado pelo adapter PostgreSQL.";
       throw new Error(`Falha ao carregar ${resource}: ${detail}`);
     }
     if (!flowResult.data) return null;
@@ -140,7 +140,7 @@ export function FlowsDataProvider({ children }: { children: ReactNode }) {
       console.warn("Não foi possível carregar o nome do criador do fluxo", creatorResult.error);
     }
     return {
-      fluxo: { ...mapearFluxo(flowResult.data), criadorNome: creatorResult.data ?? "" },
+      fluxo: { ...mapearFluxo(flowResult.data), criadorNome: typeof creatorResult.data === "string" ? creatorResult.data : "" },
       nodes: (nodesResult.data ?? []).map((node) => ({
         id: node.id, fluxoId: node.flow_id, tipo: node.type as NodeFluxo["tipo"], roboId: node.robot_id,
         posicaoX: node.position_x, posicaoY: node.position_y, dados: node.data as Record<string, unknown>,
@@ -188,30 +188,30 @@ export function FlowsDataProvider({ children }: { children: ReactNode }) {
     edges: EdgeFluxo[],
     viewport: ViewportFluxo,
   ) => {
-    const supabase = createClient();
-    const { error: flowError } = await supabase.from("flows").update({
+    const database = createClient();
+    const { error: flowError } = await database.from("flows").update({
       name: fluxo.nome.trim(), description: fluxo.descricao.trim(), viewport: viewport as unknown as Json,
     }).eq("id", fluxo.id);
     if (flowError) throw flowError;
 
     if (nodes.length) {
-      const { error } = await supabase.from("flow_nodes").upsert(nodes.map((node) => ({
+      const { error } = await database.from("flow_nodes").upsert(nodes.map((node) => ({
         id: node.id, flow_id: fluxo.id, type: node.tipo, robot_id: node.roboId,
         position_x: node.posicaoX, position_y: node.posicaoY, data: node.dados as Json,
       })));
       if (error) throw error;
     }
 
-    const { data: currentEdges, error: currentEdgesError } = await supabase.from("flow_edges").select("id").eq("flow_id", fluxo.id);
+    const { data: currentEdges, error: currentEdgesError } = await database.from("flow_edges").select("id").eq("flow_id", fluxo.id);
     if (currentEdgesError) throw currentEdgesError;
     const edgeIds = new Set(edges.map((edge) => edge.id));
     const removedEdgeIds = (currentEdges ?? []).filter((edge) => !edgeIds.has(edge.id)).map((edge) => edge.id);
     if (removedEdgeIds.length) {
-      const { error } = await supabase.from("flow_edges").delete().in("id", removedEdgeIds);
+      const { error } = await database.from("flow_edges").delete().in("id", removedEdgeIds);
       if (error) throw error;
     }
     if (edges.length) {
-      const { error } = await supabase.from("flow_edges").upsert(edges.map((edge) => ({
+      const { error } = await database.from("flow_edges").upsert(edges.map((edge) => ({
         id: edge.id, flow_id: fluxo.id, source_node_id: edge.nodeOrigemId,
         target_node_id: edge.nodeDestinoId, source_handle: edge.sourceHandle,
         target_handle: edge.targetHandle, type: edge.tipo, label: edge.rotulo,
@@ -222,12 +222,12 @@ export function FlowsDataProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
     }
 
-    const { data: currentNodes, error: currentNodesError } = await supabase.from("flow_nodes").select("id").eq("flow_id", fluxo.id);
+    const { data: currentNodes, error: currentNodesError } = await database.from("flow_nodes").select("id").eq("flow_id", fluxo.id);
     if (currentNodesError) throw currentNodesError;
     const nodeIds = new Set(nodes.map((node) => node.id));
     const removedNodeIds = (currentNodes ?? []).filter((node) => !nodeIds.has(node.id)).map((node) => node.id);
     if (removedNodeIds.length) {
-      const { error } = await supabase.from("flow_nodes").delete().in("id", removedNodeIds);
+      const { error } = await database.from("flow_nodes").delete().in("id", removedNodeIds);
       if (error) throw error;
     }
     await recarregar();
@@ -239,8 +239,12 @@ export function FlowsDataProvider({ children }: { children: ReactNode }) {
       target_snapshot: snapshot as Json,
     });
     if (error) throw error;
+    const publishedVersion = typeof data === "number" || typeof data === "string" ? Number(data) : Number.NaN;
+    if (!Number.isSafeInteger(publishedVersion)) {
+      throw new Error("O banco retornou uma versão inválida para o fluxo publicado.");
+    }
     await recarregar();
-    return data;
+    return publishedVersion;
   }, [recarregar]);
 
   const excluirFluxo = useCallback(async (id: string) => {

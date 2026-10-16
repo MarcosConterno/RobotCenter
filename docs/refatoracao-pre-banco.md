@@ -1,5 +1,7 @@
 # Relatório da refatoração pré-banco
 
+> Registro histórico da etapa anterior à persistência PostgreSQL. O estado atual está documentado em ARCHITECTURE.md e docs/checkpoint-migracao-postgres-standalone.md.
+
 ## Objetivo e restrições atendidas
 
 A aplicação foi refatorada para alinhar domínio, tipos, interface e fonte de dados antes da modelagem física. Nenhuma tabela ou migration foi criada, nenhum SQL foi executado, nenhuma biblioteca Supabase foi integrada e nenhum banco remoto foi acessado.

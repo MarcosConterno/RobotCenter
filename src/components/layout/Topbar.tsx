@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { useAdminAccess } from "@/auth/AdminAccessProvider";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/database/client";
 import ThemeToggle from "@/components/theme/ThemeToggle";
 
 interface TopbarProps { title: string; bare?: boolean; }
@@ -45,9 +45,9 @@ export default function Topbar({ title, bare = false }: TopbarProps) {
   const [updatingPassword, setUpdatingPassword] = useState(false);
 
   async function logout() {
-    const supabase = createClient();
-    const { error } = await supabase.auth.signOut();
-    if (error) await supabase.auth.signOut({ scope: "local" });
+    const database = createClient();
+    const { error } = await database.auth.signOut();
+    if (error) await database.auth.signOut();
     window.location.assign("/login");
   }
 
@@ -69,8 +69,8 @@ export default function Topbar({ title, bare = false }: TopbarProps) {
     setUpdatingPassword(true);
     setPasswordError("");
     setPasswordSuccess("");
-    const supabase = createClient();
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    const database = createClient();
+    const { error } = await database.auth.updateUser({ password: newPassword });
     setUpdatingPassword(false);
 
     if (error) {

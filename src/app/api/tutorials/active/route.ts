@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient } from "@/lib/database/admin";
 import { getTutorialAccess } from "@/server/tutorials/access";
 import { findTourPage, findTourTarget } from "@/tutorial/targetCatalog";
 
@@ -14,9 +14,15 @@ export async function GET() {
     admin.from("roles").select("id,codigo").in("id", access.roleIds),
     admin.from("tutorials").select("id,tutorial_key,nome,audience_role_id,current_version_id").eq("status", "published").in("audience_role_id", access.roleIds).not("current_version_id", "is", null).order("updated_at", { ascending: false }),
   ]);
-  const roleById = new Map((roles ?? []).map((role) => [role.id, role.codigo]));
+  const roleById = new Map<string, string>();
+  for (const role of roles ?? []) {
+    if (typeof role.id === "string" && typeof role.codigo === "string") {
+      roleById.set(role.id, role.codigo);
+    }
+  }
+  const roleCodeFor = (roleId: unknown) => typeof roleId === "string" ? roleById.get(roleId) ?? "" : "";
   const priority = ["master", "admin", "cliente", "operador", "dev", "suporte"];
-  const tutorial = [...(tutorials ?? [])].sort((a, b) => priority.indexOf(roleById.get(a.audience_role_id) ?? "") - priority.indexOf(roleById.get(b.audience_role_id) ?? ""))[0];
+  const tutorial = [...(tutorials ?? [])].sort((a, b) => priority.indexOf(roleCodeFor(a.audience_role_id)) - priority.indexOf(roleCodeFor(b.audience_role_id)))[0];
   if (!tutorial?.current_version_id) return NextResponse.json({ tutorial: null });
   const { data: version } = await admin.from("tutorial_versions").select("version,snapshot").eq("id", tutorial.current_version_id).single();
   if (!version || !version.snapshot || typeof version.snapshot !== "object" || Array.isArray(version.snapshot)) return NextResponse.json({ tutorial: null });

@@ -1,0 +1,15 @@
+.git
+.next
+node_modules
+out
+dist
+coverage
+*.log
+.env*
+supabase/.temp
+supabase/.branches
+.codex
+.agents
+analise_calculadora
+*.zip
+data

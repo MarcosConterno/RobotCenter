@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { extractRelationRows } from "@/lib/postgres/relation-rows";
+import { createAdminClient } from "@/lib/database/admin";
+import { createClient } from "@/lib/database/server";
 
 function roleCodes(value: unknown): string[] {
   if (Array.isArray(value)) return value.flatMap(roleCodes);
@@ -29,14 +30,14 @@ function roleCodeFromName(name: string) {
 }
 
 async function getAccess() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { supabase, user: null, isAdmin: false, isMaster: false };
+  const database = await createClient();
+  const { data: { user } } = await database.auth.getUser();
+  if (!user) return { database, user: null, isAdmin: false, isMaster: false };
 
-  const { data: assignments, error } = await supabase.from("user_roles")
+  const { data: assignments, error } = await database.from("user_roles")
     .select("roles(codigo)").eq("user_id", user.id);
-  const codes = error ? [] : [...new Set(assignments?.flatMap((item) => roleCodes(item.roles)) ?? [])];
-  return { supabase, user, isAdmin: codes.includes("admin") || codes.includes("master"), isMaster: codes.includes("master") };
+  const codes = error ? [] : [...new Set(extractRelationRows(assignments, "roles", roleCodes))];
+  return { database, user, isAdmin: codes.includes("admin") || codes.includes("master"), isMaster: codes.includes("master") };
 }
 
 export async function GET() {
@@ -54,13 +55,22 @@ export async function GET() {
     return NextResponse.json({ error: "Não foi possível mapear papéis e permissões." }, { status: 500 });
   }
 
-  const roleById = new Map((roles ?? []).map((role) => [role.id, role]));
+  const roleById = new Map<string, { codigo: string }>(
+    (roles ?? []).map((role) => [role.id as string, role as { codigo: string }] as const),
+  );
   const roleCodesByPermission = new Map<string, string[]>();
   for (const mapping of mappings ?? []) {
     const role = roleById.get(mapping.role_id);
     if (!role) continue;
+    const roleCode = typeof role === "object"
+      && role !== null
+      && "codigo" in role
+      && typeof role.codigo === "string"
+      ? role.codigo
+      : null;
+    if (roleCode === null) continue;
     const current = roleCodesByPermission.get(mapping.permission_id) ?? [];
-    current.push(role.codigo);
+    current.push(roleCode);
     roleCodesByPermission.set(mapping.permission_id, current);
   }
 
@@ -83,7 +93,7 @@ export async function PATCH(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Alterações de permissões inválidas." }, { status: 400 });
   if (!parsed.data.changes.length) return NextResponse.json({ success: true });
 
-  const { error } = await access.supabase.rpc("update_role_permission_matrix", { change_set: parsed.data.changes });
+  const { error } = await access.database.rpc("update_role_permission_matrix", { change_set: parsed.data.changes });
   if (error) return NextResponse.json({ error: error.message || "Não foi possível salvar as permissões." }, { status: 400 });
 
   return NextResponse.json({ success: true }, { headers: { "Cache-Control": "no-store" } });

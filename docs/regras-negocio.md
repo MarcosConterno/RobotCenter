@@ -5,7 +5,7 @@
 1. A entrada pela rota `/` sempre direciona para `/login`.
 2. A página `/login` permanece acessível mesmo quando existe uma sessão ativa.
 3. Após autenticação válida, o usuário sempre segue para `/dashboard`.
-4. Dashboard, Robôs e Configurações continuam protegidos pelo proxy e exigem sessão Supabase válida.
+4. Dashboard, Robôs e Configurações continuam protegidos pelo proxy e exigem uma sessão ativa da aplicação, validada no PostgreSQL por `public.app_sessions`.
 
 ## Robôs
 
@@ -100,7 +100,7 @@
 - A importação aceita arquivos `.xlsx` de até 5 MB e no máximo 500 robôs por arquivo.
 - Nenhuma coluna do modelo é obrigatória: valores vazios recebem padrões compatíveis com o cadastro; cliente vazio utiliza o primeiro cliente disponível.
 - O cliente da planilha é localizado pelo nome normalizado. Quando ainda não existe, é criado uma única vez com o nome informado e tenant técnico único; as demais linhas do lote reutilizam o mesmo `clienteId`.
-- Clientes já existentes são carregados do Supabase; os registros estáticos de demonstração não participam da correspondência.
+- Clientes já existentes são carregados do PostgreSQL standalone; os registros estáticos de demonstração não participam da correspondência.
 - As cores dos badges de Cliente e Pacote são escolhidas por robô entre azul, violeta, verde, âmbar, rosa e ciano. Cada paleta define conjuntamente fundo e texto para preservar contraste e consistência visual.
 - Quando a coluna Cliente estiver vazia, a importação usa o nome `Cliente não informado`, também reutilizado dentro do lote.
 - `Max` nunca é importado abaixo de `Ideal`; quando necessário, assume o mesmo valor de `Ideal`.
@@ -127,7 +127,7 @@
 - Suporte acessa Dashboard, listagem e detalhes de Robôs e Fluxos, sempre em modo de visualização e sem ações de cadastro, edição, exclusão, importação ou publicação.
 - Cadastros com soft delete não aparecem nas consultas funcionais comuns.
 - Profile com papel Cliente deve estar ativo e vinculado a um cliente ativo.
-- Senhas são processadas exclusivamente pelo Supabase Auth.
+- Senhas são verificadas por bcrypt contra auth.users.encrypted_password; as sessões locais ficam em public.app_sessions.
 - Campos `created_by`, `updated_by` e `deleted_by` são preenchidos com a identidade autenticada quando aplicável.
 ## Cores de clientes e pacotes
 
@@ -151,7 +151,7 @@
 - Somente uma sessão com `publications.create` pode registrar uma atualização, vinculada a um robô ativo.
 - Ao publicar regras novas, a descrição identifica separadamente regras de `Documentação` e de `Fora da Documentação`, incluindo o texto de cada regra. Quando as duas categorias mudam, ambas aparecem no mesmo item do feed.
 - O manual do robô é opcional, deve ser PDF e possuir no máximo 20 MB.
-- Um novo upload substitui o arquivo lógico `<robo_id>/manual.pdf`; os detalhes abrem o manual em modal usando URL assinada temporária.
+- Um novo upload substitui o arquivo lógico `<robo_id>/manual.pdf`; os detalhes abrem o manual pela rota autenticada da aplicação. Os bytes ficam no volume persistente configurado em `DOCUMENT_STORAGE_DIR`.
 - Disparo aceita somente Agendado, Manual ou por Gatilho; registros existentes assumem Manual.
 - Gatilho De e Gatilho Para são opcionais, não aceitam o próprio robô e somente podem selecionar robôs ativos do mesmo cliente.
 
@@ -224,7 +224,7 @@
 17. Sub-regras pertencem ao mesmo robô e categoria da regra pai e aceitam um nível de hierarquia.
 18. Excluir pelo editor arquiva logicamente a regra real e suas sub-regras após confirmação explícita.
 19. Seções, textos e notas pertencem ao rascunho e não modificam a Documentação Upada nem o motor DOCX/PDF.
-20. Imagens aceitam PNG, JPEG e WEBP com no máximo 10 MB e são armazenadas em bucket privado.
+20. Imagens aceitam PNG, JPEG e WEBP com no máximo 10 MB e são armazenadas no volume persistente do servidor, sob `DOCUMENT_STORAGE_DIR/robot-documentation`; o acesso é feito por rotas autenticadas, sem Supabase Storage.
 21. O bloco de imagem somente é criado após upload confirmado; substituição mantém posição, legenda, alinhamento e tamanho.
 22. Legenda acompanha logicamente a imagem durante reordenação e exclusão.
 23. Arquivo referenciado por versão publicada não é removido fisicamente ao sair do rascunho.
@@ -241,7 +241,7 @@
 8. A atribuição ou remoção do papel Master e a alteração da permissão `access_control.read` são protegidas no banco, não apenas na interface.
 9. O usuário Master deve conservar um papel administrativo base para permanecer compatível com as rotas, APIs e policies existentes.
 10. Alterações da matriz somente são persistidas após confirmação em **Salvar alterações** e são aplicadas na mesma transação.
-11. Excluir um usuário arquiva o profile para preservar referências históricas, remove seus papéis ativos e realiza exclusão lógica da identidade no Supabase Auth. O próprio usuário e o Master não podem ser excluídos por esse fluxo.
+11. Excluir um usuário arquiva o profile para preservar referências históricas, remove seus papéis ativos e arquiva a identidade local em auth.users pela conexão administrativa. O próprio usuário e o Master não podem ser excluídos por esse fluxo.
 12. Sessões abertas recebem notificações Realtime das entidades operacionais que já podem consultar. A sincronização apenas relê os dados após a confirmação da transação e não concede acesso, não contorna RLS e não altera permissões de escrita.
 13. Eventos recebidos em sequência são agrupados por 300 ms. Respostas de carregamentos anteriores não substituem o estado de uma solicitação mais recente, e os canais são removidos quando o provider é desmontado.
 14. Somente Master pode arquivar um Cliente que possua usuários ativos vinculados; todos devem ser reatribuídos a outro Cliente ou desvinculados na mesma transação.
@@ -334,3 +334,38 @@
 - Admin e Master também podem transferir o fluxo para outro cliente.
 - A transferência exige que os robôs vinculados já pertençam ao cliente de destino.
 - Gatilhos podem relacionar robôs ativos ou inativos do mesmo cliente; a interface identifica o status na lista.
+
+## Sessões próprias da aplicação
+
+- Login válido cria uma sessão aleatória com prazo de validade; o banco guarda somente o hash SHA-256 do token.
+- O cookie da sessão é HttpOnly e validado pelo backend em cada requisição protegida.
+- Logout revoga a sessão no banco e remove o cookie.
+- Sessões expiradas ou revogadas não autenticam chamadas, mesmo que o navegador ainda envie o cookie.
+- A recuperação local emite token aleatório, de uso único e validade de 30 minutos; apenas seu hash fica no banco. A tela só revela o link no ambiente de desenvolvimento.
+
+## Conta local PostgreSQL
+
+- O login usa as contas e os hashes bcrypt preservados em `auth.users`; o identificador de login pode ser o e-mail ou `profiles.login`.
+- `auth.identities` preserva os vínculos de identidade importados, mas não é um provedor de sessão no modo standalone.
+- O backend valida senha e sessão no PostgreSQL local; o navegador nunca recebe credenciais de banco.
+- Sessões e tokens de sessão não são copiados. Todos os usuários precisam entrar novamente no banco standalone.
+- A migração de dados exclui documentos e arquivos existentes. As tabelas de documentação são criadas pelo histórico de migrations e ficam disponíveis para testes com novos dados.
+- Recuperação por e-mail permanece indisponível até implementar, configurar e testar SMTP; em produção a API informa que o serviço não está configurado e não revela se o email existe.
+- O trigger de auditoria preenche `deleted_by` somente nas tabelas que possuem os campos de exclusão lógica; atualizações em catálogos e permissões sem esses campos permanecem válidas.
+
+
+## Cópia local e gatilho de perfil
+
+- O banco PostgreSQL standalone local recebeu contas, perfis, papéis, permissões e dados operacionais da origem local supabase_db_robot-center; nenhuma migration ou dado do projeto remoto LumeProspect participa desta cópia.
+- Sessões não são importadas. Depois da troca, cada pessoa autentica novamente com sua conta e senha importadas.
+- A inserção de uma conta local cria o perfil correspondente por private.handle_new_auth_user(). O gatilho não atribui papéis nem permissões automaticamente.
+- O caminho robos.manual_path pode apontar para um arquivo que ficou fora da cópia; o arquivo original não é apagado.
+
+## Recuperação local de senha
+
+1. A solicitação recebe somente email e responde com mensagem genérica, sem confirmar a existência da conta.
+2. No ambiente local de desenvolvimento, se a conta existir e tiver credencial ativa, a página mostra um link de recuperação que vence em 30 minutos.
+3. O token é aleatório, armazenado somente como SHA-256, pode ser consumido uma única vez e solicitações novas invalidam tokens anteriores.
+4. A redefinição exige senha e confirmação com pelo menos oito caracteres e até 72 bytes. A senha nova é armazenada com bcrypt.
+5. Ao redefinir a senha, todos os tokens pendentes e sessões ativas do usuário são revogados.
+6. O endpoint de emissão fica desabilitado em produção até implementar, configurar e testar a integração SMTP; a aplicação não informa que enviou email sem esse serviço.

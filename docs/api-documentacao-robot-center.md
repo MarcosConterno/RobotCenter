@@ -6,7 +6,7 @@ A rota `/robos/[id]/documentacao-robot-center` é exclusiva para Admin e apresen
 
 ## Dados consultados
 
-- sessão autenticada por `supabase.auth.getUser()`;
+- sessão autenticada validada pelo adapter PostgreSQL local;
 - papéis em `user_roles -> roles`;
 - Robô autorizado em `robos`;
 - raiz e rascunho em `robot_center_documentations -> robot_center_documentation_drafts`.

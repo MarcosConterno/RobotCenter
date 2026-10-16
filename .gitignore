@@ -14,6 +14,8 @@ pnpm-debug.log*
 # Environment
 .env
 .env.local
+.env.docker
+.env.standalone
 .env.*.local
 .env.example
 
@@ -27,3 +29,6 @@ Thumbs.db
 
 # Build
 dist/
+
+# Generated before dev/build from the versioned Markdown files
+/src/generated/system-documentation.ts

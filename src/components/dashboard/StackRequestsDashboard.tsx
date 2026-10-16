@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useAdminAccess } from "@/auth/AdminAccessProvider";
 import type { Robo } from "@/domain/entities";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/database/client";
 
 type Status = "SOLICITADA" | "EM_ANALISE" | "AGUARDANDO_INFORMACAO" | "CONCLUIDA" | "CANCELADA";
 interface Item { id: string; robot_id: string | null; suggested_stack_name: string; status: Status; generated_stack: string | null; requested_at: string; completed_at: string | null }
@@ -21,11 +21,11 @@ export default function StackRequestsDashboard({ robots, onOpenRobot }: { robots
 
   useEffect(() => {
     if (!canViewStackRequests) return;
-    const supabase = createClient();
-    const load = async () => { const { data } = await supabase.from("stack_requests").select("id,robot_id,suggested_stack_name,status,generated_stack,requested_at,completed_at").order("requested_at", { ascending: false }).limit(50); setItems((data ?? []) as Item[]); };
+    const database = createClient();
+    const load = async () => { const { data } = await database.from("stack_requests").select("id,robot_id,suggested_stack_name,status,generated_stack,requested_at,completed_at").order("requested_at", { ascending: false }).limit(50); setItems((data ?? []) as Item[]); };
     void load();
-    const channel = supabase.channel("dashboard-stack-requests").on("postgres_changes", { event: "*", schema: "public", table: "stack_requests" }, () => void load()).subscribe();
-    return () => { void supabase.removeChannel(channel); };
+    const channel = database.channel("dashboard-stack-requests").on("postgres_changes", { event: "*", schema: "public", table: "stack_requests" }, () => void load()).subscribe();
+    return () => { void database.removeChannel(channel); };
   }, [canViewStackRequests]);
 
   if (!canViewStackRequests) return null;

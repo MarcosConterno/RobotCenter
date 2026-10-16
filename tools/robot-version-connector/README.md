@@ -1,6 +1,6 @@
 # Robot Center Version Connector
 
-Conector local para consultar o registry interno usando a rede disponível no computador e a autenticação já configurada no `.npmrc`. Dentro da empresa, utiliza a rota corporativa direta; fora dela, utiliza a VPN quando conectada. Ele não altera o Supabase e não expõe credenciais ao Robot Center.
+Conector local para consultar o registry interno usando a rede disponível no computador e a autenticação já configurada no `.npmrc`. Dentro da empresa, utiliza a rota corporativa direta; fora dela, utiliza a VPN quando conectada. Ele não altera o banco do Robot Center e não expõe credenciais ao aplicativo.
 
 ## Configuração
 

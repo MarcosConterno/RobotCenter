@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/database/server";
+import { extractRelationRows } from "@/lib/postgres/relation-rows";
 import {
   formatRequirementCode,
   formatDocumentationVersion,
@@ -36,20 +37,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!body.generationToken || !/^[0-9a-f-]{36}$/i.test(body.generationToken)) {
     return NextResponse.json({ error: "Token de publicação inválido." }, { status: 400 });
   }
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const database = await createClient();
+  const { data: { user } } = await database.auth.getUser();
   if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
   const [{ data: userRoles }, { data: robot }] = await Promise.all([
-    supabase.from("user_roles").select("roles(codigo)").eq("user_id", user.id),
-    supabase.from("robos").select("id,nome,court_name,sistema,updated_at,clientes(nome)")
+    database.from("user_roles").select("roles(codigo)").eq("user_id", user.id),
+    database.from("robos").select("id,nome,court_name,sistema,updated_at,clientes(nome)")
       .eq("id", robotId).is("deleted_at", null).maybeSingle(),
   ]);
-  const isAdmin = [...new Set(userRoles?.flatMap((item) => roleCodes(item.roles)) ?? [])].includes("admin");
+  const isAdmin = [...new Set(extractRelationRows(userRoles, "roles", roleCodes))].includes("admin");
   if (!isAdmin || !robot) return NextResponse.json({ error: "Acesso negado." }, { status: 403 });
 
   let versionId = "";
   try {
-    const { data: started, error: startError } = await supabase.rpc("begin_robot_center_documentation_publication", {
+    const { data: started, error: startError } = await database.rpc("begin_robot_center_documentation_publication", {
       target_robot_id: robotId,
       target_generation_token: body.generationToken,
     });
@@ -60,16 +61,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const versionLabel = formatDocumentationVersion(versionNumber);
 
     const [{ data: draft }, { data: sections }, { data: requirements }, { data: blocks }, templateDownload] = await Promise.all([
-      supabase.from("robot_center_documentation_drafts").select("id,revision,updated_at")
+      database.from("robot_center_documentation_drafts").select("id,revision,updated_at")
         .eq("id", publication.draft_id).single(),
-      supabase.from("robot_center_documentation_sections").select("id,section_key,ordem,content")
+      database.from("robot_center_documentation_sections").select("id,section_key,ordem,content")
         .eq("draft_id", publication.draft_id).order("ordem"),
-      supabase.from("regras_robo").select("id,robo_id,parent_id,tipo,ordem,descricao")
+      database.from("regras_robo").select("id,robo_id,parent_id,tipo,ordem,descricao")
         .eq("robo_id", robotId).is("deleted_at", null).order("ordem"),
-      supabase.from("robot_center_documentation_blocks")
+      database.from("robot_center_documentation_blocks")
         .select("id,requirement_id,section_id,related_block_id,type,ordem,content,metadata")
         .eq("draft_id", publication.draft_id).is("deleted_at", null).order("ordem"),
-      supabase.storage.from(TEMPLATE_BUCKET).download(publication.template_storage_path),
+      database.storage.from(TEMPLATE_BUCKET).download(publication.template_storage_path),
     ]);
     if (!draft) throw new Error("Rascunho da Documentação Robot Center não encontrado.");
     if (templateDownload.error || !templateDownload.data) {
@@ -116,9 +117,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         if (!draftPath) throw new Error(`Imagem ${block.id} sem arquivo associado.`);
         const extension = draftPath.split(".").pop()?.toLowerCase() || "png";
         const versionPath = `${versionBase}/images/${block.id}.${extension}`;
-        const { error: copyError } = await supabase.storage.from(FILE_BUCKET).copy(draftPath, versionPath);
+        const { error: copyError } = await database.storage.from(FILE_BUCKET).copy(draftPath, versionPath);
         if (copyError && !/already exists|duplicate/i.test(copyError.message)) throw copyError;
-        const { data: imageFile, error: imageError } = await supabase.storage.from(FILE_BUCKET).download(versionPath);
+        const { data: imageFile, error: imageError } = await database.storage.from(FILE_BUCKET).download(versionPath);
         if (imageError || !imageFile) throw imageError ?? new Error(`Imagem ${block.id} não encontrada.`);
         images.set(block.id, Buffer.from(await imageFile.arrayBuffer()));
         image = {
@@ -164,12 +165,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const pdf = await convertDocxToPdf(docx, `${baseName}.docx`);
     const docxPath = `${versionBase}/${baseName}.docx`;
     const pdfPath = `${versionBase}/${baseName}.pdf`;
-    const { error: docxUploadError } = await supabase.storage.from(FILE_BUCKET).upload(docxPath, docx, { contentType: DOCX_MIME, upsert: true });
+    const { error: docxUploadError } = await database.storage.from(FILE_BUCKET).upload(docxPath, docx, { contentType: DOCX_MIME, upsert: true });
     if (docxUploadError) throw docxUploadError;
-    const { error: pdfUploadError } = await supabase.storage.from(FILE_BUCKET).upload(pdfPath, pdf, { contentType: "application/pdf", upsert: true });
+    const { error: pdfUploadError } = await database.storage.from(FILE_BUCKET).upload(pdfPath, pdf, { contentType: "application/pdf", upsert: true });
     if (pdfUploadError) throw pdfUploadError;
 
-    const { error: completeError } = await supabase.rpc("complete_robot_center_documentation_publication", {
+    const { error: completeError } = await database.rpc("complete_robot_center_documentation_publication", {
       target_version_id: versionId,
       target_generation_token: body.generationToken,
       target_snapshot: snapshot as unknown as Json,
@@ -177,7 +178,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       target_pdf_path: pdfPath,
     });
     if (completeError) throw completeError;
-    const { data: preview, error: previewError } = await supabase.storage.from(FILE_BUCKET).createSignedUrl(pdfPath, 1800);
+    const { data: preview, error: previewError } = await database.storage.from(FILE_BUCKET).createSignedUrl(pdfPath, 1800);
     return NextResponse.json({
       ok: true,
       version: versionNumber,
@@ -187,7 +188,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     });
   } catch (error) {
     console.error("Falha ao publicar a documentação Robot Center", error);
-    if (versionId) await supabase.rpc("fail_robot_center_documentation_publication", {
+    if (versionId) await database.rpc("fail_robot_center_documentation_publication", {
       target_version_id: versionId,
       target_generation_token: body.generationToken,
       target_error_message: error instanceof Error ? error.message : "Falha desconhecida.",

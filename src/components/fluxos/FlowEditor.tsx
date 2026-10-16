@@ -476,7 +476,7 @@ function FlowEditorInner({ fluxo, initialNodes, initialEdges, robos, editable, o
       console.error("Falha ao salvar o fluxo", error);
       const detail = error && typeof error === "object" && "message" in error
         ? String(error.message)
-        : "Erro não identificado pelo Supabase.";
+        : "Erro não identificado pelo adapter PostgreSQL.";
       setErro(`Não foi possível salvar as alterações. ${detail}`);
     } finally {
       setSalvando(false);

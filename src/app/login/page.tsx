@@ -28,7 +28,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <div style={contentStyle}>
           <div style={brandStyle}>ROBOT CENTER</div>
           <h1 id="login-title" style={titleStyle}>Bem-vindo</h1>
-          <p style={subtitleStyle}>Entre com seu email e senha.</p>
+          <p style={subtitleStyle}>Entre com seu email ou usuário e senha.</p>
 
           <form action="/auth/login" method="post" style={formStyle}>
           <input type="hidden" name="redirectTo" value="/minha-pagina" />
@@ -37,11 +37,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             <span style={labelStyle}>Email</span>
             <input
               name="email"
-              type="email"
-              autoComplete="email"
+              type="text"
+              autoComplete="username"
               required
               autoFocus
-              placeholder="nome@empresa.com"
+              placeholder="nome@empresa.com ou usuário"
               style={inputStyle}
             />
           </label>

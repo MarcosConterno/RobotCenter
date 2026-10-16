@@ -16,7 +16,7 @@ import { useFlowsData } from "@/data/FlowsDataProvider";
 import { PALETAS_BADGE_ROBO } from "@/domain/badge-colors";
 import type { CorBadgeRobo } from "@/domain/entities";
 import { formatarData } from "@/domain/formatters";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/database/client";
 import type { Database } from "@/types/database.types";
 
 import styles from "./MinhaPagina.module.css";
@@ -59,9 +59,20 @@ function localDateKey(date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
-function formatTaskDate(value: string) {
-  return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" })
-    .format(new Date(`${value}T12:00:00`));
+function formatTaskDate(value: string | null | undefined) {
+  const dateKey = typeof value === "string" ? value.slice(0, 10) : "";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) return "Data indisponível";
+
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const date = new Date(year, month - 1, day, 12);
+  if (Number.isNaN(date.getTime())
+    || date.getFullYear() !== year
+    || date.getMonth() !== month - 1
+    || date.getDate() !== day) {
+    return "Data indisponível";
+  }
+
+  return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" }).format(date);
 }
 
 function greeting() {
@@ -72,11 +83,11 @@ function greeting() {
 }
 
 function databaseMessage(message: string) {
-  if (message.includes("personal_tasks") || message.includes("schema cache") || message.includes("relation")) {
-    return "As tabelas de Minha página ainda não estão disponíveis. Aplique as migrations pendentes do Supabase.";
-  }
   if (message.toLocaleLowerCase("pt-BR").includes("row-level security")) {
     return "Sua sessão não tem permissão para realizar esta operação. Entre novamente e tente de novo.";
+  }
+  if (/personal_tasks|schema cache|relation|relacionamento/i.test(message)) {
+    return "A consulta da Minha página falhou por causa de uma tabela ou relacionamento no PostgreSQL local. Consulte o log do servidor para ver o objeto exato.";
   }
   return message;
 }
@@ -134,13 +145,13 @@ export default function MinhaPaginaPage() {
 
   const loadPreferences = useCallback(async () => {
     setPreferencesLoading(true);
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const database = createClient();
+    const { data: { user } } = await database.auth.getUser();
     if (!user) { setPreferencesLoading(false); return; }
     setUserId(user.id);
     const [preferenceResult, flowsResult] = await Promise.all([
-      supabase.from("personal_page_preferences").select("show_robot_table").eq("user_id", user.id).maybeSingle(),
-      supabase.from("personal_page_flows").select("flow_id").eq("user_id", user.id).order("created_at"),
+      database.from("personal_page_preferences").select("show_robot_table").eq("user_id", user.id).maybeSingle(),
+      database.from("personal_page_flows").select("flow_id").eq("user_id", user.id).order("created_at"),
     ]);
     if (preferenceResult.error || flowsResult.error) {
       const message = preferenceResult.error?.message ?? flowsResult.error?.message ?? "Não foi possível carregar suas preferências.";
@@ -204,15 +215,15 @@ export default function MinhaPaginaPage() {
     if (!title.trim()) return;
     setSaving(true);
     setError("");
-    const supabase = createClient();
+    const database = createClient();
     const payload = { title: title.trim(), due_date: dueDate, priority, status, client_id: clientId || null, origin_meeting_id: todoOrigin?.type === "meeting" ? todoOrigin.id : null, origin_note_id: todoOrigin?.type === "note" ? todoOrigin.id : null };
     let mutationError;
     if (editingId) {
-      ({ error: mutationError } = await supabase.from("personal_tasks").update(payload).eq("id", editingId));
+      ({ error: mutationError } = await database.from("personal_tasks").update(payload).eq("id", editingId));
     } else {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await database.auth.getUser();
       if (!user) mutationError = new Error("Sessão não encontrada.");
-      else ({ error: mutationError } = await supabase.from("personal_tasks").insert({ ...payload, user_id: user.id }));
+      else ({ error: mutationError } = await database.from("personal_tasks").insert({ ...payload, user_id: user.id }));
     }
     setSaving(false);
     if (mutationError) { setError(databaseMessage(mutationError.message)); return; }

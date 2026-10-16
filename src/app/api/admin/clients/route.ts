@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { CORES_BADGE_ROBO } from "@/domain/entities";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { extractRelationRows } from "@/lib/postgres/relation-rows";
+import { createAdminClient } from "@/lib/database/admin";
+import { createClient } from "@/lib/database/server";
 
 const createClientSchema = z.object({
   nome: z.string().trim().min(1, "Nome é obrigatório."),
@@ -22,15 +23,15 @@ function extractRoleCodes(roleRelation: unknown): string[] {
 }
 
 async function requireAdmin() {
-  const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const database = await createClient();
+  const { data: { user }, error } = await database.auth.getUser();
   if (error || !user) return { error: "Sessão inválida.", status: 401 } as const;
 
-  const { data: userRoles, error: rolesError } = await supabase
+  const { data: userRoles, error: rolesError } = await database
     .from("user_roles")
     .select("roles(codigo)")
     .eq("user_id", user.id);
-  const roles = userRoles?.flatMap((item) => extractRoleCodes(item.roles)) ?? [];
+  const roles = extractRelationRows(userRoles, "roles", extractRoleCodes);
 
   if (rolesError || (!roles.includes("admin") && !roles.includes("master"))) {
     return { error: "Somente administradores podem cadastrar clientes.", status: 403 } as const;

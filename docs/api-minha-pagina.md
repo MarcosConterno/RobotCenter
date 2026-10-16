@@ -2,7 +2,7 @@
 
 ## Acesso
 
-A rota de interface `/minha-pagina` está disponível para qualquer sessão autenticada. Ela usa o cliente Supabase da própria sessão e não utiliza `service_role`.
+A rota de interface `/minha-pagina` está disponível para qualquer sessão autenticada. Ela usa o adapter PostgreSQL autenticado da sessão local e não utiliza service_role no navegador.
 
 ## Tarefas pessoais
 
@@ -16,7 +16,7 @@ Não há endpoint administrativo para tarefas de terceiros.
 
 ## Reuniões e Notas
 
-As abas usam diretamente a sessão autenticada do Supabase para CRUD em `personal_meetings` e `personal_notes`. Reuniões são consultadas em ordem de data/horário; Notas em ordem de `updated_at`. As consultas começam somente quando a respectiva aba é montada.
+As abas usam o adapter PostgreSQL autenticado para CRUD em personal_meetings e personal_notes. Reuniões são consultadas em ordem de data/horário; Notas em ordem de `updated_at`. As consultas começam somente quando a respectiva aba é montada.
 
 `personal_meetings.notes` e `personal_notes.content` aceitam o texto simples legado e o HTML controlado produzido pelo editor. O editor oferece negrito, tópicos, listas numeradas e checkboxes; conteúdo colado é inserido como texto simples. As buscas e prévias de Notas extraem somente o texto visível. Essa evolução não altera o tipo `text` das colunas nem as policies de proprietário.
 

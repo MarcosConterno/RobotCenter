@@ -1,5 +1,5 @@
-import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/database/admin";
+import { createClient } from "@/lib/database/server";
 
 function relationObjects(value: unknown): Array<{ id: string; codigo: string }> {
   if (Array.isArray(value)) return value.flatMap(relationObjects);
@@ -16,9 +16,9 @@ function permissionCodes(value: unknown): string[] {
 }
 
 export async function getTutorialAccess() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { supabase, user: null, roles: [] as string[], roleIds: [] as string[], permissions: [] as string[], canManage: false, isMaster: false };
+  const database = await createClient();
+  const { data: { user } } = await database.auth.getUser();
+  if (!user) return { database, user: null, roles: [] as string[], roleIds: [] as string[], permissions: [] as string[], canManage: false, isMaster: false };
 
   const admin = createAdminClient();
   const { data: assignments } = await admin.from("user_roles").select("roles(id,codigo)").eq("user_id", user.id);
@@ -30,5 +30,5 @@ export async function getTutorialAccess() {
     : { data: [] };
   const permissions = [...new Set(mappings?.flatMap((item) => permissionCodes(item.permissions)) ?? [])];
   const isMaster = roles.includes("master");
-  return { supabase, user, roles, roleIds, permissions, isMaster, canManage: isMaster || permissions.includes("tutorials.manage") };
+  return { database, user, roles, roleIds, permissions, isMaster, canManage: isMaster || permissions.includes("tutorials.manage") };
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient } from "@/lib/database/admin";
 import { getTutorialAccess } from "@/server/tutorials/access";
 
 export async function POST(_: Request, context: { params: Promise<{ id: string }> }) {
@@ -13,7 +13,7 @@ export async function POST(_: Request, context: { params: Promise<{ id: string }
   const { data: draft } = await admin.from("tutorial_drafts").select("id").eq("tutorial_id", id).maybeSingle();
   const { count } = draft ? await admin.from("tutorial_steps").select("id", { count: "exact", head: true }).eq("draft_id", draft.id).eq("habilitado", true) : { count: 0 };
   if (!count) return NextResponse.json({ error: "Adicione ao menos um passo habilitado antes de publicar." }, { status: 400 });
-  const { data, error } = await access.supabase.rpc("publish_tutorial", { target_tutorial_id: id });
+  const { data, error } = await access.database.rpc("publish_tutorial", { target_tutorial_id: id });
   if (error || !data?.[0]) return NextResponse.json({ error: error?.message ?? "Não foi possível publicar." }, { status: 400 });
   return NextResponse.json({ version: data[0].version_number });
 }

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAppData } from "@/data/AppDataProvider";
 import { useAdminAccess } from "@/auth/AdminAccessProvider";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/database/client";
 import type { Database } from "@/types/database.types";
 import { announceDashboardUnreadCount, DASHBOARD_UNREAD_STORAGE_KEY, readDashboardUnreadCount } from "@/domain/dashboard-notifications";
 
@@ -121,15 +121,15 @@ export default function DashboardUpdateNotifier() {
   }, []);
 
   useEffect(() => {
-    const supabase = createClient();
-    const channel = supabase
+    const database = createClient();
+    const channel = database
       .channel("dashboard-update-notifications")
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "publicacoes" },
         (payload) => {
-          const publication = payload.new as PublicationRow;
-          if (notifiedPublicationIds.current.has(publication.id)) return;
+          const publication = payload?.new as PublicationRow | undefined;
+          if (!publication?.id || notifiedPublicationIds.current.has(publication.id)) return;
           notifiedPublicationIds.current.add(publication.id);
 
           const dashboardIsVisible = window.location.pathname === "/dashboard"
@@ -158,7 +158,7 @@ export default function DashboardUpdateNotifier() {
         { event: "*", schema: "public", table: "stack_requests" },
         (payload) => {
           if (!canViewStackRequests) return;
-          const request = payload.new as StackRequestRow;
+          const request = payload?.new as StackRequestRow | undefined;
           if (!request?.id) return;
           const dashboardIsVisible = window.location.pathname === "/dashboard" && document.visibilityState === "visible";
           if (!dashboardIsVisible) incrementUnreadUpdates();
@@ -172,7 +172,7 @@ export default function DashboardUpdateNotifier() {
       .subscribe();
 
     return () => {
-      void supabase.removeChannel(channel);
+      void database.removeChannel(channel);
     };
   }, [canViewStackRequests, incrementUnreadUpdates, router]);
 

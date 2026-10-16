@@ -4,7 +4,7 @@ import { FileText, Plus, Search, Trash2, X } from "lucide-react";
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 import styles from "@/app/minha-pagina/MinhaPagina.module.css";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/database/client";
 import type { Database } from "@/types/database.types";
 import MeetingNotesEditor, { richTextToPlainText } from "./MeetingNotesEditor";
 

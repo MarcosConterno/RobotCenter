@@ -36,7 +36,7 @@ import { useAdminAccess } from "@/auth/AdminAccessProvider";
 import { formatarData, formatarDataHora } from "@/domain/formatters";
 import type { Cliente, RegraRobo, Robo, RobotUploadedDocument } from "@/domain/entities";
 import { getRobotProductByType } from "@/domain/robot-products";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/database/client";
 import StackRequestsPanel from "./StackRequestsPanel";
 
 import styles from "./RobotDetails.module.css";
@@ -108,7 +108,7 @@ export default function RobotDetails({ robot, clientes = EMPTY_CLIENTES, robos =
     ]);
     setUploadingDocuments(true);
     setUploadedDocumentationError("");
-    const supabase = createClient();
+    const database = createClient();
     try {
       for (const file of Array.from(files)) {
         const extension = file.name.split(".").pop()?.toLocaleLowerCase("pt-BR") ?? "";
@@ -117,9 +117,9 @@ export default function RobotDetails({ robot, clientes = EMPTY_CLIENTES, robos =
         if (file.size > 20 * 1024 * 1024) throw new Error(`O arquivo “${file.name}” deve ter no máximo 20 MB.`);
         const safeName = file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9._-]+/g, "-");
         const storagePath = `${robot.id}/${crypto.randomUUID()}-${safeName}`;
-        const { error: uploadError } = await supabase.storage.from("robot-manuals").upload(storagePath, file, { contentType: mimeType, upsert: false });
+        const { error: uploadError } = await database.storage.from("robot-manuals").upload(storagePath, file, { contentType: mimeType, upsert: false });
         if (uploadError) throw uploadError;
-        const { data, error: metadataError } = await supabase.from("robot_uploaded_documents").insert({
+        const { data, error: metadataError } = await database.from("robot_uploaded_documents").insert({
           robot_id: robot.id,
           storage_path: storagePath,
           file_name: file.name,
@@ -127,7 +127,7 @@ export default function RobotDetails({ robot, clientes = EMPTY_CLIENTES, robos =
           size_bytes: file.size,
         }).select("id,robot_id,storage_path,file_name,mime_type,size_bytes,created_at").single();
         if (metadataError) {
-          await supabase.storage.from("robot-manuals").remove([storagePath]);
+          await database.storage.from("robot-manuals").remove([storagePath]);
           throw metadataError;
         }
         setUploadedDocuments((current) => [{ id: data.id, robotId: data.robot_id, storagePath: data.storage_path, fileName: data.file_name, mimeType: data.mime_type, sizeBytes: data.size_bytes, createdAt: data.created_at }, ...current]);
@@ -144,14 +144,14 @@ export default function RobotDetails({ robot, clientes = EMPTY_CLIENTES, robos =
     if (!isAdmin || !window.confirm(`Excluir o arquivo “${document.fileName}”?`)) return;
     setUploadedDocumentationBusy(`${document.id}:delete`);
     setUploadedDocumentationError("");
-    const supabase = createClient();
-    const { error: metadataError } = await supabase.from("robot_uploaded_documents").update({ deleted_at: new Date().toISOString() }).eq("id", document.id).eq("robot_id", robot.id);
+    const database = createClient();
+    const { error: metadataError } = await database.from("robot_uploaded_documents").update({ deleted_at: new Date().toISOString() }).eq("id", document.id).eq("robot_id", robot.id);
     if (metadataError) {
       setUploadedDocumentationError("Não foi possível excluir o arquivo.");
       setUploadedDocumentationBusy(null);
       return;
     }
-    const { error: storageError } = await supabase.storage.from("robot-manuals").remove([document.storagePath]);
+    const { error: storageError } = await database.storage.from("robot-manuals").remove([document.storagePath]);
     if (storageError) console.error("Falha ao remover objeto arquivado", { message: storageError.message });
     setUploadedDocuments((current) => current.filter((item) => item.id !== document.id));
     setUploadedDocumentationBusy(null);

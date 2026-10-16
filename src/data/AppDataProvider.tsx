@@ -15,17 +15,17 @@ import {
   type RobotUploadedDocument,
   type Usuario,
 } from "@/domain/entities";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/database/client";
 import type { Database } from "@/types/database.types";
 
 const LIMITE_PUBLICACOES = 50;
 const TAMANHO_PAGINA_ROBOS = 1000;
 
-async function carregarTodosOsRobos(supabase: ReturnType<typeof createClient>) {
+async function carregarTodosOsRobos(database: ReturnType<typeof createClient>) {
   const robos: Database["public"]["Tables"]["robos"]["Row"][] = [];
 
   for (let inicio = 0; ; inicio += TAMANHO_PAGINA_ROBOS) {
-    const { data, error } = await supabase
+    const { data, error } = await database
       .from("robos")
       .select("*")
       .is("deleted_at", null)
@@ -56,11 +56,11 @@ function gerarTenant(nome: string) {
 }
 
 async function garantirCadastrosDoRobo(dados: Pick<DadosFormularioRobo, "sistema" | "pacote" | "pacoteCor" | "stack" | "fila" | "command">) {
-  const supabase = createClient();
+  const database = createClient();
   const [systemsResult, packagesResult, stacksResult, queuesResult, commandsResult] = await Promise.all([
-    supabase.from("robot_systems").select("id,name"),
-    supabase.from("robot_packages").select("id,name,color"), supabase.from("robot_stacks").select("id,name"),
-    supabase.from("robot_queues").select("id,name"), supabase.from("robot_commands").select("id,name,command"),
+    database.from("robot_systems").select("id,name"),
+    database.from("robot_packages").select("id,name,color"), database.from("robot_stacks").select("id,name"),
+    database.from("robot_queues").select("id,name"), database.from("robot_commands").select("id,name,command"),
   ]);
   const errors = [systemsResult.error, packagesResult.error, stacksResult.error, queuesResult.error, commandsResult.error].filter(Boolean);
   if (errors[0]) throw errors[0];
@@ -71,12 +71,12 @@ async function garantirCadastrosDoRobo(dados: Pick<DadosFormularioRobo, "sistema
   let stackId = dados.stack ? stacksResult.data?.find((item) => key(item.name) === key(dados.stack))?.id : undefined;
   let queueId = queuesResult.data?.find((item) => key(item.name) === key(dados.fila))?.id;
   let commandId = dados.command ? commandsResult.data?.find((item) => key(item.command) === key(dados.command))?.id : undefined;
-  if (!systemId) { const { data, error } = await supabase.from("robot_systems").insert({ name: dados.sistema }).select("id").single(); if (error) throw new Error(`Sistema não cadastrado e não foi possível criá-lo: ${error.message}`); systemId = data.id; }
-  if (!packageId) { const { data, error } = await supabase.from("robot_packages").insert({ name: dados.pacote, color: dados.pacoteCor }).select("id").single(); if (error) throw new Error(`Pacote não cadastrado e não foi possível criá-lo: ${error.message}`); packageId = data.id; }
-  else if (existingPackage && existingPackage.color !== dados.pacoteCor) { const { error } = await supabase.from("robot_packages").update({ color: dados.pacoteCor }).eq("id", packageId); if (error) throw error; }
-  if (dados.stack && !stackId) { const { data, error } = await supabase.from("robot_stacks").insert({ name: dados.stack }).select("id").single(); if (error) throw new Error(`Stack não cadastrada e não foi possível criá-la: ${error.message}`); stackId = data.id; }
-  if (!queueId) { const { data, error } = await supabase.from("robot_queues").insert({ name: dados.fila }).select("id").single(); if (error) throw new Error(`Fila não cadastrada e não foi possível criá-la: ${error.message}`); queueId = data.id; }
-  if (dados.command && !commandId) { const { data, error } = await supabase.from("robot_commands").insert({ name: dados.command, command: dados.command }).select("id").single(); if (error) throw new Error(`Command não cadastrado e não foi possível criá-lo: ${error.message}`); commandId = data.id; }
+  if (!systemId) { const { data, error } = await database.from("robot_systems").insert({ name: dados.sistema }).select("id").single(); if (error) throw new Error(`Sistema não cadastrado e não foi possível criá-lo: ${error.message}`); systemId = data.id; }
+  if (!packageId) { const { data, error } = await database.from("robot_packages").insert({ name: dados.pacote, color: dados.pacoteCor }).select("id").single(); if (error) throw new Error(`Pacote não cadastrado e não foi possível criá-lo: ${error.message}`); packageId = data.id; }
+  else if (existingPackage && existingPackage.color !== dados.pacoteCor) { const { error } = await database.from("robot_packages").update({ color: dados.pacoteCor }).eq("id", packageId); if (error) throw error; }
+  if (dados.stack && !stackId) { const { data, error } = await database.from("robot_stacks").insert({ name: dados.stack }).select("id").single(); if (error) throw new Error(`Stack não cadastrada e não foi possível criá-la: ${error.message}`); stackId = data.id; }
+  if (!queueId) { const { data, error } = await database.from("robot_queues").insert({ name: dados.fila }).select("id").single(); if (error) throw new Error(`Fila não cadastrada e não foi possível criá-la: ${error.message}`); queueId = data.id; }
+  if (dados.command && !commandId) { const { data, error } = await database.from("robot_commands").insert({ name: dados.command, command: dados.command }).select("id").single(); if (error) throw new Error(`Command não cadastrado e não foi possível criá-lo: ${error.message}`); commandId = data.id; }
   return { systemId, packageId, stackId: stackId ?? null, queueId, commandId: commandId ?? null };
 }
 
@@ -85,14 +85,14 @@ async function enviarDocumentacaoUpadaRobo(roboId: string, arquivo?: File | null
   if (arquivo.type !== "application/pdf") throw new Error("O manual deve ser um arquivo PDF.");
   if (arquivo.size > 20 * 1024 * 1024) throw new Error("O manual deve ter no máximo 20 MB.");
 
-  const supabase = createClient();
+  const database = createClient();
   const safeName = arquivo.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9._-]+/g, "-");
   const uploadedDocumentationPath = `${roboId}/${crypto.randomUUID()}-${safeName}`;
-  const { error: uploadError } = await supabase.storage
+  const { error: uploadError } = await database.storage
     .from("robot-manuals")
     .upload(uploadedDocumentationPath, arquivo, { contentType: "application/pdf", upsert: false });
   if (uploadError) throw uploadError;
-  const { error: metadataError } = await supabase.from("robot_uploaded_documents").insert({
+  const { error: metadataError } = await database.from("robot_uploaded_documents").insert({
     robot_id: roboId,
     storage_path: uploadedDocumentationPath,
     file_name: arquivo.name,
@@ -100,10 +100,10 @@ async function enviarDocumentacaoUpadaRobo(roboId: string, arquivo?: File | null
     size_bytes: arquivo.size,
   });
   if (metadataError) {
-    await supabase.storage.from("robot-manuals").remove([uploadedDocumentationPath]);
+    await database.storage.from("robot-manuals").remove([uploadedDocumentationPath]);
     throw metadataError;
   }
-  const { error: updateError } = await supabase.from("robos")
+  const { error: updateError } = await database.from("robos")
     .update({ manual_path: uploadedDocumentationPath, manual_nome: arquivo.name })
     .eq("id", roboId);
   if (updateError) throw updateError;
@@ -154,17 +154,17 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    const supabase = createClient();
+    const database = createClient();
     void Promise.all([
-      supabase.from("clientes").select("id,nome,tenant,cor").is("deleted_at", null).order("nome"),
-      carregarTodosOsRobos(supabase),
-      supabase.from("regras_robo").select("id,robo_id,parent_id,descricao,ordem,tipo").is("deleted_at", null).order("ordem"),
-      supabase.from("alteracoes_robo").select("id,robo_id,descricao,realizada_em").order("realizada_em", { ascending: false }),
-      supabase.from("publicacoes").select("id,robo_id,categoria,descricao,publicada_em").order("publicada_em", { ascending: false }),
-      supabase.from("robot_center_documentations").select("id,robo_id,status,updated_at").is("deleted_at", null),
-      supabase.from("robot_center_documentation_versions").select("documentation_id,version,docx_path,pdf_path,status")
+      database.from("clientes").select("id,nome,tenant,cor").is("deleted_at", null).order("nome"),
+      carregarTodosOsRobos(database),
+      database.from("regras_robo").select("id,robo_id,parent_id,descricao,ordem,tipo").is("deleted_at", null).order("ordem"),
+      database.from("alteracoes_robo").select("id,robo_id,descricao,realizada_em").order("realizada_em", { ascending: false }),
+      database.from("publicacoes").select("id,robo_id,categoria,descricao,publicada_em").order("publicada_em", { ascending: false }),
+      database.from("robot_center_documentations").select("id,robo_id,status,updated_at").is("deleted_at", null),
+      database.from("robot_center_documentation_versions").select("documentation_id,version,docx_path,pdf_path,status")
         .eq("status", "published").order("version", { ascending: false }),
-      supabase.from("robot_uploaded_documents").select("id,robot_id,storage_path,file_name,mime_type,size_bytes,created_at").is("deleted_at", null).order("created_at", { ascending: false }),
+      database.from("robot_uploaded_documents").select("id,robot_id,storage_path,file_name,mime_type,size_bytes,created_at").is("deleted_at", null).order("created_at", { ascending: false }),
     ]).then(([clientesResult, robosResult, regrasResult, alteracoesResult, publicacoesResult, documentationsResult, documentationVersionsResult, uploadedDocumentsResult]) => {
       if (!active) return;
       const clientesCarregados: Cliente[] = (clientesResult.data ?? []).map((cliente) => ({
@@ -249,13 +249,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, [dataRevision]);
 
   useEffect(() => {
-    const supabase = createClient();
+    const database = createClient();
     let refreshTimer: ReturnType<typeof setTimeout> | null = null;
     const scheduleRefresh = () => {
       if (refreshTimer) clearTimeout(refreshTimer);
       refreshTimer = setTimeout(() => setDataRevision((current) => current + 1), 300);
     };
-    const channel = supabase
+    const channel = database
       .channel("app-data-sync")
       .on("postgres_changes", { event: "*", schema: "public", table: "clientes" }, scheduleRefresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "robos" }, scheduleRefresh)
@@ -268,16 +268,16 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       .subscribe();
     return () => {
       if (refreshTimer) clearTimeout(refreshTimer);
-      void supabase.removeChannel(channel);
+      void database.removeChannel(channel);
     };
   }, []);
 
   async function cadastrarRobo(dados: DadosFormularioRobo) {
     const { alteracoesRealizadas, uploadedDocumentationFile, ...cadastro } = dados;
-    const supabase = createClient();
+    const database = createClient();
     const clienteCor = clientes.find((cliente) => cliente.id === cadastro.clienteId)?.cor ?? "azul";
     const catalogIds = await garantirCadastrosDoRobo(cadastro);
-    const { data: roboCriado, error: erroRobo } = await supabase.from("robos").insert({
+    const { data: roboCriado, error: erroRobo } = await database.from("robos").insert({
       cliente_id: cadastro.clienteId, cliente_cor: clienteCor, nome: cadastro.nome, sistema: cadastro.sistema,
       court_name: cadastro.courtName, ideal: cadastro.ideal, max: cadastro.max, pacote: cadastro.pacote,
       pacote_cor: cadastro.pacoteCor, descricao: cadastro.descricao, ambiente: cadastro.ambiente,
@@ -298,12 +298,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       ...cadastro.regrasForaDocumentacao.map((regra, ordem) => ({ robo_id: roboCriado.id, descricao: regra.descricao, ordem, tipo: "fora_documentacao" })),
     ];
     if (regras.length) {
-      const { error } = await supabase.from("regras_robo").insert(regras);
+      const { error } = await database.from("regras_robo").insert(regras);
       if (error) throw error;
     }
     let alteracoesCriadas: { id: string; descricao: string; realizada_em: string }[] = [];
     if (alteracoesRealizadas.length) {
-      const { data, error } = await supabase.from("alteracoes_robo")
+      const { data, error } = await database.from("alteracoes_robo")
         .insert(alteracoesRealizadas.map((alteracao) => ({ robo_id: roboCriado.id, descricao: alteracao.descricao })))
         .select("id,descricao,realizada_em");
       if (error) throw error;
@@ -327,9 +327,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     if (!atual) return null;
 
     const { alteracoesRealizadas, uploadedDocumentationFile, ...cadastro } = dados;
-    const supabase = createClient();
+    const database = createClient();
     const catalogIds = await garantirCadastrosDoRobo(cadastro);
-    const { error } = await supabase.from("robos").update({
+    const { error } = await database.from("robos").update({
       cliente_id: cadastro.clienteId, nome: cadastro.nome,
       sistema: cadastro.sistema, court_name: cadastro.courtName, ideal: cadastro.ideal, max: cadastro.max,
       pacote: cadastro.pacote, pacote_cor: cadastro.pacoteCor, descricao: cadastro.descricao,
@@ -350,7 +350,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       .map((robo) => robo.id);
     await Promise.all([
       idsPacoteMesmoNome.length
-        ? supabase.from("robos").update({ pacote_cor: cadastro.pacoteCor }).in("id", idsPacoteMesmoNome)
+        ? database.from("robos").update({ pacote_cor: cadastro.pacoteCor }).in("id", idsPacoteMesmoNome)
         : Promise.resolve(),
     ]);
     const agora = new Date().toISOString();
@@ -382,8 +382,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   async function atualizarCapacidadeRobo(id: string, ideal: number, max: number) {
     const atual = robos.find((robo) => robo.id === id);
     if (!atual) return null;
-    const supabase = createClient();
-    const { error } = await supabase.rpc("update_robot_capacity", {
+    const database = createClient();
+    const { error } = await database.rpc("update_robot_capacity", {
       target_robot_id: id,
       target_ideal: ideal,
       target_max: max,
@@ -419,8 +419,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const categoria: Publicacao["categoria"] = robotAtualizado && !robos.some((robo) => robo.id === id)
       ? "Novo Robô"
       : "Atualização do Robô";
-    const supabase = createClient();
-    const { data, error } = await supabase.from("publicacoes").insert({
+    const database = createClient();
+    const { data, error } = await database.from("publicacoes").insert({
       robo_id: id, categoria, descricao, publicada_em: publicadaEm,
     }).select("id,robo_id,categoria,descricao,publicada_em").single();
     if (error) throw error;
@@ -458,7 +458,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }
 
   async function importarRobos(itens: DadosImportacaoRobo[]) {
-    const supabase = createClient();
+    const database = createClient();
     const clientesAtualizados = [...clientes];
     const clientesPorNome = new Map(clientesAtualizados.map((cliente) => [normalizarIdentificador(cliente.nome), cliente]));
     const tenantsEmUso = new Set(clientesAtualizados.map((cliente) => cliente.tenant));
@@ -480,7 +480,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           tenant = `${tenantBase}-${suffix}`;
           suffix += 1;
         }
-        const { data: clienteCriado, error: erroCliente } = await supabase.from("clientes").insert({ nome, tenant, cor: "azul" }).select("id,nome,tenant,cor").single();
+        const { data: clienteCriado, error: erroCliente } = await database.from("clientes").insert({ nome, tenant, cor: "azul" }).select("id,nome,tenant,cor").single();
         if (erroCliente || !clienteCriado) throw erroCliente ?? new Error("Cliente não retornado após o cadastro.");
         cliente = { ...clienteCriado, cor: clienteCriado.cor as Cliente["cor"] };
         clientesAtualizados.push(cliente);
@@ -541,7 +541,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         });
         patch.system_id = catalogIds.systemId; patch.package_id = catalogIds.packageId; patch.stack_id = catalogIds.stackId;
         patch.queue_id = catalogIds.queueId; patch.command_id = catalogIds.commandId;
-        const { error } = await supabase.from("robos").update(patch).eq("id", item.roboId);
+        const { error } = await database.from("robos").update(patch).eq("id", item.roboId);
         if (error) throw new Error(`Linha ${item.linha}: ${error.message}`);
         const atualizado: Robo = {
           ...atual,
@@ -592,7 +592,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       const clienteCor = cliente?.cor ?? "azul";
       const pacoteCor = corPacotePorNome.get(chavePacote) ?? cadastro.pacoteCor;
       corPacotePorNome.set(chavePacote, pacoteCor);
-      const { data: roboCriado, error: erroRobo } = await supabase.from("robos").insert({
+      const { data: roboCriado, error: erroRobo } = await database.from("robos").insert({
         cliente_id: cliente?.id ?? null, cliente_cor: clienteCor, nome: cadastro.nome, sistema: cadastro.sistema, court_name: cadastro.courtName,
         ideal: cadastro.ideal, max: cadastro.max, pacote: cadastro.pacote, pacote_cor: pacoteCor, descricao: cadastro.descricao,
         ambiente: cadastro.ambiente, ativo: cadastro.ativo, stack: cadastro.stack || null, fila: cadastro.fila,
@@ -610,13 +610,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         ...cadastro.regrasForaDocumentacao.map((regra, ordem) => ({ robo_id: roboCriado.id, descricao: regra.descricao, ordem, tipo: "fora_documentacao" })),
       ];
       if (regras.length) {
-        const { error } = await supabase.from("regras_robo").insert(regras);
+        const { error } = await database.from("regras_robo").insert(regras);
         if (error) throw error;
       }
       const alteracoes = alteracoesRealizadas.map((alteracao) => ({ robo_id: roboCriado.id, descricao: alteracao.descricao }));
       let alteracoesCriadas: { id: string; descricao: string; realizada_em: string }[] = [];
       if (alteracoes.length) {
-        const { data, error } = await supabase.from("alteracoes_robo").insert(alteracoes).select("id,descricao,realizada_em");
+        const { data, error } = await database.from("alteracoes_robo").insert(alteracoes).select("id,descricao,realizada_em");
         if (error) throw error;
         alteracoesCriadas = data;
       }
@@ -639,7 +639,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     if (alterados.length) {
       const publicadaEm = new Date().toISOString();
       const novosIds = new Set(novosRobos.map((robo) => robo.id));
-      const { error: publicationError } = await supabase.from("publicacoes").insert(alterados.map((robo) => ({
+      const { error: publicationError } = await database.from("publicacoes").insert(alterados.map((robo) => ({
         robo_id: robo.id,
         categoria: novosIds.has(robo.id) ? "Novo Robô" : "Atualização do Robô",
         descricao: novosIds.has(robo.id) ? `Robô ${robo.nome} cadastrado por importação.` : `Robô ${robo.nome} atualizado por importação.`,
@@ -653,9 +653,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   async function atualizarCliente(id: string, dados: DadosCadastroCliente) {
     const atual = clientes.find((cliente) => cliente.id === id);
     if (!atual) return null;
-    const supabase = createClient();
+    const database = createClient();
     const atualizado = { ...atual, nome: dados.nome.trim(), tenant: dados.tenant.trim(), cor: dados.cor };
-    const { error } = await supabase.from("clientes").update({ nome: atualizado.nome, tenant: atualizado.tenant, cor: atualizado.cor }).eq("id", id);
+    const { error } = await database.from("clientes").update({ nome: atualizado.nome, tenant: atualizado.tenant, cor: atualizado.cor }).eq("id", id);
     if (error) throw error;
     setClientes((atuais) => atuais.map((cliente) => cliente.id === id ? atualizado : cliente));
     setRobos((atuais) => atuais.map((robo) => robo.clienteId === id ? { ...robo, clienteCor: atualizado.cor } : robo));
@@ -669,8 +669,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       replacement_client_id: replacementClientId,
     });
     if (error) throw error;
+    const reassignedCount = typeof data === "number" || typeof data === "string" ? Number(data) : Number.NaN;
+    if (!Number.isSafeInteger(reassignedCount) || reassignedCount < 0) {
+      throw new Error("O banco retornou uma quantidade inválida de usuários reatribuídos.");
+    }
     setClientes((atuais) => atuais.filter((cliente) => cliente.id !== id));
-    return data;
+    return reassignedCount;
   }
 
   const publicacoes = useMemo(() => publicacoesLocais, [publicacoesLocais]);

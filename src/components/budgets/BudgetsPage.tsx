@@ -4,7 +4,7 @@ import { BookOpen, Calculator, Check, ChevronDown, FileDown, FileText, Pencil, P
 import * as Popover from "@radix-ui/react-popover";
 import { useEffect, useMemo, useRef, useState } from "react";
 import AppShell from "@/components/layout/AppShell";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/database/client";
 import { generateBudgetPdf, generateRobotCenterBudgetPdf } from "./budget-pdf";
 import { BUDGET_STATUSES, normalizeBudgetText, parseBudgetText, type BudgetAction, type BudgetActionAlias, type BudgetClient, type BudgetItemDraft, type BudgetStatus, type BudgetSummary, type BudgetSystem } from "@/domain/budgets";
 import { budgetSchema, primeiraMensagemErro } from "@/domain/validation";
@@ -49,13 +49,13 @@ export default function BudgetsPage() {
 
   async function loadData() {
     setLoading(true);
-    const supabase = createClient();
+    const database = createClient();
     const [actionsResult, aliasesResult, budgetsResult, clientsResult, systemsResult] = await Promise.all([
-      supabase.from("budget_action_catalog").select("id,code,category,description,default_hours,sort_order,active").order("sort_order"),
-      supabase.from("budget_action_aliases").select("id,action_id,alias,priority,active").order("priority", { ascending: false }),
-      supabase.from("budgets").select("id,project_name,source,status,total_hours,total,robot_id,client_id,system_id,created_at").is("deleted_at", null).order("created_at", { ascending: false }).limit(20),
-      supabase.from("clientes").select("id,nome").is("deleted_at", null).order("nome"),
-      supabase.from("robot_systems").select("id,name").eq("active", true).is("deleted_at", null).order("name"),
+      database.from("budget_action_catalog").select("id,code,category,description,default_hours,sort_order,active").order("sort_order"),
+      database.from("budget_action_aliases").select("id,action_id,alias,priority,active").order("priority", { ascending: false }),
+      database.from("budgets").select("id,project_name,source,status,total_hours,total,robot_id,client_id,system_id,created_at").is("deleted_at", null).order("created_at", { ascending: false }).limit(20),
+      database.from("clientes").select("id,nome").is("deleted_at", null).order("nome"),
+      database.from("robot_systems").select("id,name").eq("active", true).is("deleted_at", null).order("name"),
     ]);
     if (actionsResult.error || aliasesResult.error || budgetsResult.error || clientsResult.error || systemsResult.error) {
       setMessage("Não foi possível carregar o módulo. Confirme se a migration foi aplicada.");
@@ -103,10 +103,10 @@ export default function BudgetsPage() {
 
   async function editBudget(id: string) {
     setMessage("Carregando orçamento...");
-    const supabase = createClient();
+    const database = createClient();
     const [budgetResult, itemsResult] = await Promise.all([
-      supabase.from("budgets").select("id,project_name,source,status,source_file_name,source_content,hourly_rate,commission_percent,client_id,system_id").eq("id", id).is("deleted_at", null).single(),
-      supabase.from("budget_items").select("id,action_id,description,hours,source_line,source_text,sort_order").eq("budget_id", id).order("sort_order"),
+      database.from("budgets").select("id,project_name,source,status,source_file_name,source_content,hourly_rate,commission_percent,client_id,system_id").eq("id", id).is("deleted_at", null).single(),
+      database.from("budget_items").select("id,action_id,description,hours,source_line,source_text,sort_order").eq("budget_id", id).order("sort_order"),
     ]);
     if (budgetResult.error || itemsResult.error || !budgetResult.data) return setMessage("Não foi possível carregar o orçamento para edição.");
     const budget = budgetResult.data;
@@ -120,8 +120,8 @@ export default function BudgetsPage() {
     const validation = budgetSchema.safeParse({ projectName, source, sourceFileName, sourceContent, clientId, systemId, status: budgetStatus, hourlyRate, commissionPercent, items });
     if (!validation.success) return setMessage(primeiraMensagemErro(validation.error));
     setSaving(true); setMessage("");
-    const supabase = createClient();
-    const { error } = await supabase.rpc("save_budget", {
+    const database = createClient();
+    const { error } = await database.rpc("save_budget", {
       p_budget_id: editingBudgetId,
       p_project_name: projectName.trim(),
       p_source: source,
@@ -256,21 +256,21 @@ function DictionaryDialog({ actions, aliases, onClose, onSaved }: { actions: Bud
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [onClose]);
   async function save() {
-    setSaving(true); const supabase = createClient();
+    setSaving(true); const database = createClient();
     for (const draft of drafts) {
-      await supabase.from("budget_action_catalog").update({ description: draft.description.trim(), default_hours: draft.defaultHours, active: draft.active }).eq("id", draft.id);
+      await database.from("budget_action_catalog").update({ description: draft.description.trim(), default_hours: draft.defaultHours, active: draft.active }).eq("id", draft.id);
       const existing = aliases.filter((alias) => alias.actionId === draft.id);
       const requested = draft.aliases.split(",").map((value) => value.trim()).filter(Boolean);
-      for (const alias of existing) await supabase.from("budget_action_aliases").update({ active: requested.includes(alias.alias) }).eq("id", alias.id);
+      for (const alias of existing) await database.from("budget_action_aliases").update({ active: requested.includes(alias.alias) }).eq("id", alias.id);
       const existingValues = new Set(existing.map((alias) => alias.alias));
       const fresh = requested.filter((alias) => !existingValues.has(alias));
-      if (fresh.length) await supabase.from("budget_action_aliases").insert(fresh.map((alias) => ({ action_id: draft.id, alias, priority: 50 })));
+      if (fresh.length) await database.from("budget_action_aliases").insert(fresh.map((alias) => ({ action_id: draft.id, alias, priority: 50 })));
     }
     if (newAction.description.trim()) {
       const code = `custom-${crypto.randomUUID()}`;
-      const { data } = await supabase.from("budget_action_catalog").insert({ code, category: newAction.category, description: newAction.description.trim(), default_hours: newAction.hours, sort_order: 900 }).select("id").single();
+      const { data } = await database.from("budget_action_catalog").insert({ code, category: newAction.category, description: newAction.description.trim(), default_hours: newAction.hours, sort_order: 900 }).select("id").single();
       const freshAliases = newAction.aliases.split(",").map((value) => value.trim()).filter(Boolean);
-      if (data && freshAliases.length) await supabase.from("budget_action_aliases").insert(freshAliases.map((alias) => ({ action_id: data.id, alias, priority: 50 })));
+      if (data && freshAliases.length) await database.from("budget_action_aliases").insert(freshAliases.map((alias) => ({ action_id: data.id, alias, priority: 50 })));
     }
     await onSaved(); setSaving(false); onClose();
   }

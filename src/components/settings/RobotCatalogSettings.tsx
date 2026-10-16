@@ -2,7 +2,7 @@
 
 import { Check, PackagePlus, Pencil, Plus, Search, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/database/client";
 import { CORES_BADGE_ROBO, type CorBadgeRobo } from "@/domain/entities";
 import { PALETAS_BADGE_ROBO } from "@/domain/badge-colors";
 import { ROBOT_CATALOGS, type RobotCatalogItem, type RobotCatalogKind } from "@/domain/robot-catalog";
@@ -23,12 +23,12 @@ export default function RobotCatalogSettings({ canManage }: { canManage: boolean
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
-    const supabase = createClient();
-    const result = kind === "systems" ? await supabase.from("robot_systems").select("id,name,active").order("name")
-      : kind === "packages" ? await supabase.from("robot_packages").select("id,name,color,active").order("name")
-      : kind === "commands" ? await supabase.from("robot_commands").select("id,name,command,active").order("name")
-      : kind === "stacks" ? await supabase.from("robot_stacks").select("id,name,active").order("name")
-      : await supabase.from("robot_queues").select("id,name,active").order("name");
+    const database = createClient();
+    const result = kind === "systems" ? await database.from("robot_systems").select("id,name,active").order("name")
+      : kind === "packages" ? await database.from("robot_packages").select("id,name,color,active").order("name")
+      : kind === "commands" ? await database.from("robot_commands").select("id,name,command,active").order("name")
+      : kind === "stacks" ? await database.from("robot_stacks").select("id,name,active").order("name")
+      : await database.from("robot_queues").select("id,name,active").order("name");
     if (result.error) setError(result.error.message);
     else setItems((result.data ?? []) as RobotCatalogItem[]);
     setLoading(false);
@@ -44,24 +44,24 @@ export default function RobotCatalogSettings({ canManage }: { canManage: boolean
   async function save(event: React.FormEvent) {
     event.preventDefault();
     if (!name.trim() || (kind === "commands" && !command.trim())) return;
-    const supabase = createClient();
+    const database = createClient();
     let operationError: { code?: string; message: string } | null = null;
-    if (kind === "systems") operationError = (editingId ? await supabase.from("robot_systems").update({ name: name.trim() }).eq("id", editingId) : await supabase.from("robot_systems").insert({ name: name.trim() })).error;
-    else if (kind === "packages") operationError = (editingId ? await supabase.from("robot_packages").update({ name: name.trim(), color }).eq("id", editingId) : await supabase.from("robot_packages").insert({ name: name.trim(), color })).error;
-    else if (kind === "commands") operationError = (editingId ? await supabase.from("robot_commands").update({ name: name.trim(), command: command.trim() }).eq("id", editingId) : await supabase.from("robot_commands").insert({ name: name.trim(), command: command.trim() })).error;
-    else if (kind === "stacks") operationError = (editingId ? await supabase.from("robot_stacks").update({ name: name.trim() }).eq("id", editingId) : await supabase.from("robot_stacks").insert({ name: name.trim() })).error;
-    else operationError = (editingId ? await supabase.from("robot_queues").update({ name: name.trim() }).eq("id", editingId) : await supabase.from("robot_queues").insert({ name: name.trim() })).error;
+    if (kind === "systems") operationError = (editingId ? await database.from("robot_systems").update({ name: name.trim() }).eq("id", editingId) : await database.from("robot_systems").insert({ name: name.trim() })).error;
+    else if (kind === "packages") operationError = (editingId ? await database.from("robot_packages").update({ name: name.trim(), color }).eq("id", editingId) : await database.from("robot_packages").insert({ name: name.trim(), color })).error;
+    else if (kind === "commands") operationError = (editingId ? await database.from("robot_commands").update({ name: name.trim(), command: command.trim() }).eq("id", editingId) : await database.from("robot_commands").insert({ name: name.trim(), command: command.trim() })).error;
+    else if (kind === "stacks") operationError = (editingId ? await database.from("robot_stacks").update({ name: name.trim() }).eq("id", editingId) : await database.from("robot_stacks").insert({ name: name.trim() })).error;
+    else operationError = (editingId ? await database.from("robot_queues").update({ name: name.trim() }).eq("id", editingId) : await database.from("robot_queues").insert({ name: name.trim() })).error;
     if (operationError) { setError(operationError.code === "23505" ? `${ROBOT_CATALOGS[kind].singular} já cadastrado.` : operationError.message); return; }
     reset(); await load();
   }
 
   async function toggle(item: RobotCatalogItem) {
-    const supabase = createClient();
-    const result = kind === "systems" ? await supabase.from("robot_systems").update({ active: !item.active }).eq("id", item.id)
-      : kind === "packages" ? await supabase.from("robot_packages").update({ active: !item.active }).eq("id", item.id)
-      : kind === "commands" ? await supabase.from("robot_commands").update({ active: !item.active }).eq("id", item.id)
-      : kind === "stacks" ? await supabase.from("robot_stacks").update({ active: !item.active }).eq("id", item.id)
-      : await supabase.from("robot_queues").update({ active: !item.active }).eq("id", item.id);
+    const database = createClient();
+    const result = kind === "systems" ? await database.from("robot_systems").update({ active: !item.active }).eq("id", item.id)
+      : kind === "packages" ? await database.from("robot_packages").update({ active: !item.active }).eq("id", item.id)
+      : kind === "commands" ? await database.from("robot_commands").update({ active: !item.active }).eq("id", item.id)
+      : kind === "stacks" ? await database.from("robot_stacks").update({ active: !item.active }).eq("id", item.id)
+      : await database.from("robot_queues").update({ active: !item.active }).eq("id", item.id);
     if (result.error) setError(result.error.message); else await load();
   }
 

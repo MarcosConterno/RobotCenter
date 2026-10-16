@@ -8,7 +8,7 @@ import { ROBOT_PRODUCTS } from "@/domain/robot-products";
 import { dadosFormularioRoboSchema, primeiraMensagemErro } from "@/domain/validation";
 import { PALETAS_BADGE_ROBO } from "@/domain/badge-colors";
 import { CORES_BADGE_ROBO, type CorBadgeRobo } from "@/domain/entities";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/database/client";
 import type { RobotCatalogItem } from "@/domain/robot-catalog";
 
 interface RobotFormProps {
@@ -47,13 +47,13 @@ export default function RobotForm({
   const [draggedRuleIndex, setDraggedRuleIndex] = useState<number | null>(null);
   const [catalogs, setCatalogs] = useState<{ systems: RobotCatalogItem[]; packages: RobotCatalogItem[]; stacks: RobotCatalogItem[]; queues: RobotCatalogItem[]; commands: RobotCatalogItem[] }>({ systems: [], packages: [], stacks: [], queues: [], commands: [] });
   useEffect(() => {
-    const supabase = createClient();
+    const database = createClient();
     void Promise.all([
-      supabase.from("robot_systems").select("id,name,active").eq("active", true).order("name"),
-      supabase.from("robot_packages").select("id,name,color,active").eq("active", true).order("name"),
-      supabase.from("robot_stacks").select("id,name,active").eq("active", true).order("name"),
-      supabase.from("robot_queues").select("id,name,active").eq("active", true).order("name"),
-      supabase.from("robot_commands").select("id,name,command,active").eq("active", true).order("name"),
+      database.from("robot_systems").select("id,name,active").eq("active", true).order("name"),
+      database.from("robot_packages").select("id,name,color,active").eq("active", true).order("name"),
+      database.from("robot_stacks").select("id,name,active").eq("active", true).order("name"),
+      database.from("robot_queues").select("id,name,active").eq("active", true).order("name"),
+      database.from("robot_commands").select("id,name,command,active").eq("active", true).order("name"),
     ]).then(([systems, packages, stacks, queues, commands]) => setCatalogs({
       systems: (systems.data ?? []) as RobotCatalogItem[],
       packages: (packages.data ?? []) as RobotCatalogItem[], stacks: (stacks.data ?? []) as RobotCatalogItem[],

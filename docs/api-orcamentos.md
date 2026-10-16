@@ -2,7 +2,7 @@
 
 ## Acesso
 
-A rota `/orcamentos` valida a sessão no servidor e exige vínculo real com o papel `master` ou `admin`. O cliente autenticado acessa as tabelas pela Data API do Supabase, sempre sujeito às policies RLS.
+A rota `/orcamentos` valida a sessão no servidor e exige vínculo real com o papel `master` ou `admin`. O adapter PostgreSQL autenticado acessa as tabelas pelas rotas locais, sempre sujeito às policies RLS.
 
 ## Consultas
 

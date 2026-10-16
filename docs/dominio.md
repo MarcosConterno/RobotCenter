@@ -16,9 +16,9 @@ Pode ser cadastrado individualmente ou importado em lote por administradores. O 
 
 Na importação, Cliente é identificado pelo nome. Um nome ainda não cadastrado cria um Cliente com tenant técnico único, e todos os Robôs subsequentes com o mesmo nome recebem o mesmo `clienteId`. Assim, o vínculo permanece estável para consultas e filtros por Cliente.
 
-Os identificadores de Cliente, Robô, Alteração e Publicação usados pela aplicação são UUIDs compatíveis com as chaves do PostgreSQL. A listagem de Robôs e Clientes é montada a partir do Supabase, sem registros mock iniciais.
+Os identificadores de Cliente, Robô, Alteração e Publicação usados pela aplicação são UUIDs compatíveis com as chaves do PostgreSQL. A listagem de Robôs e Clientes é montada a partir do PostgreSQL pelo adapter local, sem registros mock iniciais.
 
-Alterações confirmadas nas entidades operacionais são refletidas nas sessões abertas por meio do Supabase Realtime. Essa sincronização atualiza a representação em memória dos providers e não modifica as entidades, validações ou regras de autoria. Eventos sucessivos são agrupados antes da releitura para evitar consultas redundantes.
+Alterações confirmadas no PostgreSQL são consultadas periodicamente pelos providers do browser. O adapter atual não recebe eventos reais do banco; a atualização periódica pode levar até 30 segundos e não modifica as entidades, validações ou regras de autoria.
 
 Cada Cliente possui a configuração visual `cor`, selecionada entre seis paletas controladas no próprio cadastro do Cliente. Todos os robôs vinculados ao mesmo Cliente exibem essa cor. O Robô mantém apenas `pacoteCor`, compartilhada entre pacotes com o mesmo nome normalizado.
 
@@ -86,21 +86,21 @@ Na administração, cada Cliente possui um resumo operacional derivado: quantida
 
 ## Organização do código
 
-- `src/domain/entities.ts`: entidades, uniões e constantes de valores aceitos.
-- `src/domain/validation.ts`: schemas Zod dos dados de entrada.
-- `src/domain/formatters.ts`: apresentação de datas ISO.
-- `src/mocks/app.mock.ts`: conjunto único de dados iniciais.
-- `src/data/AppDataProvider.tsx`: fonte temporária compartilhada e operações em memória.
-- `src/components`: apresentação e interação.
-- `src/app`: composição das rotas.
+- src/domain/entities.ts e src/domain/validation.ts: entidades e schemas dos dados de entrada.
+- src/data: providers de Clientes, Robôs, Fluxos e preferências pessoais.
+- src/lib/postgres: autenticação, sessões, autorização de consultas, RPCs e armazenamento de arquivos.
+- src/lib/database: entradas server/browser para o adapter PostgreSQL.
+- src/app: páginas e rotas locais da aplicação.
 
-## Limites atuais
+## Estado atual e limites
 
-- Não existe persistência de Robô, Usuário ou Cliente após recarregar a página.
-- Publicações locais são uma adaptação temporária baseada em `localStorage`.
-- Não existe autenticação, autorização, API ou acesso ao Supabase.
-- Cliente não deve ser inferido a partir de Sistema ou Pacote.
-- Usuário não deve ser inferido a partir de Responsável.
+- Robôs, Usuários, Clientes, Fluxos e demais dados operacionais são persistidos em PostgreSQL.
+- Autenticação e autorização usam sessão local, RBAC e RLS.
+- A cópia local acordada não inclui bytes de documentos; o filesystem tem volume e backup separados.
+- Atualizações entre sessões usam polling periódico, sem eventos PostgreSQL em tempo real.
+- Recuperação local usa token temporário de uso único; em desenvolvimento, o link é mostrado na tela. O envio por email em produção depende de uma integração SMTP implementada, configurada e testada.
+- Cliente não deve ser inferido a partir de Sistema ou Pacote; Usuário não deve ser inferido a partir de Responsável.
+
 # Persistência V1
 
 Sistema e Pacote são catálogos relacionados ao `Robo`; Responsável e Ambiente continuam atributos diretos. Os nomes textuais de Sistema e Pacote permanecem sincronizados para compatibilidade das projeções existentes.
@@ -109,7 +109,7 @@ Para persistência, os IDs passam a UUID. Um robô pertence obrigatoriamente a u
 
 Os dados técnicos operacionais do Robô incluem `courtName`, `fila`, `stack`, `ideal`, `max`, `pacote` e `versao`. `ideal` e `max` são inteiros não negativos, sendo `max` sempre maior ou igual a `ideal`.
 
-Usuário autenticado é representado por `auth.users`; seus dados funcionais ficam em `profiles`, e seu tipo é obtido pelo RBAC. Senha é entrada exclusiva do Supabase Auth e nunca integra uma entidade persistida da aplicação.
+Usuário autenticado é representado por auth.users; seus dados funcionais ficam em profiles e seus papéis vêm do RBAC. O hash bcrypt da senha permanece em auth.users.encrypted_password; a aplicação usa sessões próprias em public.app_sessions.
 
 ## Tutorial do Robot Center
 
@@ -123,7 +123,7 @@ Tutoriais administrativos possuem um público baseado nos papéis reais do RBAC,
 A cor do Cliente pertence ao seu cadastro. A cor do Pacote é armazenada nos robôs por compatibilidade, mas é compartilhada pelo nome normalizado do pacote. A atribuição inicial usa ciclicamente a paleta `azul`, `violeta`, `verde`, `ambar`, `rosa` e `ciano`.
 ## Nome do usuário e credencial
 
-O campo apresentado como `Nome` no cadastro de usuários continua persistido em `profiles.login` por compatibilidade com o modelo existente. A senha pertence ao Supabase Auth e pode ser alterada pelo próprio usuário autenticado, sem ser armazenada nas tabelas públicas da aplicação.
+O campo apresentado como Nome no cadastro de usuários continua persistido em profiles.login. A senha pode ser alterada pelo próprio usuário autenticado e seu hash é mantido em auth.users.encrypted_password.
 
 ## Publicações do Dashboard
 
@@ -133,7 +133,7 @@ Alterações de regras são registradas na descrição da publicação com a cat
 
 ## Documentação Upada
 
-O Robô pode possuir vários documentos externos em `uploadedDocuments`, incluindo PDF, DOCX e XLSX. Os metadados pertencem a `robot_uploaded_documents` e os objetos permanecem privados no bucket `robot-manuals`. `uploadedDocumentationPath` e `uploadedDocumentationName` continuam como compatibilidade para o PDF legado e são migrados sem apagar o objeto existente. Esses anexos não integram regras, publicações ou o motor DOCX/PDF.
+O Robô pode possuir vários documentos externos em `uploadedDocuments`, incluindo PDF, DOCX e XLSX. Os metadados pertencem a `robot_uploaded_documents`; os bytes são gravados no filesystem persistente do servidor, abaixo de `DOCUMENT_STORAGE_DIR/robot-manuals`, e servidos por rotas autenticadas. `robot-manuals` é uma área lógica compatível, não um bucket Supabase. `uploadedDocumentationPath` e `uploadedDocumentationName` continuam como compatibilidade para o PDF legado. Os arquivos e metadados documentais não foram copiados na migração e serão cadastrados manualmente na infraestrutura. Esses anexos não integram regras, publicações ou o motor DOCX/PDF.
 
 ## Orçamentos
 
@@ -159,9 +159,9 @@ São válidos os estados: somente Documentação Upada, somente Documentação R
 
 Os códigos RF/RNF são calculados por categoria, pai e ordem. O UUID da regra é a identidade estável usada pelos blocos documentais e por snapshots futuros.
 
-Imagens, prints e legendas pertencem apenas ao rascunho documental. Upload, colagem e substituição não alteram a regra real. O preview utiliza URL assinada temporária; alinhamento e tamanho são dados do `DocumentSchema` destinados à futura geração oficial.
+Imagens, prints e legendas pertencem apenas ao rascunho documental. Upload, colagem e substituição não alteram a regra real. O preview usa a rota autenticada de arquivos da aplicação; alinhamento e tamanho são dados do `DocumentSchema` destinados à geração oficial.
 
-Ao publicar, o Robot Center cria um snapshot completo e imutável dos dados do robô, seções, RFs/RNFs, códigos calculados, blocos e imagens. O DOCX é produzido sobre uma cópia do template oficial; o PDF deriva obrigatoriamente desse DOCX por conversão temporária no ConvertAPI e é então preservado no Storage privado. O rascunho continua editável e nunca altera uma versão anterior.
+Ao publicar, o Robot Center cria um snapshot completo e imutável dos dados do robô, seções, RFs/RNFs, códigos calculados, blocos e imagens. O DOCX é produzido sobre uma cópia do template oficial; o PDF deriva obrigatoriamente desse DOCX por conversão temporária no ConvertAPI e os artefatos são gravados no volume persistente sob `DOCUMENT_STORAGE_DIR/robot-documentation`. O rascunho continua editável e nunca altera uma versão anterior.
 
 O detalhe do Robô possui rota própria `/robos/{id}` e organiza os dados existentes em Detalhes Gerais, Documentação e Redmine. A área Documentação apresenta requisitos e arquivos separadamente. Redmine permanece apenas como ponto de extensão visual, sem integração ou dados fictícios.
 
@@ -200,7 +200,7 @@ O papel Cliente edita apenas Fluxos do seu Cliente. Admin cria, edita, publica e
 
 A visão gráfica da Dashboard é uma projeção em memória do cadastro autorizado de Robôs. Ela não cria entidade persistente: agrupa o conjunto visível por Cliente, CourtName, Sistema e Stack. Os filtros são cumulativos e não substituem as policies de acesso do banco. Cada agrupamento pode ser visualizado em Barras, Pizza ou Rosca, com expansão de todas as categorias.
 
-Os quadros são modulares. O conjunto inicial possui quatro exemplos, mas o usuário pode removê-los, criar até 20 quadros e escolher qualquer contexto suportado do cadastro de Robôs. A preferência de estrutura é persistida individualmente no Supabase; os valores agregados continuam calculados em tempo real sobre os registros autorizados.
+Os quadros são modulares. O conjunto inicial possui quatro exemplos, mas o usuário pode removê-los, criar até 20 quadros e escolher qualquer contexto suportado do cadastro de Robôs. A preferência de estrutura é persistida individualmente no PostgreSQL standalone; os valores agregados continuam calculados em tempo real sobre os registros autorizados.
 
 ## Minha página
 
@@ -217,3 +217,18 @@ Antes de arquivar um Cliente, o Master pode reatribuir todos os usuários vincul
 # Atualização: Kortex
 
 Todo robô pode ser marcado como usuário de Kortex. A marcação é opcional no cadastro e na edição; quando ativa, o card do robô exibe “Kortex”.
+
+## Sessão da aplicação
+
+Uma sessão representa a autenticação ativa de uma conta no Robot Center. O backend gera um token aleatório, entrega-o em cookie HttpOnly e persiste somente seu hash em `app_sessions`. A sessão pertence a um `user_id`, tem prazo de validade e pode ser revogada no logout ou em alterações administrativas de acesso.
+
+No PostgreSQL standalone, `auth.users` mantém a conta e o hash bcrypt importado; `public.profiles` mantém login, cliente e estado de aplicação; `auth.identities` preserva o vínculo do provedor original. O Robot Center autentica e cria sessões próprias sem GoTrue ou chamadas ao Supabase. A sessão não é migrada entre bancos, então usuários entram novamente depois da troca. Documentos e arquivos existentes ficam fora da cópia; o schema de documentação continua disponível para testar novos registros.
+
+
+## Conta e perfil no banco local standalone
+
+A conta importada é mantida em auth.users; o identificador de login da interface continua em profiles.login. O trigger private.handle_new_auth_user() cria um perfil ao inserir uma nova conta, usando e-mail, telefone ou UUID como valor inicial de login. A criação do perfil não concede papéis: vínculos e permissões continuam em user_roles e role_permissions. Sessões locais são registradas em public.app_sessions, separadas das contas e emitidas novamente após a mudança de banco.
+
+## Recuperação de senha no PostgreSQL standalone
+
+O usuário informa o email cadastrado em `/recuperar-senha`. Em desenvolvimento, uma conta ativa recebe um link local de uso único com validade de 30 minutos; o banco guarda somente o hash SHA-256 do token. A nova senha é salva como bcrypt em `auth.users.encrypted_password`, os tokens pendentes são consumidos e todas as sessões da conta são revogadas. Nenhuma conta, senha ou sessão é migrada ou removida por solicitar recuperação. O envio de links por email em produção depende de uma integração SMTP implementada, configurada e testada; permanece desabilitado até essa etapa.

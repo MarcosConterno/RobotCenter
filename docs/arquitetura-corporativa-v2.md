@@ -1,5 +1,7 @@
 # Arquitetura de Banco V1 — Robot Center
 
+> Documento histórico de planejamento para uma integração Supabase que não foi adotada. Não descreve o runtime atual; consulte ARCHITECTURE.md e docs/auditoria-preparacao-infra-interna.md.
+
 > Status: arquitetura concluída para implementação, ainda sem migrations, SQL, integração ou alteração no Supabase.
 
 ## 1. Escopo consolidado

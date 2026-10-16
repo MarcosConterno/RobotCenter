@@ -1,6 +1,6 @@
 import AppShell from "@/components/layout/AppShell";
 import RobotDocumentationEditor from "@/components/robos/documentation/RobotDocumentationEditor";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/database/server";
 import type {
   DocumentSectionKey,
   DocumentationBlockType,
@@ -16,13 +16,13 @@ function roleCodes(value: unknown): string[] {
 
 export default async function RobotDocumentationEditorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const database = await createClient();
+  const { data: { user } } = await database.auth.getUser();
   if (!user) return <Denied />;
 
   const [{ data: userRoles }, { data: robot }] = await Promise.all([
-    supabase.from("user_roles").select("roles(codigo)").eq("user_id", user.id),
-    supabase.from("robos")
+    database.from("user_roles").select("roles(codigo)").eq("user_id", user.id),
+    database.from("robos")
       .select("id,nome,court_name,sistema,updated_at,clientes(nome)")
       .eq("id", id).is("deleted_at", null).maybeSingle(),
   ]);
@@ -30,7 +30,7 @@ export default async function RobotDocumentationEditorPage({ params }: { params:
   const isAdmin = roleSet.includes("admin") || roleSet.includes("master");
   if (!isAdmin || !robot) return <Denied message="Robô não encontrado ou acesso negado." />;
 
-  const { data: initialized, error: initializeError } = await supabase
+  const { data: initialized, error: initializeError } = await database
     .rpc("initialize_robot_center_documentation", { target_robot_id: id });
   if (initializeError || !initialized?.[0]) {
     return <Denied message={initializeError?.message ?? "Não foi possível preparar o rascunho."} />;
@@ -38,14 +38,14 @@ export default async function RobotDocumentationEditorPage({ params }: { params:
   const { documentation_id: documentationId, draft_id: draftId } = initialized[0];
 
   const [{ data: draft }, { data: sections }, { data: requirements }, { data: blocks }, { data: currentVersion }] = await Promise.all([
-    supabase.from("robot_center_documentation_drafts").select("revision,updated_at").eq("id", draftId).single(),
-    supabase.from("robot_center_documentation_sections").select("id,section_key,ordem,content").eq("draft_id", draftId).order("ordem"),
-    supabase.from("regras_robo").select("id,robo_id,parent_id,tipo,ordem,descricao")
+    database.from("robot_center_documentation_drafts").select("revision,updated_at").eq("id", draftId).single(),
+    database.from("robot_center_documentation_sections").select("id,section_key,ordem,content").eq("draft_id", draftId).order("ordem"),
+    database.from("regras_robo").select("id,robo_id,parent_id,tipo,ordem,descricao")
       .eq("robo_id", id).is("deleted_at", null).order("ordem"),
-    supabase.from("robot_center_documentation_blocks")
+    database.from("robot_center_documentation_blocks")
       .select("id,requirement_id,section_id,related_block_id,type,ordem,content,metadata")
       .eq("draft_id", draftId).is("deleted_at", null).order("ordem"),
-    supabase.from("robot_center_documentation_versions").select("version")
+    database.from("robot_center_documentation_versions").select("version")
       .eq("documentation_id", documentationId).eq("status", "published")
       .order("version", { ascending: false }).limit(1).maybeSingle(),
   ]);
@@ -57,7 +57,7 @@ export default async function RobotDocumentationEditorPage({ params }: { params:
     const storagePath = typeof baseMetadata.storagePath === "string" ? baseMetadata.storagePath : null;
     let previewUrl: string | undefined;
     if (item.type === "image" && storagePath) {
-      const { data } = await supabase.storage.from("robot-documentation").createSignedUrl(storagePath, 3600);
+      const { data } = await database.storage.from("robot-documentation").createSignedUrl(storagePath, 3600);
       previewUrl = data?.signedUrl;
     }
     return {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/database/server";
 
 export const runtime = "nodejs";
 
@@ -99,11 +99,11 @@ function roleCodes(value: unknown): string[] {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const database = await createClient();
+  const { data: { user }, error: authError } = await database.auth.getUser();
   if (authError || !user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
 
-  const { data: assignments, error: rolesError } = await supabase
+  const { data: assignments, error: rolesError } = await database
     .from("user_roles")
     .select("roles(codigo)")
     .eq("user_id", user.id);
@@ -111,7 +111,7 @@ export async function POST(request: Request) {
     console.error("[api/admin/robot-versions] role lookup failed", { code: rolesError.code, message: rolesError.message });
     return NextResponse.json({ error: "Não foi possível validar as permissões." }, { status: 500 });
   }
-  const roles = [...new Set(assignments?.flatMap((item) => roleCodes(item.roles)) ?? [])];
+  const roles = [...new Set(extractRelationRows(assignments, "roles", roleCodes))];
   if (!roles.includes("admin") && !roles.includes("master")) {
     return NextResponse.json({ error: "Acesso exclusivo de administradores." }, { status: 403 });
   }
@@ -146,7 +146,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: failure.message }, { status: failure.status });
   }
 
-  const { data: robots, error: selectError } = await supabase
+  const { data: robots, error: selectError } = await database
     .from("robos")
     .select("id,versao")
     .eq("pacote", packageName)
@@ -159,7 +159,7 @@ export async function POST(request: Request) {
 
   const checkedAt = new Date().toISOString();
   const changedRobots = robots.filter((robot) => robot.versao !== version).length;
-  const { error: updateError } = await supabase
+  const { error: updateError } = await database
     .from("robos")
     .update({ versao: version, version_checked_at: checkedAt })
     .eq("pacote", packageName)
@@ -178,3 +178,5 @@ export async function POST(request: Request) {
     status: changedRobots > 0 ? "updated" : "unchanged",
   }, { headers: { "Cache-Control": "no-store" } });
 }
+import { extractRelationRows } from "@/lib/postgres/relation-rows";
+

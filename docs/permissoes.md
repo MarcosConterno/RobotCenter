@@ -2,31 +2,22 @@
 
 ## Estado atual
 
-A aplicação não implementa autenticação, autorização, RLS, policies ou integração com Supabase Auth.
+A aplicação implementa sessão local em PostgreSQL, papéis RBAC e RLS. A autorização das rotas e operações é verificada no servidor; o estado da Sidebar apenas controla a exibição dos menus e não substitui RLS.
 
-`TipoUsuario` aceita Admin, Operador e Cliente, mas esses valores são apenas dados cadastrais. Nenhum componente restringe rotas, botões ou operações com base no tipo.
+O perfil Cliente tem vínculo explícito com profiles.cliente_id. Os papéis Master/Admin são atribuídos em user_roles; permissions e role_permissions definem acesso a módulos e ações. RLS permanece como limite de leitura/escrita por papel e cliente.
 
 ## O que não deve ser inferido
 
-- Usuário do tipo Cliente ainda não pertence a um `Cliente` específico.
-- `Robo.responsavel` não identifica o usuário autenticado.
-- O texto `Admin` da Topbar não comprova uma sessão autenticada.
+- Robo.responsavel não identifica o usuário autenticado.
+- O texto Admin da Topbar, isoladamente, não comprova uma sessão válida.
+- A ausência de um menu não comprova que uma policy negou os dados; verificar GET /api/admin/access e as permissões retornadas.
 
-## Decisões obrigatórias antes de RLS
-
-- Definir se Usuário será conta do Supabase Auth e como será o perfil de aplicação.
-- Definir as permissões efetivas de Admin, Operador e Cliente.
-- Definir se dados são globais ou isolados por Cliente/tenant.
-- Definir relações Cliente–Usuário e Cliente–Robô.
-- Definir quem pode cadastrar, editar, excluir e publicar Robôs.
-- Definir quem pode consultar Publicações e cadastros administrativos.
-
-Nenhuma policy deve ser criada antes dessas decisões, pois apenas usar o papel `authenticated` não implementaria autorização por registro.
+# Policies implementadas para a V1
 # Policies implementadas para a V1
 
 As migrations implementam autorização por tabelas RBAC e RLS deny-by-default:
 
-A publicação `supabase_realtime` inclui as tabelas operacionais usadas pelos providers de Robôs e Fluxos. A publicação não constitui autorização: cada inscrição usa o JWT da sessão e continua limitada pelas policies RLS das tabelas. Usuários Cliente recebem somente alterações do próprio cliente; usuários sem permissão de leitura não recebem as linhas protegidas. Não há canal anônimo nem uso da chave `service_role` no navegador.
+Os providers consultam as rotas locais e o PostgreSQL. O adapter ainda simula canais com callbacks periódicos de 30 segundos; isso não é publicação de eventos e não altera as permissões. As consultas usam sessão local e RLS; usuários Cliente permanecem limitados ao próprio cliente, e service_role nunca é enviado ao browser.
 
 - **Master**: papel complementar e superior ao Admin, atribuído exclusivamente a `marcos.vinicius@loylegal.com`. Consulta e edita toda a matriz de permissões e executa ações excepcionais explicitamente protegidas, mantendo também o papel Admin por compatibilidade.
 - **Admin**: gerencia clientes, profiles, robôs, regras e publicações conforme os grants disponíveis. Pode editar e arquivar usuários e clientes, sem excluir fisicamente seus históricos. No painel de permissões, altera somente Operador, Dev, Cliente e Suporte.
@@ -68,10 +59,10 @@ O histórico `alteracoes_robo` permite leitura com `robots.read`, respeitando `p
 
 As policies consultam `roles`, `permissions`, `user_roles` e `role_permissions` por funções no schema privado. `user_metadata` não participa da autorização. Todas as tabelas públicas da aplicação têm RLS habilitada, e `anon` não recebe acesso. O papel Master é um vínculo RBAC real, nunca uma condição confiada apenas ao email enviado pela interface.
 
-A escrita individual do Cliente consulta `profiles.pode_editar_robos_cliente` diretamente no banco. `robos_update_staff` usa `private.can_update_robot(cliente_id)` em `USING` e `WITH CHECK`, bloqueando IDs de outros Clientes e a transferência da linha. O trigger `robos_protect_client_update` protege campos administrativos mesmo contra chamadas diretas à Data API.
-- Todo usuário autenticado pode alterar exclusivamente a própria senha pelo menu da conta. A operação usa a sessão atual do Supabase Auth e não concede acesso administrativo a outros usuários.
+A escrita individual do Cliente consulta `profiles.pode_editar_robos_cliente` diretamente no banco. `robos_update_staff` usa `private.can_update_robot(cliente_id)` em `USING` e `WITH CHECK`, bloqueando IDs de outros Clientes e a transferência da linha. O trigger `robos_protect_client_update` protege campos administrativos mesmo contra consultas diretas ao PostgreSQL feitas por papéis sem autorização.
+- Todo usuário autenticado pode alterar exclusivamente a própria senha pelo menu da conta. A operação usa a sessão PostgreSQL local e não concede acesso administrativo a outros usuários.
 - O histórico do Dashboard respeita `publicacoes_select`; somente papéis com `publications.create` podem inserir registros por **Salvar e publicar**.
-- O bucket privado `robot-manuals` permite leitura somente a quem possui `robots.read` e acesso ao cliente do robô. Upload e exclusão de objetos exigem `robots.update`; não existe acesso anônimo. Os metadados em `robot_uploaded_documents` repetem o mesmo escopo por RLS.
+- A área de arquivos `robot-manuals` é servida pelo filesystem persistente do servidor, não pelo Supabase Storage. A rota exige sessão e acesso ao cliente/robô para leitura; escrita, remoção e cópia também verificam `robots.update`. Os metadados em `robot_uploaded_documents` têm proteção RLS própria. Não há acesso anônimo aos arquivos.
 - Master e Admin podem criar, editar ou arquivar requisitos funcionais e regras fora da documentação diretamente na aba Documentação, sem editar o robô inteiro. A interface não exibe as ações a outros papéis, e `regras_robo` exige `robots.update` no banco.
 - Os relacionamentos de gatilho fazem parte de `robos`: leitura segue `robots.read` e alteração segue `robots.update`, com o mesmo isolamento por cliente já aplicado pela RLS.
 - `product_type`, `command`, `tribunal` e `tribunal_system` fazem parte da mesma tabela `robos`. A segregação visual por produto não amplia acesso: leitura e escrita continuam submetidas às policies `robos_select`, `robos_insert_staff` e `robos_update_staff`, incluindo escopo por Cliente.
@@ -109,9 +100,9 @@ Somente Admin pode criar e editar. A exclusão lógica exige adicionalmente o pa
 
 O endpoint e a rota do editor exigem papel `admin`. As tabelas de seções e blocos usam RLS herdada do rascunho, documento, robô e cliente. As RPCs de inicialização, reordenação e arquivamento repetem a validação de Admin e do escopo do robô; ocultar o botão nunca é a única barreira.
 
-O bucket `robot-documentation` é privado. Leitura, inserção, substituição e remoção no caminho de rascunho exigem Admin, `robot_center_documentation.manage` e acesso ao cliente do robô identificado no primeiro segmento da pasta. Versões publicadas terão caminhos e política de leitura próprios na etapa de publicação.
+Os bytes de `robot-documentation` ficam no filesystem persistente do servidor e só são servidos pelas rotas autenticadas da aplicação. Na rota genérica atual, leitura exige sessão e acesso ao cliente/robô; gravação, remoção e cópia também verificam `robots.update`. As tabelas de documentação mantêm suas próprias policies RLS e validações de papel nas APIs/RPCs. A proteção dos bytes não é feita por policies de bucket no PostgreSQL.
 
-Versões publicadas permanecem no mesmo bucket privado, sob `<robo_id>/versions/`. Usuários com `robot_center_documentation.read` e acesso ao cliente do robô podem obter URL assinada; somente Admin com `robot_center_documentation.manage` grava artefatos. O bucket `robot-documentation-templates` é privado e acessível apenas a Admin. Publicar e alterar estados de geração também exigem Admin no backend e nas policies/RPCs.
+Versões publicadas permanecem no filesystem, sob `<robo_id>/versions/`, e os registros guardam apenas os caminhos e snapshots. O helper chamado `signedUrl` retorna uma URL da API autenticada, não uma URL assinada de serviço externo. A rota genérica de arquivos não expõe `robot-documentation-templates`; publicação e alteração de estado continuam protegidas nas APIs/RPCs de documentação. O volume deve ter acesso restrito ao usuário do container e backup próprio.
 
 | Permissão | Admin | Operador | Cliente | Suporte |
 |---|---:|---:|---:|---:|
@@ -122,7 +113,7 @@ Versões publicadas permanecem no mesmo bucket privado, sob `<robo_id>/versions/
 
 O módulo `/orcamentos` exige papel real `master` ou `admin` na navegação e na validação de rota. A ocultação do item não substitui a proteção no servidor e no banco. As tabelas `budgets`, `budget_items`, `budget_action_catalog` e `budget_action_aliases` possuem RLS e grants somente para `authenticated`, com policies que repetem a exigência de Master/Admin.
 
-As permissões cadastradas são `budgets.read`, `budgets.create`, `budgets.update` e `budgets.dictionary.manage`, inicialmente atribuídas somente a Master e Admin. Nenhuma policy usa `user_metadata`, e usuários anônimos ou demais papéis não consultam nem alteram orçamentos por acesso direto à Data API.
+As permissões cadastradas são `budgets.read`, `budgets.create`, `budgets.update` e `budgets.dictionary.manage`, inicialmente atribuídas somente a Master e Admin. Nenhuma policy usa `user_metadata`, e usuários anônimos ou demais papéis não consultam nem alteram orçamentos por acesso direto ao PostgreSQL.
 
 O catálogo `robot_systems` segue `robot_catalog.read` e `robot_catalog.manage`: os mesmos papéis que consultam os demais catálogos podem lê-lo, enquanto somente Master e Admin podem cadastrar, editar ou inativar Sistemas.
 
@@ -186,3 +177,43 @@ Todos os perfis autenticados possuem acesso funcional a Minha página, sem permi
 A leitura e alteração de `robos.kortex` seguem as mesmas policies RLS e permissões já aplicadas à linha do robô; nenhuma permissão adicional é concedida.
 
 O criador do fluxo pode atualizar sua descrição pela função controlada `update_flow_metadata`. Apenas Admin e Master podem alterar o cliente associado ao fluxo.
+
+## Sessões próprias da aplicação
+
+`app_sessions` mantém RLS habilitada e não possui policies para clientes do banco. `PUBLIC`, `anon` e `authenticated` não recebem grants; apenas o processo de backend com credencial privilegiada valida, cria ou revoga sessões. As APIs continuam validando papel e permissões antes de operações administrativas. O cookie HttpOnly não concede acesso direto ao PostgreSQL.
+## Papéis SQL no PostgreSQL standalone
+
+O papel `authenticated` recebe operações de leitura e escrita apenas nas tabelas públicas que têm RLS habilitado. As policies existentes continuam limitando as linhas por usuário, papel de negócio e escopo de cliente. Tabelas sem RLS não recebem privilégios diretos para esse papel.
+
+O papel `service_role` é restrito ao servidor e recebe privilégios administrativos nas tabelas e sequences operacionais dos schemas `public`, `private` e `storage`. Em `auth.users`, a migration standalone restringe o acesso às colunas necessárias para login e administração de contas. `auth.identities` não é consultável pelo papel da aplicação. O papel não é usado pelo navegador.
+
+## Login local com PostgreSQL
+
+O papel `service_role`, usado exclusivamente pelo backend, pode consultar em
+`auth.users` `id`, `email`, `encrypted_password`, `email_confirmed_at`,
+`raw_app_meta_data`, `raw_user_meta_data` e `created_at`. Ele pode inserir os
+campos de conta usados pela criação administrativa e atualizar somente e-mail,
+senha, metadados de usuário e `updated_at`. A migration final revoga a concessão
+ampla introduzida pelo histórico standalone antes de reaplicar essas permissões
+por coluna. `anon` e `authenticated` não consultam diretamente as tabelas de
+contas ou identidades.
+
+No PostgreSQL standalone, `auth.uid()` e `auth.jwt()` leem as claims da
+transação iniciada pelo servidor. RLS e as policies de domínio continuam
+decidindo quais linhas o papel `authenticated` pode consultar ou alterar. A
+conexão administrativa permanece exclusiva do servidor; o navegador não recebe
+credenciais PostgreSQL.
+
+
+
+## Grants locais verificados em 16/10/2026
+
+A migration 20261016183651_standalone_private_function_grants.sql concede EXECUTE ao papel authenticated nas funções privadas can_update_robot(uuid), get_flow_creator_name(uuid), has_role(text), is_active_user(), publish_flow(uuid,jsonb) e update_flow_metadata(uuid,text,uuid). Ela completa os grants já registrados para has_permission(text) e can_access_cliente(uuid), sem alterar as policies. As seis permissões correspondem às funções que o banco de origem autoriza para consultas autenticadas.
+
+service_role é usado somente no servidor. A migration de compatibilidade revoga o acesso amplo a auth.users restaurado para reproduzir os privilégios e reaplica somente os grants por coluna; auth.identities permanece inacessível à aplicação. anon e authenticated não consultam as tabelas de contas.
+
+Na verificação local, marcos.vinicius manteve admin e master, leu 62 robôs e 25 clientes, e recebeu 42 mapeamentos de permissão. Um usuário com papel Cliente leu somente 1 cliente e 22 robôs, não acessou access_control, não viu o profile Master e não teve acesso a auth.users.
+
+## Recuperação de senha
+
+As rotas de recuperação são públicas apenas para solicitar e consumir um token. A aplicação não concede sessão ao solicitar o link. A tabela `app_password_reset_tokens` tem RLS habilitada, nenhuma policy ou grant para `PUBLIC`, `anon` ou `authenticated`, e acesso exclusivo ao backend com `service_role`. No PostgreSQL standalone local, a verificação confirmou RLS ativo, sem `SELECT` para `anon`/`authenticated` e com `SELECT`/`INSERT`/`UPDATE` para `service_role`; esse papel tem `BYPASSRLS`. O endpoint nunca retorna hash ou dados do usuário; o token bruto aparece somente no link local de desenvolvimento. Ao redefinir a senha, o servidor consome os tokens e revoga as sessões existentes. A operação não atribui papéis ou permissões.

@@ -8,8 +8,7 @@ import AppShell from "@/components/layout/AppShell";
 import ReadmeDocument from "./ReadmeDocument";
 import styles from "./SystemDocumentation.module.css";
 
-type DocumentId = "readme" | "architecture" | "database" | "domain" | "rules" | "permissions" | "usersApi" | "flowsApi" | "personalApi" | "versionsApi" | "robotDocumentationApi";
-type DocumentationSources = Record<DocumentId, string>;
+import type { DocumentationId, DocumentationSources } from "@/lib/documentation/types";
 
 const documents = [
   { id: "readme", title: "README", shortTitle: "Visão geral", description: "Produto, recursos, tecnologias e execução.", icon: FileCode2 },
@@ -18,20 +17,22 @@ const documents = [
   { id: "domain", title: "Domínio", shortTitle: "Domínio", description: "Conceitos e linguagem do sistema.", icon: Building2 },
   { id: "rules", title: "Regras de negócio", shortTitle: "Regras", description: "Comportamentos e decisões funcionais.", icon: ScrollText },
   { id: "permissions", title: "Papéis e permissões", shortTitle: "Permissões", description: "RBAC, RLS e escopos de acesso.", icon: ShieldCheck },
+  { id: "authApi", title: "API de autenticação PostgreSQL", shortTitle: "Autenticação", description: "Sessões locais e recuperação de senha.", icon: LockKeyhole },
   { id: "usersApi", title: "API de usuários", shortTitle: "Usuários", description: "Contratos administrativos de usuários.", icon: Users },
   { id: "flowsApi", title: "API de fluxos", shortTitle: "Fluxos", description: "Persistência e publicação de fluxos.", icon: GitFork },
   { id: "personalApi", title: "API da Minha página", shortTitle: "Minha página", description: "Tarefas, reuniões, notas e preferências.", icon: BookOpen },
   { id: "versionsApi", title: "API de versões de robôs", shortTitle: "Versões", description: "Consulta e persistência das versões dos pacotes.", icon: Braces },
   { id: "robotDocumentationApi", title: "Documentação Robot Center", shortTitle: "Documentação", description: "Editor e publicação documental dos robôs.", icon: Braces },
-] as const satisfies ReadonlyArray<{ id: DocumentId; title: string; shortTitle: string; description: string; icon: typeof FileCode2 }>;
+] as const satisfies ReadonlyArray<{ id: DocumentationId; title: string; shortTitle: string; description: string; icon: typeof FileCode2 }>;
 
-const markdownTargetToDocument: Record<string, DocumentId> = {
+const markdownTargetToDocument: Record<string, DocumentationId> = {
   README: "readme",
   ARCHITECTURE: "architecture",
   "docs/modelagem-banco": "database",
   "docs/dominio": "domain",
   "docs/regras-negocio": "rules",
   "docs/permissoes": "permissions",
+  "docs/api-postgres-autenticacao": "authApi",
   "docs/api-usuarios": "usersApi",
   "docs/api-fluxos": "flowsApi",
   "docs/api-minha-pagina": "personalApi",
@@ -40,7 +41,7 @@ const markdownTargetToDocument: Record<string, DocumentId> = {
 };
 
 export default function SystemDocumentation({ sources }: { sources: DocumentationSources }) {
-  const [active, setActive] = useState<DocumentId>("readme");
+  const [active, setActive] = useState<DocumentationId>("readme");
   const selected = documents.find((document) => document.id === active) ?? documents[0];
   const SelectedIcon = selected.icon;
 

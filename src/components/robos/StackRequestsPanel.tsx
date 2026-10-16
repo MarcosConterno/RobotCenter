@@ -4,7 +4,7 @@ import { CheckCircle2, MessageSquarePlus, Plus, Save, XCircle } from "lucide-rea
 import { useCallback, useEffect, useState } from "react";
 
 import { useAdminAccess } from "@/auth/AdminAccessProvider";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/database/client";
 
 import styles from "./StackRequestsPanel.module.css";
 
@@ -28,10 +28,10 @@ export default function StackRequestsPanel({ robotId }: { robotId: string }) {
 
   const load = useCallback(async () => {
     if (!access.canViewStackRequests) return;
-    const supabase = createClient();
+    const database = createClient();
     const [requests, queueResult] = await Promise.all([
-      supabase.from("stack_requests").select("id,suggested_stack_name,queue_id,type,job,status,generated_stack,requested_at,completed_at,stack_request_history(id,event_type,message,created_at,previous_status,new_status)").eq("robot_id", robotId).order("requested_at", { ascending: false }),
-      supabase.from("robot_queues").select("id,name").eq("active", true).order("name"),
+      database.from("stack_requests").select("id,suggested_stack_name,queue_id,type,job,status,generated_stack,requested_at,completed_at,stack_request_history(id,event_type,message,created_at,previous_status,new_status)").eq("robot_id", robotId).order("requested_at", { ascending: false }),
+      database.from("robot_queues").select("id,name").eq("active", true).order("name"),
     ]);
     if (requests.error) setError(requests.error.message); else setItems((requests.data ?? []) as RequestItem[]);
     if (!queueResult.error) setQueues((queueResult.data ?? []) as Queue[]);
@@ -40,9 +40,9 @@ export default function StackRequestsPanel({ robotId }: { robotId: string }) {
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
     if (!access.canViewStackRequests) return;
-    const supabase = createClient();
-    const channel = supabase.channel(`stack-requests-${robotId}`).on("postgres_changes", { event: "*", schema: "public", table: "stack_requests", filter: `robot_id=eq.${robotId}` }, () => void load()).subscribe();
-    return () => { void supabase.removeChannel(channel); };
+    const database = createClient();
+    const channel = database.channel(`stack-requests-${robotId}`).on("postgres_changes", { event: "*", schema: "public", table: "stack_requests", filter: `robot_id=eq.${robotId}` }, () => void load()).subscribe();
+    return () => { void database.removeChannel(channel); };
   }, [access.canViewStackRequests, load, robotId]);
 
   if (!access.canViewStackRequests) return null;
@@ -66,10 +66,10 @@ export default function StackRequestsPanel({ robotId }: { robotId: string }) {
     const message = messageById[item.id]?.trim();
     if (!message) return setError("Escreva a informação antes de enviar.");
     setSaving(true); setError("");
-    const supabase = createClient();
-    const { error: historyError } = await supabase.from("stack_request_history").insert({ stack_request_id: item.id, event_type: eventType, message });
-    if (!historyError && eventType === "INFORMACAO_SOLICITADA") await supabase.from("stack_requests").update({ status: "AGUARDANDO_INFORMACAO" }).eq("id", item.id);
-    if (!historyError && eventType === "RESPOSTA") await supabase.from("stack_requests").update({ status: "EM_ANALISE" }).eq("id", item.id);
+    const database = createClient();
+    const { error: historyError } = await database.from("stack_request_history").insert({ stack_request_id: item.id, event_type: eventType, message });
+    if (!historyError && eventType === "INFORMACAO_SOLICITADA") await database.from("stack_requests").update({ status: "AGUARDANDO_INFORMACAO" }).eq("id", item.id);
+    if (!historyError && eventType === "RESPOSTA") await database.from("stack_requests").update({ status: "EM_ANALISE" }).eq("id", item.id);
     setSaving(false); if (historyError) return setError(historyError.message); setMessageById((current) => ({ ...current, [item.id]: "" })); await load();
   }
 

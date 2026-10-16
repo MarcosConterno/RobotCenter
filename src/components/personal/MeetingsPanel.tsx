@@ -3,7 +3,7 @@
 import { CalendarDays, Clock3, FileText, MoreHorizontal, Pencil, Plus, Search, Trash2, Users, X } from "lucide-react";
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/database/client";
 import type { Database } from "@/types/database.types";
 import styles from "@/app/minha-pagina/MinhaPagina.module.css";
 import MeetingNotesEditor from "./MeetingNotesEditor";

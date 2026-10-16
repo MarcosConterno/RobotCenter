@@ -1,10 +1,10 @@
-# Modelagem de banco — estado preparado da aplicação
+# Modelagem de banco — aplicação PostgreSQL standalone
 
 ## 1. Escopo
 
-Este documento descreve o domínio e sua preparação para persistência no Supabase. As alterações estruturais e regras de integridade são rastreadas em `supabase/migrations`.
+Este documento descreve o domínio e sua persistência PostgreSQL. O histórico SQL está em supabase/migrations e inclui as alterações do banco standalone; o runtime usa PostgreSQL sem serviço Supabase.
 
-A fonte temporária de dados é `AppDataProvider`, inicializada pelo conjunto único de mocks de `src/mocks/app.mock.ts`. Publicações criadas durante o uso continuam persistidas no `localStorage`; os demais dados permanecem em memória.
+AppDataProvider e FlowsDataProvider consultam o PostgreSQL pelo adapter local; o navegador envia consultas autorizadas a /api/database com o cookie de sessão. Os dados operacionais deixam de depender de mocks durante o uso normal.
 
 ## 2. Rotas e consumo de dados
 
@@ -15,22 +15,15 @@ A fonte temporária de dados é `AppDataProvider`, inicializada pelo conjunto ú
 | `/robos` | Filtrar, cadastrar, importar, editar, excluir e publicar robôs. | `useAppData()` e autorização administrativa. |
 | `/configuracoes` | Cadastrar, editar e arquivar usuários e clientes como administrador. | API administrativa e `useAppData()`. |
 
-Usuários e clientes são arquivados por exclusão lógica, preservando histórico e auditoria. O banco impede o arquivamento de clientes que ainda possuam perfis ou robôs ativos vinculados; a API administrativa bloqueia o acesso de usuários arquivados no Supabase Auth.
+Usuários e clientes são arquivados por exclusão lógica, preservando histórico e auditoria. No modo standalone, as contas ficam em auth.users e o backend aplica as mesmas verificações de acesso às contas locais.
 
 Dashboard e telas operacionais usam a mesma instância de estado enquanto a aplicação permanece carregada.
 
-As tabelas operacionais consumidas por `AppDataProvider` e `FlowsDataProvider` integram a publicação `supabase_realtime`. Cada provider mantém um canal por sessão do navegador e, ao receber alterações autorizadas pelo RLS, agrupa eventos próximos por 300 ms antes de recarregar o conjunto correspondente. A publicação não cria colunas, não replica dados para tabelas auxiliares e não substitui as policies existentes.
+Os providers AppDataProvider e FlowsDataProvider consultam o PostgreSQL por meio do adapter local. O adapter atual mantém callbacks periódicos compatíveis com os componentes, mas não recebe eventos reais do banco; uma alteração feita por outra sessão pode levar até 30 segundos para ser refletida. RLS e as policies permanecem responsáveis pela autorização.
 
-```mermaid
-flowchart LR
-  A[Transação confirmada no PostgreSQL] --> B[Publicação supabase_realtime]
-  B --> C[Canal autorizado pela sessão]
-  C --> D[Debounce de 300 ms]
-  D --> E[AppDataProvider ou FlowsDataProvider]
-  E --> F[Interface atualizada]
-```
+Fluxo de leitura: navegador → rotas locais Next.js → adapter PostgreSQL → transação como authenticated com claims → PostgreSQL/RLS → resposta autorizada.
 
-A importação Excel reutiliza o contrato do formulário e não altera o schema. O nome do cliente é normalizado para localizar ou criar um registro no Supabase, cujo UUID é atribuído aos robôs do lote; o tenant obrigatório é gerado de forma única quando o cliente é novo. Robôs, regras e alterações são persistidos nas tabelas correspondentes e a leitura inicial não depende mais de mocks.
+A importação Excel reutiliza o contrato do formulário e persiste os dados no PostgreSQL local. O nome do cliente é normalizado para localizar ou criar um registro em clientes; o tenant obrigatório é gerado de forma única quando o cliente é novo.
 
 A migration `20260807194902_clear_existing_robots_for_import.sql` prepara uma nova carga removendo, nessa ordem, publicações, alterações, regras e robôs. Clientes, profiles, usuários e RBAC são preservados.
 
@@ -191,7 +184,7 @@ Materializa `RegraRobo.descricao` e a relação com Robô. A coluna `tipo` separ
 
 ### `usuarios` ou perfil de autenticação
 
-Dados de aplicação: `id`, `login`, `tipo`. A senha não deve ser coluna de uma tabela de perfil; a estratégia de Supabase Auth ainda precisa ser definida.
+Dados do perfil: id, login e tipo; a senha não é coluna de profile. No standalone, auth.users guarda o hash bcrypt e public.app_sessions guarda hashes dos tokens de sessão.
 
 ### `clientes`
 
@@ -262,7 +255,7 @@ erDiagram
 `flows`, `flow_nodes` e `flow_edges` usam `private.set_flow_row_audit_fields()`, função de auditoria própria para registros sem exclusão lógica. Ela preserva autoria e criação e atualiza `updated_at`/`updated_by`, sem acessar campos `deleted_at` ou `deleted_by` inexistentes nessas tabelas.
 - Se Responsável continuará texto ou ganhará entidade própria de equipe/pessoa.
 - Relações Cliente–Robô e Cliente–Usuário.
-- Estratégia Supabase Auth, perfis, papéis e RLS.
+- Sessão local, perfis, papéis e RLS.
 - Mínimo definitivo de senha: UI atual usa 4; configuração local do Auth usa 6.
 
 ## 9. Riscos de migração restantes
@@ -286,7 +279,7 @@ A persistência inicial está definida pelas migrations em `supabase/migrations`
 2. grants, funções privadas de autorização, RLS e policies;
 3. catálogo mínimo e idempotente de papéis e permissões.
 
-`auth.users` é gerida pelo Supabase Auth e relacionada 1:1 com `profiles`. `robos.cliente_id` estabelece o isolamento por cliente. `regras_robo` preserva categoria e ordem das duas listas de regras, e a última publicação permanece um dado derivado de `publicacoes`.
+auth.users é uma tabela local de compatibilidade e se relaciona 1:1 com profiles. `robos.cliente_id` estabelece o isolamento por cliente. `regras_robo` preserva categoria e ordem das duas listas de regras, e a última publicação permanece um dado derivado de `publicacoes`.
 
 `profiles.cliente_id` é uma FK opcional para `clientes`, com `on delete restrict` e índice próprio. O valor é obrigatório por regra de negócio quando o profile recebe o papel Cliente e pode permanecer nulo ou ser preenchido para Admin, Operador e Suporte.
 
@@ -302,7 +295,7 @@ As permissões `robots.product.integrador.read`, `robots.product.consulta_proces
 
 A migration `20260809130000_add_dev_role.sql` adiciona o papel ativo `dev` e copia, no momento da criação, os vínculos de `role_permissions` do Operador. Os dois papéis permanecem independentes para futuras alterações da matriz. A função `private.can_access_cliente` e a policy `clientes_select` incluem Dev no mesmo escopo global de leitura do Operador.
 
-Os tipos do schema ficam em `src/types/database.types.ts`. Após aplicar as migrations no Supabase Cloud, esse arquivo deve ser regenerado pela CLI para refletir o schema remoto como fonte final.
+Os tipos do schema ficam em src/types/database.types.ts. O build não os regenera automaticamente; quando o schema mudar, sincronizar os tipos com o PostgreSQL standalone e revisar os contratos de API.
 
 ## Progresso do tutorial
 
@@ -328,11 +321,11 @@ A migration `20260807230000_add_client_color.sql` adiciona `clientes.cor`, com v
 
 ## Persistência do feed de atualizações
 
-O componente **Atualizações recentes** lê `public.publicacoes`, ordenada por `publicada_em` decrescente. A ação **Salvar e publicar** insere o evento nessa tabela pelo cliente autenticado do Supabase. `localStorage` não é fonte de persistência para novas publicações.
+O componente **Atualizações recentes** lê `public.publicacoes`, ordenada por `publicada_em` decrescente. A ação **Salvar e publicar** insere o evento nessa tabela pelo adapter PostgreSQL autenticado. `localStorage` não é fonte de persistência para novas publicações.
 
 ## Manual PDF do robô
 
-`robot_uploaded_documents` registra os metadados dos anexos privados do robô: caminho, nome original, MIME, tamanho e auditoria. O bucket privado `robot-manuals` aceita PDF, DOCX e XLSX de até 20 MB, usando caminhos únicos sob `<robo_id>/`. Os campos legados `robos.manual_path` e `robos.manual_nome` são preservados, e seus arquivos existentes ganham somente uma linha de metadados, sem duplicação ou remoção do objeto.
+`robot_uploaded_documents` registra os metadados dos anexos privados do robô: caminho, nome original, MIME, tamanho e auditoria. A área lógica `robot-manuals` aceita PDF, DOCX e XLSX de até 20 MB, usando caminhos únicos sob `<robo_id>/`; os bytes são armazenados no filesystem sob `DOCUMENT_STORAGE_DIR/robot-manuals`, e as rotas autenticadas aplicam o escopo de acesso ao robô/cliente. A área não é um bucket Supabase. Os campos legados `robos.manual_path` e `robos.manual_nome` são preservados. A cópia para a infraestrutura não leva os metadados documentais nem os arquivos; referências legadas podem apontar para arquivos que precisarão ser cadastrados manualmente.
 
 ## Orçamentos
 
@@ -360,7 +353,7 @@ O editor mantém `regras_robo` como fonte de verdade. `parent_id` referencia uma
 
 `robot_center_documentation_sections` armazena as seis seções fixas do rascunho. `robot_center_documentation_blocks` armazena conteúdo complementar vinculado ao UUID real da regra e está preparado para `text`, `note`, `image`, `caption` e `page_break`; a primeira interface edita `text` e `note`.
 
-Blocos agora podem pertencer a uma regra (`requirement_id`) ou seção (`section_id`), nunca às duas. Imagens mantêm arquivo, MIME, nome original, bytes, dimensões, alinhamento e preset de tamanho em `metadata`. Legendas são blocos `caption` ligados à imagem por `related_block_id`. Os arquivos ficam no bucket privado `robot-documentation`, no caminho `<robo_id>/draft/images/<uuid>.<ext>`.
+Blocos agora podem pertencer a uma regra (`requirement_id`) ou seção (`section_id`), nunca às duas. `metadata` registra caminho, MIME, nome original, tamanho, dimensões, alinhamento e preset da imagem; os bytes ficam no filesystem persistente sob `DOCUMENT_STORAGE_DIR/robot-documentation/<robo_id>/draft/images/<uuid>.<ext>`. Legendas são blocos `caption` ligados à imagem por `related_block_id`. `robot-documentation` é uma área lógica, não um bucket Supabase.
 
 - `robot_center_documentations`: raiz 1:1 com `robos`, status, auditoria e exclusão lógica; não contém o arquivo externo nem conteúdo editorial.
 - A unicidade de `robot_center_documentations` por robô considera somente registros com `deleted_at is null`, permitindo uma nova documentação após exclusão lógica sem sobrescrever o histórico anterior.
@@ -370,9 +363,9 @@ Blocos agora podem pertencer a uma regra (`requirement_id`) ou seção (`section
 
 ### Publicação da Documentação Robot Center
 
-`robot_center_documentation_templates` registra o template DOCX mestre ativo, armazenado no bucket privado `robot-documentation-templates`. A publicação reserva uma linha em `robot_center_documentation_versions` com estado `generating`, número sequencial e token idempotente. Após gerar os artefatos, a linha recebe `snapshot`, `docx_path`, `pdf_path`, template utilizado e `published_at`; versões `published` não aceitam atualização nem exclusão. Falhas ficam em `failed` e são reprocessadas no mesmo número.
+`robot_center_documentation_templates` registra o template DOCX mestre ativo, armazenado no filesystem persistente sob `DOCUMENT_STORAGE_DIR/robot-documentation-templates`. Essa área lógica não é um bucket Supabase. A publicação reserva uma linha em `robot_center_documentation_versions` com estado `generating`, número sequencial e token idempotente. Após gerar os artefatos, a linha recebe `snapshot`, `docx_path`, `pdf_path`, template utilizado e `published_at`; versões `published` não aceitam atualização nem exclusão. Falhas ficam em `failed` e são reprocessadas no mesmo número.
 
-Os arquivos publicados ficam no bucket privado `robot-documentation`, em `<robo_id>/versions/v1.x/`. Imagens do rascunho são copiadas para a pasta da versão antes da geração, portanto substituições futuras no rascunho não alteram snapshots publicados. `robot_center_documentations.current_version_id` referencia a versão publicada atual.
+Os arquivos publicados ficam no filesystem persistente em `DOCUMENT_STORAGE_DIR/robot-documentation/<robo_id>/versions/v1.x/`. Imagens do rascunho são copiadas para a pasta da versão antes da geração, portanto substituições futuras no rascunho não alteram snapshots publicados. `robot_center_documentations.current_version_id` referencia a versão publicada atual.
 
 Ao concluir uma versão, a mesma transação insere uma linha em `publicacoes` com categoria `Atualização do Robô`. Assim, a dashboard reutiliza seu feed existente sem duplicar entidade nem introduzir uma categoria incompatível.
 
@@ -427,3 +420,52 @@ Na interface, essa entidade é denominada exclusivamente **ToDo**. `note` aceita
 # Atualização: flag Kortex dos robôs
 
 `public.robos.kortex` é um booleano obrigatório, com padrão `false`, que indica se o robô utiliza Kortex. O campo pertence à própria entidade `robos` e não altera seus relacionamentos.
+
+## Sessões próprias da aplicação
+
+`public.app_sessions` registra sessões emitidas pelo backend Robot Center. A tabela contém `id`, `user_id`, `token_hash` SHA-256, `created_at`, `expires_at`, `last_seen_at` e `revoked_at`. `user_id` identifica a conta existente sem copiar, renomear ou remover usuários. O token bruto permanece somente no cookie HttpOnly; o banco armazena seu hash. Índices atendem à validação e revogação de sessões ativas. RLS fica habilitada e a tabela não concede acesso a `PUBLIC`, `anon` ou `authenticated`; somente o backend privilegiado pode operá-la.
+
+## Compatibilidade de autenticação PostgreSQL standalone
+
+No PostgreSQL standalone, `auth.users` preserva a identidade da conta, os hashes de senha e os metadados necessários ao backend. `auth.identities.user_id` referencia `auth.users.id` com exclusão em cascata. `public.profiles.id` também referencia a mesma conta. O login da aplicação compara a senha com `auth.users.encrypted_password`; não há serviço GoTrue no servidor standalone.
+
+`auth.uid()` e `auth.jwt()` leem as claims definidas pelo backend durante cada transação. Elas mantêm as policies e funções existentes sem enviar JWT ou credenciais do Supabase ao navegador. `service_role` acessa apenas as colunas de conta usadas pelo servidor; `authenticated` e `anon` não recebem acesso direto às tabelas `auth.users` e `auth.identities`.
+
+`public.app_sessions` contém apenas sessões novas emitidas pela aplicação local. Sessões antigas não são copiadas; depois da troca de banco, cada usuário autentica novamente. A importação preserva `auth.users` e `auth.identities`, mas exclui dados de documentos e arquivos. As tabelas de documentação continuam criadas pelas migrations para que o fluxo possa ser testado vazio; o conteúdo binário fica em `DOCUMENT_STORAGE_DIR`.
+
+As tabelas `storage.buckets` e `storage.objects`, junto de `storage.foldername(text)`, existem como compatibilidade para as policies presentes no histórico. O armazenamento atual da aplicação grava os bytes no filesystem local; linhas e arquivos de `storage.objects` não fazem parte da importação.
+
+O trigger compartilhado `private.set_row_audit_fields()` atualiza os campos comuns de auditoria. Como ele também atende tabelas sem exclusão lógica, a migration standalone verifica `deleted_at` e `deleted_by` dinamicamente antes de preenchê-los.
+
+```mermaid
+erDiagram
+    AUTH_USERS ||--|| PROFILES : "id, FK"
+    AUTH_USERS ||--o{ AUTH_IDENTITIES : "user_id, FK"
+    AUTH_USERS ||..o{ APP_SESSIONS : "user_id, referência lógica sem FK"
+    PROFILES ||--o{ USER_ROLES : "user_id, FK"
+    ROLES ||--o{ USER_ROLES : "role_id, FK"
+```
+
+
+## Estado verificado da cópia standalone — 16/10/2026
+
+A cópia inicial do schema e dos dados foi feita do banco local `supabase_db_robot-center` para `robot_center_migrated`, sem alterar a origem. Naquele restore, os dois bancos tinham 45 tabelas public/private, 122 policies, 57 funções e 44 tabelas públicas com RLS; as contagens coincidiam nas 37 tabelas de produto importadas. As seis tabelas de conteúdo da Documentação Robot Center, `robot_uploaded_documents`, `storage.objects` e `app_sessions` foram mantidas sem dados na cópia inicial, conforme o escopo combinado. A migration posterior de recuperação acrescentou `app_password_reset_tokens`; os dados de sessões e tokens locais devem continuar fora do dump corporativo.
+
+As contas `auth.users` e `auth.identities`, perfis, papéis e permissões foram preservados. Na cópia inicial, o destino continha 14 contas e 14 identidades; o perfil `marcos.vinicius` mantém os papéis `admin` e `master`. `public.app_sessions` foi importada sem sessões, portanto cada usuário precisou entrar novamente. Logins posteriores criam sessões locais; sessões de desenvolvimento e tokens de recuperação não devem ir no dump corporativo. O trigger `on_auth_user_created` cria um perfil para novas contas.
+
+As migrations históricas do banco de origem foram registradas no destino, seguidas pelas migrations standalone locais. authenticated mantém as policies RLS e os grants dos helpers privados; service_role fica restrito ao backend, com acesso por coluna a auth.users e sem acesso a auth.identities.
+
+O campo robos.manual_path ainda contém uma referência a um PDF que não foi copiado. O arquivo não está disponível no destino até ser importado por um procedimento separado; o dado de origem foi preservado.
+
+## Recuperação de senha standalone
+
+`public.app_password_reset_tokens` registra solicitações de redefinição sem substituir ou alterar a identidade em `auth.users` até o usuário confirmar a nova senha. A tabela contém `id`, `user_id` (FK para `auth.users.id`, com cascade na exclusão física), `token_hash` SHA-256 único, `created_at`, `expires_at` e `used_at`. A aplicação armazena apenas o hash do token; o token bruto é entregue no link local de desenvolvimento ou, futuramente, pelo SMTP de produção.
+
+Índices atendem à invalidação por usuário e à consulta de tokens ainda não consumidos. RLS fica habilitada, sem policies ou grants para `PUBLIC`, `anon` e `authenticated`; somente `service_role` opera a tabela pelo backend. O token vence em 30 minutos, é de uso único e novas solicitações invalidam as anteriores. A redefinição atualiza o hash bcrypt da conta, consome tokens pendentes e revoga sessões ativas.
+
+Relacionamento de autenticação:
+
+```text
+AUTH_USERS ||..o{ APP_SESSIONS : "user_id"
+AUTH_USERS ||..o{ APP_PASSWORD_RESET_TOKENS : "user_id"
+```

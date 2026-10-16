@@ -83,7 +83,7 @@ export default function FluxoDetalhePage({ params }: { params: Promise<{ id: str
       console.error("Falha ao publicar a versão do fluxo", error);
       const detail = error && typeof error === "object" && "message" in error
         ? String(error.message)
-        : "Erro não identificado pelo Supabase.";
+        : "Erro não identificado pelo adapter PostgreSQL.";
       setErro(`Não foi possível publicar a nova versão. ${detail}`);
     }
     finally { setPublicando(false); }

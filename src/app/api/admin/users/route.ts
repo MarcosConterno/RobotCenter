@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/database/admin";
+import { createClient } from "@/lib/database/server";
 
 const createUserSchema = z.object({
   login: z.string().trim().min(1, "Login é obrigatório."),
@@ -63,11 +63,11 @@ function roleCodeFromName(name: string) {
 }
 
 async function requireAdmin() {
-  const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const database = await createClient();
+  const { data: { user }, error } = await database.auth.getUser();
   if (error || !user) return { error: "Sessão inválida.", status: 401 } as const;
 
-  const { data: userRoles, error: rolesError } = await supabase
+  const { data: userRoles, error: rolesError } = await database
     .from("user_roles")
     .select("roles(codigo)")
     .eq("user_id", user.id);
@@ -103,10 +103,16 @@ export async function GET() {
     authData.users.map((user): [string, string] => [user.id, user.email ?? ""]),
   );
   const users = (profiles ?? []).map((profile) => {
-    const assignments = profile.user_roles as unknown as Array<{ roles: { codigo?: string; nome?: string } | Array<{ codigo?: string; nome?: string }> | null }>;
-    const codes = assignments?.flatMap((assignment) => Array.isArray(assignment.roles) ? assignment.roles : [assignment.roles]).filter(Boolean).flatMap(roleCodes) ?? [];
-    const assignedRole = assignments?.flatMap((assignment) => Array.isArray(assignment.roles) ? assignment.roles : [assignment.roles]).find((role) => role && role.codigo !== "master");
-    const tipo = assignedRole?.nome ?? "Operador";
+    const assignedRoles = extractRelationRows(profile.user_roles, "roles", (roles) =>
+      Array.isArray(roles) ? roles : roles == null ? [] : [roles],
+    );
+    const codes = assignedRoles.flatMap(roleCodes);
+    const assignedRole = assignedRoles.find((role) => {
+      const codigo = relationValue(role, "codigo");
+      return typeof codigo === "string" && codigo !== "master";
+    });
+    const roleName = relationValue(assignedRole, "nome");
+    const tipo = typeof roleName === "string" ? roleName : "Operador";
     return { id: profile.id, login: profile.login, email: emailById.get(profile.id) ?? "", tipo, clienteId: profile.cliente_id, podeEditarRobosCliente: profile.pode_editar_robos_cliente, isMaster: codes.includes("master") };
   });
 
@@ -283,3 +289,5 @@ export async function DELETE(request: Request) {
   if (authError) return NextResponse.json({ error: `Perfil arquivado, mas a identidade de acesso não pôde ser removida: ${authError.message}` }, { status: 500 });
   return NextResponse.json({ success: true });
 }
+import { extractRelationRows, relationValue } from "@/lib/postgres/relation-rows";
+

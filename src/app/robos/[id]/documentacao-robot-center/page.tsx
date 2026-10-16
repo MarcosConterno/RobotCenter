@@ -2,7 +2,7 @@ import { ArrowLeft, Download, ExternalLink, FileText, Pencil } from "lucide-reac
 import Link from "next/link";
 import AppShell from "@/components/layout/AppShell";
 import { formatDocumentationVersion } from "@/domain/robot-center-documentation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/database/server";
 
 function roleCodes(value: unknown): string[] {
   if (Array.isArray(value)) return value.flatMap(roleCodes);
@@ -12,30 +12,30 @@ function roleCodes(value: unknown): string[] {
 
 export default async function RobotCenterDocumentationPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const database = await createClient();
+  const { data: { user } } = await database.auth.getUser();
   if (!user) return <Denied />;
 
   const [{ data: userRoles }, { data: robot }, { data: documentation }] = await Promise.all([
-    supabase.from("user_roles").select("roles(codigo)").eq("user_id", user.id),
-    supabase.from("robos").select("id,nome,sistema").eq("id", id).is("deleted_at", null).maybeSingle(),
-    supabase.from("robot_center_documentations").select("id,status").eq("robo_id", id).is("deleted_at", null).maybeSingle(),
+    database.from("user_roles").select("roles(codigo)").eq("user_id", user.id),
+    database.from("robos").select("id,nome,sistema").eq("id", id).is("deleted_at", null).maybeSingle(),
+    database.from("robot_center_documentations").select("id,status").eq("robo_id", id).is("deleted_at", null).maybeSingle(),
   ]);
   if (!robot || !documentation) return <Denied message="Documentação não encontrada ou acesso negado." />;
   const isAdmin = [...new Set(userRoles?.flatMap((item) => roleCodes(item.roles)) ?? [])].includes("admin");
-  const { data: versions } = await supabase.from("robot_center_documentation_versions")
+  const { data: versions } = await database.from("robot_center_documentation_versions")
     .select("id,version,status,published_at,created_at,created_by,docx_path,pdf_path,error_message")
     .eq("documentation_id", documentation.id).order("version", { ascending: false });
   const creatorIds = [...new Set((versions ?? []).map((item) => item.created_by))];
   const { data: creators } = creatorIds.length
-    ? await supabase.from("profiles").select("id,nome,email").in("id", creatorIds)
+    ? await database.from("profiles").select("id,nome,email").in("id", creatorIds)
     : { data: [] };
 
   const items = await Promise.all((versions ?? []).map(async (version) => {
     const [pdfView, pdfDownload, docxDownload] = await Promise.all([
-      version.pdf_path ? supabase.storage.from("robot-documentation").createSignedUrl(version.pdf_path, 900) : null,
-      version.pdf_path ? supabase.storage.from("robot-documentation").createSignedUrl(version.pdf_path, 900, { download: `${robot.nome}-${formatDocumentationVersion(version.version)}.pdf` }) : null,
-      version.docx_path ? supabase.storage.from("robot-documentation").createSignedUrl(version.docx_path, 900, { download: `${robot.nome}-${formatDocumentationVersion(version.version)}.docx` }) : null,
+      version.pdf_path ? database.storage.from("robot-documentation").createSignedUrl(version.pdf_path, 900) : null,
+      version.pdf_path ? database.storage.from("robot-documentation").createSignedUrl(version.pdf_path, 900, { download: `${robot.nome}-${formatDocumentationVersion(version.version)}.pdf` }) : null,
+      version.docx_path ? database.storage.from("robot-documentation").createSignedUrl(version.docx_path, 900, { download: `${robot.nome}-${formatDocumentationVersion(version.version)}.docx` }) : null,
     ]);
     return { ...version, creator: creators?.find((item) => item.id === version.created_by), pdfView: pdfView?.data?.signedUrl, pdfDownload: pdfDownload?.data?.signedUrl, docxDownload: docxDownload?.data?.signedUrl };
   }));

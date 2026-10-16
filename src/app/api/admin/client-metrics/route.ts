@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/database/admin";
+import { createClient } from "@/lib/database/server";
+import { extractRelationRows } from "@/lib/postgres/relation-rows";
 
 function roleCodes(value: unknown): string[] {
   if (Array.isArray(value)) return value.flatMap(roleCodes);
@@ -18,14 +19,14 @@ interface ClientMetric {
 }
 
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const database = await createClient();
+  const { data: { user } } = await database.auth.getUser();
   if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
 
-  const { data: assignments, error: rolesError } = await supabase.from("user_roles")
+  const { data: assignments, error: rolesError } = await database.from("user_roles")
     .select("roles(codigo)")
     .eq("user_id", user.id);
-  const roles = rolesError ? [] : [...new Set(assignments?.flatMap((item) => roleCodes(item.roles)) ?? [])];
+  const roles = rolesError ? [] : [...new Set(extractRelationRows(assignments, "roles", roleCodes))];
   if (!roles.includes("admin") && !roles.includes("master")) {
     return NextResponse.json({ error: "Acesso exclusivo de administradores." }, { status: 403 });
   }

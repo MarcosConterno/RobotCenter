@@ -7,8 +7,8 @@ import { FlowsDataProvider } from "@/data/FlowsDataProvider";
 import ThemeProvider from "@/components/theme/ThemeProvider";
 import { TutorialProvider } from "@/tutorial/TutorialProvider";
 
-const publicSiteUrl = process.env.NEXT_PUBLIC_SITE_URL
-  ?? (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000");
+const publicSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim()
+  || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000");
 
 export const metadata: Metadata = {
   metadataBase: new URL(publicSiteUrl),

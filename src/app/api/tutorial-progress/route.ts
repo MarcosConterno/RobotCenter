@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/database/server";
 import { ONBOARDING_KEY, ONBOARDING_VERSION, type TutorialProgress } from "@/tutorial/types";
 
 const updateSchema = z.object({
@@ -34,15 +34,15 @@ function mapProgress(row: {
 }
 
 export async function GET(request: Request) {
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const database = await createClient();
+  const { data: { user }, error: authError } = await database.auth.getUser();
   if (authError || !user) return NextResponse.json({ error: "Sessão inválida." }, { status: 401 });
 
   const url = new URL(request.url);
   const tutorialKey = url.searchParams.get("tutorialKey")?.trim() || ONBOARDING_KEY;
   const tutorialVersion = Number(url.searchParams.get("tutorialVersion") || ONBOARDING_VERSION);
   if (!Number.isInteger(tutorialVersion) || tutorialVersion < 1) return NextResponse.json({ error: "Versão inválida." }, { status: 400 });
-  const { data, error } = await supabase
+  const { data, error } = await database
     .from("user_tutorial_progress")
     .select("tutorial_key,tutorial_version,status,current_step,started_at,completed_at,updated_at")
     .eq("user_id", user.id)
@@ -63,16 +63,16 @@ export async function PUT(request: Request) {
   const parsed = updateSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Progresso inválido." }, { status: 400 });
 
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const database = await createClient();
+  const { data: { user }, error: authError } = await database.auth.getUser();
   if (authError || !user) return NextResponse.json({ error: "Sessão inválida." }, { status: 401 });
 
   if (parsed.data.tutorialId) {
-    const { data: allowedTutorial } = await supabase.from("tutorials").select("id").eq("id", parsed.data.tutorialId).eq("status", "published").maybeSingle();
+    const { data: allowedTutorial } = await database.from("tutorials").select("id").eq("id", parsed.data.tutorialId).eq("status", "published").maybeSingle();
     if (!allowedTutorial) return NextResponse.json({ error: "Tutorial indisponível para este usuário." }, { status: 403 });
   }
 
-  const { data: existing, error: readError } = await supabase
+  const { data: existing, error: readError } = await database
     .from("user_tutorial_progress")
     .select("started_at,completed_at")
     .eq("user_id", user.id)
@@ -82,7 +82,7 @@ export async function PUT(request: Request) {
   if (readError) return NextResponse.json({ error: "Não foi possível validar o progresso." }, { status: 500 });
 
   const now = new Date().toISOString();
-  const { data, error } = await supabase
+  const { data, error } = await database
     .from("user_tutorial_progress")
     .upsert({
       user_id: user.id,

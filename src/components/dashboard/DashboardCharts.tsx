@@ -4,7 +4,7 @@ import { BarChart3, ChevronDown, Circle, Disc3, Plus, RotateCcw, Save, SlidersHo
 import { useEffect, useMemo, useState } from "react";
 
 import type { Cliente, Robo } from "@/domain/entities";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/database/client";
 import type { Json } from "@/types/database.types";
 
 import styles from "./DashboardCharts.module.css";
@@ -118,11 +118,11 @@ export default function DashboardCharts({ robots, clients }: { robots: Robo[]; c
   useEffect(() => {
     let active = true;
     const loadLayout = async () => {
-      const supabase = createClient();
-      const { data: claimsData } = await supabase.auth.getClaims();
+      const database = createClient();
+      const { data: claimsData } = await database.auth.getClaims();
       const userId = typeof claimsData?.claims?.sub === "string" ? claimsData.claims.sub : null;
       if (!userId) { if (active) setLayoutReady(true); return; }
-      const { data, error } = await supabase.from("dashboard_chart_preferences").select("cards").eq("user_id", userId).maybeSingle();
+      const { data, error } = await database.from("dashboard_chart_preferences").select("cards").eq("user_id", userId).maybeSingle();
       if (!active) return;
       if (!error && data) {
         const saved = validChartConfigs(data.cards);
@@ -228,13 +228,13 @@ export default function DashboardCharts({ robots, clients }: { robots: Robo[]; c
   async function saveLayout() {
     setSavingLayout(true);
     setLayoutMessage("");
-    const supabase = createClient();
-    const { data: claimsData } = await supabase.auth.getClaims();
+    const database = createClient();
+    const { data: claimsData } = await database.auth.getClaims();
     const userId = typeof claimsData?.claims?.sub === "string" ? claimsData.claims.sub : null;
     if (!userId) { setSavingLayout(false); setLayoutMessage("Sessão inválida. Entre novamente para salvar o layout."); return; }
-    const { error } = await supabase.from("dashboard_chart_preferences").upsert({ user_id: userId, cards: chartConfigs as unknown as Json }, { onConflict: "user_id" });
+    const { error } = await database.from("dashboard_chart_preferences").upsert({ user_id: userId, cards: chartConfigs as unknown as Json }, { onConflict: "user_id" });
     setSavingLayout(false);
-    setLayoutMessage(error ? "Não foi possível salvar. Confirme se a migration da Dashboard foi aplicada." : "Layout salvo no Supabase Cloud.");
+    setLayoutMessage(error ? "Não foi possível salvar. Confirme se a migration da Dashboard foi aplicada." : "Layout salvo no PostgreSQL.");
   }
 
   return (

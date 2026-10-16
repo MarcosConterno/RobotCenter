@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/database/server";
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
@@ -19,8 +19,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.redirect(errorDestination, 303);
   }
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const database = await createClient();
+  const { data: { user } } = await database.auth.getUser();
 
   if (!user) {
     const destination = new URL("/recuperar-senha", request.url);
@@ -28,14 +28,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.redirect(destination, 303);
   }
 
-  const { error } = await supabase.auth.updateUser({ password });
+  const { error } = await database.auth.updateUser({ password });
 
   if (error) {
     errorDestination.searchParams.set("error", "Não foi possível atualizar a senha.");
     return NextResponse.redirect(errorDestination, 303);
   }
 
-  await supabase.auth.signOut();
+  await database.auth.signOut();
   const loginDestination = new URL("/login", request.url);
   loginDestination.searchParams.set("message", "Senha atualizada. Entre novamente.");
   return NextResponse.redirect(loginDestination, 303);
